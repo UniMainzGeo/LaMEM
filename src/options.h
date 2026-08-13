@@ -27,6 +27,7 @@ struct SolOptDB
 	PetscInt    view_solvers                   =  0;                         // show linear solver configuration
 	PetscInt    monitor_solvers                =  0;                         // show linear iteration convergence
 	PetscInt    set_linear_problem             =  0;                         // linear problem flag (skip nonlinear iteration)
+	PetscInt    continue_on_fail               =  0;                         // continue simulation if nonlinear solver diverged
 
 	PetscScalar nonlinear_tolerances[3]        =  { 1e-5, -1.0, 50.0  };     // rtol, atol, maxit (-1 = automatic setting, only for atol)
 	PetscScalar linear_tolerances[3]           =  { 1e-6, -1.0, 200.0 };     // rtol, atol, maxit (-1 = automatic setting, only for atol)
@@ -82,38 +83,38 @@ PetscErrorCode solverOptionsCheck(SolOptDB &opt);
 PetscErrorCode get_num_mg_levels(SolOptDB &opt, FDSTAG *fs);
 
 PetscErrorCode get_coarse_reduction_factor(
-		SolOptDB &opt,
-		PetscInt  coarse_num_local_cells);
+    SolOptDB &opt,
+    PetscInt  coarse_num_local_cells);
 
 PetscErrorCode get_num_local_blocks(
-		SolOptDB &opt,
-		PetscInt  levels_num_local_cells[],
-		PetscInt  coarse_num_local_cells);
+    SolOptDB &opt,
+    PetscInt  levels_num_local_cells[],
+    PetscInt  coarse_num_local_cells);
 
 PetscErrorCode set_default_smoother(SolOptDB &opt);
 
 PetscErrorCode set_smoother_options(
-		SolOptDB   &opt,
-		const char *prefix,
-		PetscInt    num_local_blocks);
+    SolOptDB   &opt,
+    const char *prefix,
+    PetscInt    num_local_blocks);
 
 PetscErrorCode set_subdomain_options(
-		SolOptDB   &opt,
-		const char *prefix,
-		const char *pc_type,
-		PetscInt    num_local_blocks);
+    SolOptDB   &opt,
+    const char *prefix,
+    const char *pc_type,
+    PetscInt    num_local_blocks);
 
 PetscErrorCode set_coarse_options(
-		SolOptDB   &opt,
-		const char *mg_prefix);
+    SolOptDB   &opt,
+    const char *mg_prefix);
 
 PetscErrorCode set_levels_options(
-		SolOptDB   &opt,
-		const char *mg_prefix);
+    SolOptDB   &opt,
+    const char *mg_prefix);
 
 PetscErrorCode set_custom_mg_options(
-		SolOptDB   &opt,
-		const char *prefix);
+    SolOptDB   &opt,
+    const char *prefix);
 
 PetscErrorCode set_standard_mg_options(SolOptDB &opt, const char *prefix);
 

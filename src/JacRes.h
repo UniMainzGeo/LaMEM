@@ -58,7 +58,7 @@ struct SolVarBulk
 	PetscScalar  mf;     // melt fraction from phase diagram
 	PetscScalar  phi;    // PSD angle
 	PetscScalar  Ha ;    // Adiabatic heating
-    PetscScalar  cond ;  // conductivity
+	PetscScalar  cond ;  // conductivity
 
 };
 
@@ -116,6 +116,13 @@ enum GWLevelType
 
 };
 
+// solution access mode
+enum AccessMode
+{
+	_interp_,    // assigned edges and corners for interpolation
+	_no_interp_, // no interpolation is required
+};
+
 struct Controls
 {
 	PetscScalar grav[3];       // global gravity components
@@ -123,7 +130,7 @@ struct Controls
 	PetscScalar shearHeatEff;  // shear heating efficiency parameter [0 - 1]
 	PetscScalar biot;          // Biot pressure parameter [0 - 1]
 
-	PetscScalar AdiabHeat;		// Adiabatic Heating efficiency
+	PetscScalar AdiabHeat;      // Adiabatic Heating efficiency
 	PetscInt    actTemp;        // temperature diffusion activation flag
 	PetscInt    actExp;         // thermal expansion activation flag
 	PetscInt    actSteadyTemp;  // steady-state temperature initial guess flag
@@ -137,7 +144,7 @@ struct Controls
 	PetscInt    pLimPlast;      // limit pressure at first iteration for plasticity
 	PetscScalar pShift;         // shift the pressure by a constant value while evaluating plasticity & for output
 	PetscInt    pShiftAct;      // pressure shift activation flag (zero pressure in the top cell layer)
-	PetscInt    printNorms;		// priny norms of velocity/pressure/temperature?
+	PetscInt    printNorms;     // priny norms of velocity/pressure/temperature?
 
 	PetscScalar eta_min;        // minimum viscosity
 	PetscScalar eta_max;        // maximum viscosity
@@ -182,6 +189,7 @@ struct JacRes
 	BCCtx      *bc;     // boundary condition context
 	DBPropDike *dbdike; // dike database
 	DBMat      *dbm;    // material database
+	PData      *Pd;      // Phase diagram
 
 	// parameters and controls
 	Controls ctrl;
@@ -189,62 +197,25 @@ struct JacRes
 	// coupled solution & residual vectors
 	Vec gsol, gres; // global
 
-	// velocity	components
-	Vec gvx,  gvy, gvz;  // global
-	Vec lvx,  lvy, lvz;  // local (ghosted)
-
-	// momentum residual components
-	Vec gfx,  gfy, gfz;  // global
-	Vec lfx,  lfy, lfz;  // local (ghosted)
-
-	// strain-rate components (also used as buffer vectors)
-	Vec ldxx, ldyy, ldzz, ldxy, ldxz, ldyz; // local (ghosted)
-	Vec                   gdxy, gdxz, gdyz; // global
-	// (ADVInterpMarkToEdge & ADVInterpFieldToMark is the only
-	//  couple of functions where global vectors (gdxy, gdxz, gdyz) are used.
-	//  Get rid of this ugly averaging between markers & edges!
-	//  In ADVInterpFieldToMark it's easy.
-	//  In ADVInterpMarkToEdge it's impossible because of assembly operation.
-	//  Really really really need to switch to ghost marker approach!
-	//  Also to get communication pattern independent of number of phases.
-
-	// For almost all the purposes only one center-based array is necessary instead of three
-	// for example - strain rate contributions from centers can be stored in one array
-
-	// IN GENERAL GET RID OF BUFFER VECTORS, USE LOCAL DMGetLocalVector (GET_INIT_LOCAL_VECTOR)
-
-	// pressure
-	Vec gp;      // global
-	Vec lp;      // local (ghosted)
-	Vec lp_lith; // lithostatic pressure
-	Vec lp_pore; // pore pressure
-
-	// continuity residual
-	Vec gc; // global
-
-	// corner buffer
-	Vec lbcor; // local (ghosted)
-
 	// solution variables
 	SolVarCell  *svCell;   // cell centers
 	SolVarEdge  *svXYEdge; // XY edges
 	SolVarEdge  *svXZEdge; // XZ edges
 	SolVarEdge  *svYZEdge; // YZ edges
 	PetscScalar *svBuff;   // storage for phRat
-	PetscScalar  mean_p;  // average lithostatic pressure
 
-	// Phase diagram
-	PData       *Pd;
+	//=========
+	// pressure
+	//=========
 
-	// Adjoint field based gradients
-	Vec          lgradfield;
-	Vec          phi; // PSD context
+	Vec lp_lith; // lithostatic pressure
+	Vec lp_pore; // pore pressure
 
 	//=======================
 	// temperature parameters
 	//=======================
 
-	Vec lT;   // temperature (box stencil, active even without diffusion)
+	Vec gT;   // temperature solution vector (global)
 	DM  DA_T; // temperature cell-centered grid with star stencil
 	Mat Att;  // temperature preconditioner matrix
 	Vec dT;   // temperature increment (global)
@@ -274,63 +245,64 @@ PetscErrorCode JacResWriteRestart(JacRes *jr, FILE *fp);
 // destroy residual & Jacobian evaluation context
 PetscErrorCode JacResDestroy(JacRes *jr);
 
-// form residual vector
-PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f);
-
 // compute effective inverse elastic parameter
 PetscErrorCode JacResGetI2Gdt(JacRes *jr);
 
+// form residual vector
+PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f);
+
+// access solution vectors, set two-point constraints, prepare for interpolation (optionally)
+PetscErrorCode JacResGetSolution(JacRes *jr, Vec x, Vec *lvx, Vec *lvy, Vec *lvz, Vec *lp, Vec *lT, AccessMode mode);
+
+// restore solution vectors
+PetscErrorCode JacResRestoreSolution(JacRes *jr, Vec *lvx, Vec *lvy, Vec *lvz, Vec *lp, Vec *lT);
+
+// access current velocity
+PetscErrorCode JacResGetVel(JacRes *jr, Vec x, Vec lvx, Vec lvy, Vec lvz);
+
+// access current pressure
+PetscErrorCode JacResGetPres(JacRes *jr, Vec x, Vec lp);
+
 // get average pressure near the top surface
-PetscErrorCode JacResGetPressShift(JacRes *jr);
+PetscErrorCode JacResGetPressShift(JacRes *jr, Vec lp);
 
 // evaluate effective strain rate components in basic nodes
-PetscErrorCode JacResGetEffStrainRate(JacRes *jr);
+PetscErrorCode JacResGetEffStrainRate(JacRes *jr,
+                                      Vec lvx,  Vec lvy,  Vec lvz,
+                                      Vec ldxx, Vec ldyy, Vec ldzz,
+                                      Vec ldxy, Vec ldxz, Vec ldyz);
 
 // compute velocity gradients for output
 PetscErrorCode JacResGetVelGrad(JacRes *jr,
-		Vec dvxdx, Vec dvxdy, Vec dvxdz,
-		Vec dvydx, Vec dvydy, Vec dvydz,
-		Vec dvzdx, Vec dvzdy, Vec dvzdz);
+                                Vec lvx,   Vec lvy,   Vec lvz,
+                                Vec dvxdx, Vec dvxdy, Vec dvxdz,
+                                Vec dvydx, Vec dvydy, Vec dvydz,
+                                Vec dvzdx, Vec dvzdy, Vec dvzdz);
 
 // compute components of vorticity vector
-PetscErrorCode JacResGetVorticity(JacRes *jr);
-
-// compute nonlinear residual vectors
-PetscErrorCode JacResGetResidual(JacRes *jr);
-
-// copy solution from global to local vectors, enforce boundary constraints
-PetscErrorCode JacResCopySol(JacRes *jr, Vec x);
-
-// copy velocity solution from global to local vectors, enforce boundary constraints
-PetscErrorCode JacResCopyVel(JacRes *jr, Vec x);
-
-// copy pressure solution from global to local vectors, enforce boundary constraints
-PetscErrorCode JacResCopyPres(JacRes *jr, Vec x);
+PetscErrorCode JacResGetVorticity(JacRes *jr,
+                                  Vec lvx,  Vec lvy,  Vec lvz,
+                                  Vec ldxy, Vec ldxz, Vec ldyz);
 
 // initialize pressure
-PetscErrorCode JacResInitPres(JacRes *jr,TSSol *ts);
+PetscErrorCode JacResInitPres(JacRes *jr);
 
 // initialize pressure to lithostatic pressure
 PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx, TSSol *ts);
 
-// copy residuals from local to global vectors, enforce boundary constraints
-PetscErrorCode JacResCopyRes(JacRes *jr, Vec f);
+// assemble residual
+PetscErrorCode JacResAssembleRes(JacRes *jr, Vec f, Vec lfx, Vec lfy, Vec lfz, Vec gc);
 
-// copy momentum residuals from global to local vectors for output
-PetscErrorCode JacResCopyMomentumRes(JacRes *jr, Vec f);
-
-// copy continuity residuals from global to local vectors for output
-PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f);
-
+// print residual
 PetscErrorCode JacResViewRes(JacRes *jr);
 
 //---------------------------------------------------------------------------
 
 // compute maximum horizontal compressive stress (SHmax) orientation
-PetscErrorCode JacResGetSHmax(JacRes *jr);
+PetscErrorCode JacResGetSHmax(JacRes *jr, Vec cx, Vec cy);
 
 // compute maximum horizontal extension rate (EHmax) orientation
-PetscErrorCode JacResGetEHmax(JacRes *jr);
+PetscErrorCode JacResGetEHmax(JacRes *jr, Vec cx, Vec cy);
 
 //---------------------------------------------------------------------------
 // Effective permeability functions
@@ -343,14 +315,14 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 //---------------------------------------------------------------------------
 
 PetscErrorCode JacResGetTempParam(
-	JacRes      *jr,
-	PetscScalar *phRat,
-	PetscScalar *k_,      // conductivity
-	PetscScalar *rho_Cp_, // volumetric heat capacity
-	PetscScalar *rho_A_,  // volumetric radiogenic heat   
-	PetscScalar Tc,       // temperature of cell
+    JacRes      *jr,
+    PetscScalar *phRat,
+    PetscScalar *k_,      // conductivity
+    PetscScalar *rho_Cp_, // volumetric heat capacity
+    PetscScalar *rho_A_,  // volumetric radiogenic heat
+    PetscScalar Tc,       // temperature of cell
     PetscScalar y_c,
-    PetscInt J);     // coordinate of cell
+    PetscInt J);          // coordinate of cell
 
 // check whether thermal material parameters are properly defined
 PetscErrorCode JacResCheckTempParam(JacRes *jr);
@@ -364,11 +336,8 @@ PetscErrorCode JacResDestroyTempParam(JacRes *jr);
 // initialize temperature from markers
 PetscErrorCode JacResInitTemp(JacRes *jr);
 
-// correct temperature for diffusion (Newton update)
-PetscErrorCode JacResUpdateTemp(JacRes *jr);
-
-// apply temperature two-point constraints
-PetscErrorCode JacResApplyTempBC(JacRes *jr);
+// access current temperature
+PetscErrorCode JacResGetTemp(JacRes *jr, Vec lT);
 
 // compute temperature residual vector
 PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt);
@@ -394,8 +363,8 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr);
 //---------------------------------------------------------------------------
 
 #define SET_TPC(bc, a, k, j, i, pmdof) { \
-	if(bc[k][j][i] == DBL_MAX) a[k][j][i] = pmdof; \
-	else                       a[k][j][i] = 2.0*bc[k][j][i] - pmdof; }
+    if(bc[k][j][i] == DBL_MAX) a[k][j][i] = pmdof; \
+    else                       a[k][j][i] = 2.0*bc[k][j][i] - pmdof; }
 
 //---------------------------------------------------------------------------
 #endif

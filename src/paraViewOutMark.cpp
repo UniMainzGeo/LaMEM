@@ -24,7 +24,6 @@ PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb)
 {
 	char filename[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	// check advection type
@@ -55,7 +54,6 @@ PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb)
 //---------------------------------------------------------------------------
 PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscScalar ttime)
 {
-	
 	PetscFunctionBeginUser;
 
 	// check activation
@@ -84,7 +82,7 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	float       var_float, Xp[3];
 	int         var_int;
 	uint64_t    offset = 0;
-	uint64_t 	length;
+	uint64_t    length;
 
 	PetscFunctionBeginUser;
 
@@ -144,7 +142,7 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 
 	fprintf(fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"Phase\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n", offset );
 	offset += (uint64_t)(sizeof(uint64_t) + sizeof(int)*(size_t)nummark);
-	
+
 	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"APS\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n", offset );
 	offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)nummark);
 

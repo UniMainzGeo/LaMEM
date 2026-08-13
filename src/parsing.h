@@ -63,7 +63,7 @@ struct FB
 	PetscInt  *blBeg;   // starting lines of blocks
 	PetscInt  *blEnd;   // ending lines of blocks
 
-    PetscInt   ID;      // ID of the current phase or softening law 
+	PetscInt   ID;      // ID of the current phase or softening law
 };
 
 //-----------------------------------------------------------------------------
@@ -81,59 +81,59 @@ PetscErrorCode FBFreeBlocks(FB *fb);
 char ** FBGetLineRanges(FB *fb, PetscInt *lnbeg, PetscInt *lnend);
 
 PetscErrorCode FBGetIntArray(
-		FB         *fb,
-		const char *key,
-		PetscInt   *nvalues,
-		PetscInt   *values,
-		PetscInt    num,
-		PetscBool  *found);
+    FB         *fb,
+    const char *key,
+    PetscInt   *nvalues,
+    PetscInt   *values,
+    PetscInt    num,
+    PetscBool  *found);
 
 PetscErrorCode FBGetScalarArray(
-		FB          *fb,
-		const char  *key,
-		PetscInt    *nvalues,
-		PetscScalar *values,
-		PetscInt     num,
-		PetscBool   *found);
+    FB          *fb,
+    const char  *key,
+    PetscInt    *nvalues,
+    PetscScalar *values,
+    PetscInt     num,
+    PetscBool   *found);
 
 PetscErrorCode FBGetString(
-		FB         *fb,
-		const char *key,
-		char       *str,    // output string
-		PetscBool  *found);
+    FB         *fb,
+    const char *key,
+    char       *str,    // output string
+    PetscBool  *found);
 
 //-----------------------------------------------------------------------------
 // Wrappers
 //-----------------------------------------------------------------------------
 
 PetscErrorCode getIntParam(
-		FB         *fb,
-		ParamType   ptype,
-		const char *key,
-		PetscInt   *val,
-		PetscInt    num,
-		PetscInt    maxval);
+    FB         *fb,
+    ParamType   ptype,
+    const char *key,
+    PetscInt   *val,
+    PetscInt    num,
+    PetscInt    maxval);
 
 PetscErrorCode getScalarParam(
-		FB          *fb,
-		ParamType    ptype,
-		const char  *key,
-		PetscScalar *val,
-		PetscInt     num,
-		PetscScalar  scal);
+    FB          *fb,
+    ParamType    ptype,
+    const char  *key,
+    PetscScalar *val,
+    PetscInt     num,
+    PetscScalar  scal);
 
 // string is initialized with default value, if available, otherwise set to zero
 PetscErrorCode getStringParam(
-		FB          *fb,
-		ParamType    ptype,
-		const char  *key,
-		char        *str,         // output string
-		const char  *_default_);  // default value (optional)
+    FB          *fb,
+    ParamType    ptype,
+    const char  *key,
+    char        *str,         // output string
+    const char  *_default_);  // default value (optional)
 
 PetscErrorCode  PetscOptionsGetCheckString(
-		const char   key[],
-		char         str[],
-		PetscBool   *set);
+    const char   key[],
+    char         str[],
+    PetscBool   *set);
 
 //-----------------------------------------------------------------------------
 #endif

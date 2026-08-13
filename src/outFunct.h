@@ -34,14 +34,14 @@ struct OutVec
 };
 
 void OutVecCreate(
-	OutVec         *outvec,
-	JacRes         *jr,
-	OutBuf         *outbuf,
-	const char     *name,
-	const char     *label,
-	PetscErrorCode (*OutVecWrite)(OutVec*),
-	PetscInt        num,       // number of vector components or phases to aggregate
-	PetscInt       *phase_ID); // phase IDs to aggregate
+    OutVec         *outvec,
+    JacRes         *jr,
+    OutBuf         *outbuf,
+    const char     *name,
+    const char     *label,
+    PetscErrorCode (*OutVecWrite)(OutVec*),
+    PetscInt        num,       // number of vector components or phases to aggregate
+    PetscInt       *phase_ID); // phase IDs to aggregate
 
 //---------------------------------------------------------------------------
 
@@ -52,7 +52,6 @@ PetscErrorCode PVOutWriteViscTotal   (OutVec*);
 PetscErrorCode PVOutWriteViscCreep   (OutVec*);
 PetscErrorCode PVOutWriteVelocity    (OutVec*);
 PetscErrorCode PVOutWritePressure    (OutVec*);
-PetscErrorCode PVOutWriteGradient    (OutVec*);
 PetscErrorCode PVOutWriteTotalPress  (OutVec*);
 PetscErrorCode PVOutWriteEffPress    (OutVec*);
 PetscErrorCode PVOutWriteOverPress   (OutVec*);

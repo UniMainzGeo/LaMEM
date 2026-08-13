@@ -2,29 +2,24 @@
 using PETSc_jll
 using MPICH_jll
 
-# Compile LaMEM
-println("Compiling LaMEM")
 cd("../src")
 
-# read command-line argument
-if any(contains.(ARGS,"int64"))
-    is64bit = true
-else
-    is64bit = false
-end
+# read command-line arguments
+is64bit  = any(contains.(ARGS, "int64"))
+do_check = any(contains.(ARGS, "check"))
 
-with_fastscape = any(contains.(ARGS,"fastscape"))
+with_fastscape = any(contains.(ARGS, "fastscape"))
 
 # Take the environment (dynamic libraries etc.) from the PETSc
 if is64bit
-    println("Compiling LaMEM with PETSc that has 64bit integers")
+    println("Using PETSc that has 64bit integers")
     cmd = addenv(PETSc_jll.ex42(),
                     "PETSC_OPT"=>"/workspace/destdir/lib/petsc/double_real_Int64",
                     "PETSC_DEB"=>"/workspace/destdir/lib/petsc/double_real_Int64_deb",
                 )
 
 else
-    println("Compiling LaMEM with PETSc that has 32bit integers")
+    println("Using PETSc that has 32bit integers")
     cmd = addenv(PETSc_jll.ex42(),
                     "PETSC_OPT"=>"/workspace/destdir/lib/petsc/double_real_Int32",
                     "PETSC_DEB"=>"/workspace/destdir/lib/petsc/double_real_Int32",
@@ -38,11 +33,21 @@ end
 @show pkgversion(PETSc_jll)
 #@show pkgversion(MPICH_jll)
 
-if with_fastscape
+if do_check
+    # only check source formatting, don't compile
+    println("---- Checking LaMEM source formatting ----")
+    check_format = Cmd(`make mode=opt check`, env = cmd.env)
+    run(check_format)
+elseif with_fastscape
+    # FastScape-enabled build (opt only; there is no deb FastScape build in the CI)
+    println("Compiling LaMEM")
+
     println("---- Compiling LaMEM opt version (with FastScape) ----")
     compile_lamem = Cmd(`make mode=opt surf=scape all`, env = cmd.env)
     run(compile_lamem)
 else
+    println("Compiling LaMEM")
+
     println("---- Compiling LaMEM opt version ----")
     compile_lamem = Cmd(`make mode=opt all`, env = cmd.env)
     run(compile_lamem)
@@ -51,6 +56,3 @@ else
     compile_lamem = Cmd(`make mode=deb all`, env = cmd.env)
     run(compile_lamem)
 end
-
-
-

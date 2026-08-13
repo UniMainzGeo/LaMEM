@@ -44,7 +44,6 @@ PetscErrorCode PMatCreate(MatData *md, Mat *A, PetscInt set_null_space)
 	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -127,7 +126,7 @@ PetscErrorCode PMatCreate(MatData *md, Mat *A, PetscInt set_null_space)
 		ind = (PetscInt) ivz[k+1][j-1][i]; CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivz[k][j][i];     CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivz[k+1][j][i];   CHECK_DOF(ind, start, ln, nd, no);
- 		// x-velocity
+		// x-velocity
 		ind = (PetscInt) ivx[k][j-1][i];   CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivx[k][j-1][i+1]; CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivx[k][j][i];     CHECK_DOF(ind, start, ln, nd, no);
@@ -159,7 +158,7 @@ PetscErrorCode PMatCreate(MatData *md, Mat *A, PetscInt set_null_space)
 		ind = (PetscInt) ivz[k][j-1][i];   CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivz[k+1][j][i];   CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivz[k-1][j][i];   CHECK_DOF(ind, start, ln, nd, no);
- 		// x-velocity
+		// x-velocity
 		ind = (PetscInt) ivx[k-1][j][i];   CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivx[k-1][j][i+1]; CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivx[k][j][i];     CHECK_DOF(ind, start, ln, nd, no);
@@ -251,7 +250,6 @@ PetscErrorCode PMatAssemble(MatData *md, PetscScalar pgamma, Mat A)
 	PetscInt    pdofidx[7];
 	PetscScalar cf[7];
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -552,7 +550,6 @@ PetscErrorCode PMatDiagComp(MatData *md, PetscScalar pgamma, Mat M)
 	PetscScalar ***ip;
 	PetscScalar ***veta;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -599,14 +596,13 @@ PetscErrorCode PMatDiagComp(MatData *md, PetscScalar pgamma, Mat M)
 //.........................   MONOLITHIC MATRIX   ...........................
 //---------------------------------------------------------------------------
 PetscErrorCode PMatMonoCreate(
-		PMatMono    *P,
-		MatData     *md,
-		PetscScalar  pgamma,
-		PetscInt     set_null_space)
+    PMatMono    *P,
+    MatData     *md,
+    PetscScalar  pgamma,
+    PetscInt     set_null_space)
 {
 	DOFIndex *dof;
 
-	
 	PetscFunctionBeginUser;
 
 	// store evaluation context
@@ -631,7 +627,6 @@ PetscErrorCode PMatMonoCreate(
 //---------------------------------------------------------------------------
 PetscErrorCode PMatMonoDestroy(PMatMono *P)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatDestroy(&P->A));
@@ -643,7 +638,6 @@ PetscErrorCode PMatMonoDestroy(PMatMono *P)
 //---------------------------------------------------------------------------
 PetscErrorCode PMatMonoAssemble(PMatMono *P)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(PMatAssemble(P->md, P->pgamma, P->A));
@@ -662,7 +656,6 @@ PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r)
 
 	PMatMono *P;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatShellGetContext(J, (void**)&P));
@@ -682,12 +675,12 @@ PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r)
 //...........................   BLOCK MATRIX   ..............................
 //---------------------------------------------------------------------------
 PetscErrorCode PMatBlockCreate(
-		PMatBlock   *P,
-		MatData     *md,
-		PetscScalar  pgamma,
-		PetscInt     buildwBFBT,
-		PetscInt     buildBvv,
-		PetscInt     set_null_space)
+    PMatBlock   *P,
+    MatData     *md,
+    PetscScalar  pgamma,
+    PetscInt     buildwBFBT,
+    PetscInt     buildBvv,
+    PetscInt     set_null_space)
 {
 	FDSTAG      *fs;
 	DOFIndex    *dof;
@@ -698,7 +691,6 @@ PetscErrorCode PMatBlockCreate(
 	PetscInt    *Apv_d_nnz, *Apv_o_nnz;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 
-	
 	PetscFunctionBeginUser;
 
 	// store evaluation context
@@ -797,7 +789,7 @@ PetscErrorCode PMatBlockCreate(
 		ind = (PetscInt) ivz[k+1][j-1][i]; CHECK_DOF(ind, startv, lnv, nd, no);
 		ind = (PetscInt) ivz[k][j][i];     CHECK_DOF(ind, startv, lnv, nd, no);
 		ind = (PetscInt) ivz[k+1][j][i];   CHECK_DOF(ind, startv, lnv, nd, no);
- 		// x-velocity
+		// x-velocity
 		ind = (PetscInt) ivx[k][j-1][i];   CHECK_DOF(ind, startv, lnv, nd, no);
 		ind = (PetscInt) ivx[k][j-1][i+1]; CHECK_DOF(ind, startv, lnv, nd, no);
 		ind = (PetscInt) ivx[k][j][i];     CHECK_DOF(ind, startv, lnv, nd, no);
@@ -833,7 +825,7 @@ PetscErrorCode PMatBlockCreate(
 		ind = (PetscInt) ivz[k][j-1][i];   CHECK_DOF(ind, startv, lnv, nd, no);
 		ind = (PetscInt) ivz[k+1][j][i];   CHECK_DOF(ind, startv, lnv, nd, no);
 		ind = (PetscInt) ivz[k-1][j][i];   CHECK_DOF(ind, startv, lnv, nd, no);
- 		// x-velocity
+		// x-velocity
 		ind = (PetscInt) ivx[k-1][j][i];   CHECK_DOF(ind, startv, lnv, nd, no);
 		ind = (PetscInt) ivx[k-1][j][i+1]; CHECK_DOF(ind, startv, lnv, nd, no);
 		ind = (PetscInt) ivx[k][j][i];     CHECK_DOF(ind, startv, lnv, nd, no);
@@ -949,7 +941,6 @@ PetscErrorCode PMatBlockCreate(
 //---------------------------------------------------------------------------
 PetscErrorCode PMatBlockDestroy(PMatBlock *P)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatDestroy(&P->Avv));
@@ -1012,7 +1003,6 @@ PetscErrorCode PMatBlockAssemble(PMatBlock *P)
 	PetscInt    pdofidx[7];
 	PetscScalar cf[7];
 
-	
 	PetscFunctionBeginUser;
 
 	// accees context
@@ -1329,6 +1319,13 @@ PetscErrorCode PMatBlockAssemble(PMatBlock *P)
 	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   md->bcvz,  &bcvz));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, md->bcp,   &bcp));
 
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, md->Kb,    &vKb));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, md->rho,   &vrho));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, md->eta,   &veta));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  md->etaxy, &vetaxy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  md->etaxz, &vetaxz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  md->etayz, &vetayz));
+
 	// assemble velocity-pressure matrix blocks, remove constrained rows
 	PetscCall(MatAIJAssemble(P->Avv, md->vNumSPC, md->vSPCListMat, 1.0));
 	PetscCall(MatAIJAssemble(P->Avp, md->vNumSPC, md->vSPCListMat, 0.0));
@@ -1365,7 +1362,6 @@ PetscErrorCode PMatBlockPicard(Mat J, Vec x, Vec r)
 	//=======================================================================
 	PMatBlock *P;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatShellGetContext(J, (void**)&P));

@@ -18,12 +18,11 @@
 // MATRIX SERVICE FUNCTIONS
 //---------------------------------------------------------------------------
 PetscErrorCode MatAIJCreate(
-	PetscInt m, PetscInt n,
-	PetscInt d_nz, const PetscInt d_nnz[],
-	PetscInt o_nz, const PetscInt o_nnz[],
-	Mat *P)
+    PetscInt m, PetscInt n,
+    PetscInt d_nz, const PetscInt d_nnz[],
+    PetscInt o_nz, const PetscInt o_nnz[],
+    Mat *P)
 {
-	
 	PetscFunctionBeginUser;
 
 	// create matrix
@@ -49,7 +48,6 @@ PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P)
 {
 	PetscInt i, ii;
 
-	
 	PetscFunctionBeginUser;
 
 	// preallocate
@@ -74,7 +72,6 @@ PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P)
 //---------------------------------------------------------------------------
 PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], PetscScalar diag)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatSetOption(P, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_FALSE));
@@ -100,7 +97,6 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, MatData *md)
 	PetscScalar *v;
 	PetscInt     i, j, sz, ln, iter, nullsp_sz, lbsz[_max_nullsp_sz_];
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -157,11 +153,11 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, MatData *md)
 }
 //---------------------------------------------------------------------------
 void getStiffMat(
-	PetscScalar eta, PetscScalar diag,
-	PetscScalar *v,  PetscScalar *cf,
-	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
-	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
-	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz)
+    PetscScalar eta, PetscScalar diag,
+    PetscScalar *v,  PetscScalar *cf,
+    PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
+    PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
+    PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz)
 {
 	// compute cell stiffness matrix with deviatoric projection
 
@@ -179,10 +175,10 @@ void getStiffMat(
 }
 //---------------------------------------------------------------------------
 void addDensGradStabil(
-	PetscScalar fssa, PetscScalar *v,
-	PetscScalar rho,  PetscScalar dt,   PetscScalar *grav,
-	PetscScalar fdx,  PetscScalar fdy,  PetscScalar fdz,
-	PetscScalar bdx,  PetscScalar bdy,  PetscScalar bdz)
+    PetscScalar fssa, PetscScalar *v,
+    PetscScalar rho,  PetscScalar dt,   PetscScalar *grav,
+    PetscScalar fdx,  PetscScalar fdy,  PetscScalar fdz,
+    PetscScalar bdx,  PetscScalar bdy,  PetscScalar bdz)
 {
 	PetscScalar cf = -fssa*dt;
 
@@ -259,7 +255,8 @@ void getTwoPointConstr(PetscInt n, PetscInt idx[], PetscInt pdofidx[], PetscScal
 			}
 		}
 		else
-		{	// internal point detected, cannot have two-point constraints
+		{
+			// internal point detected, cannot have two-point constraints
 			pdofidx[j] = -1;
 		}
 	}
@@ -331,7 +328,6 @@ PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode
 	PetscInt     fs,  gs,  bs;
 	PetscScalar *fp, *gp;
 
-	
 	PetscFunctionBeginUser;
 
 	// get sizes of the blocks

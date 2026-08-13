@@ -64,7 +64,7 @@
 #===============================================================================
 
 	msetup         = polygons          # setup type
-	poly_file      = Polygons_Hollow.bin
+	poly_file      = geomIO_Hollow.poly
 	nmark_x        = 3                 # markers per cell in x-direction
 	nmark_y        = 3                 # ...                 y-direction
 	nmark_z        = 3                 # ...                 z-direction

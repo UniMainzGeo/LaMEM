@@ -70,9 +70,9 @@ PetscInt getGlobalRank(PetscInt i, PetscInt j, PetscInt k, PetscInt m, PetscInt 
 
 // get global rank of processor in DMDA with periodic topology
 PetscInt getGlobalRankPeriodic(
-		PetscInt i,  PetscInt j,  PetscInt k,
-		PetscInt m,  PetscInt n,  PetscInt p,
-		PetscInt pi, PetscInt pj, PetscInt pk);
+    PetscInt i,  PetscInt j,  PetscInt k,
+    PetscInt m,  PetscInt n,  PetscInt p,
+    PetscInt pi, PetscInt pj, PetscInt pk);
 
 // get local ranks of processor in DMDA
 void getLocalRank(PetscInt *i, PetscInt *j, PetscInt *k, PetscInt rank, PetscInt m, PetscInt n);
@@ -116,20 +116,20 @@ static inline PetscScalar ODDROOT(PetscScalar x, PetscScalar a)
 //---------------------------------------------------------------------------
 
 void polygon_box(
-	PetscInt    *pnv,    // number of polygon vertices (can be modified)
-	PetscScalar *vcoord, // coordinates of polygon vertices
-	PetscScalar  rtol,   // relative tolerance
-	PetscScalar *atol,   // absolute tolerance
-	PetscScalar *box);   // bounding box of a polygon
+    PetscInt    *pnv,    // number of polygon vertices (can be modified)
+    PetscScalar *vcoord, // coordinates of polygon vertices
+    PetscScalar  rtol,   // relative tolerance
+    PetscScalar *atol,   // absolute tolerance
+    PetscScalar *box);   // bounding box of a polygon
 
 void in_polygon(
-	PetscInt     np,     // number of test points
-	PetscScalar *pcoord, // coordinates of test points
-	PetscInt     nv,     // number of polygon vertices
-	PetscScalar *vcoord, // coordinates of polygon vertices
-	PetscScalar *box,    // bounding box of a polygon (optimization)
-	PetscScalar  atol,   // absolute tolerance
-	PetscInt    *in);    // point location flags (1-inside, 0-outside)
+    PetscInt     np,     // number of test points
+    PetscScalar *pcoord, // coordinates of test points
+    PetscInt     nv,     // number of polygon vertices
+    PetscScalar *vcoord, // coordinates of polygon vertices
+    PetscScalar *box,    // bounding box of a polygon (optimization)
+    PetscScalar  atol,   // absolute tolerance
+    PetscInt    *in);    // point location flags (1-inside, 0-outside)
 
 //---------------------------------------------------------------------------
 // Polygon stretching functions
@@ -137,14 +137,14 @@ void in_polygon(
 
 // generate linearly interpolated values
 void linSpace(
-	PetscScalar  min,
-	PetscScalar  max,
-	PetscInt     N,
-	PetscScalar *outVec);
+    PetscScalar  min,
+    PetscScalar  max,
+    PetscInt     N,
+    PetscScalar *outVec);
 
 // interpolate stretch parameters for all polygons
 void interpStretch(
-	PetscScalar *Sx,
+    PetscScalar *Sx,
     PetscScalar *Sy,
     PetscInt     numCtrlPoly,
     PetscInt    *CtrlPoly,
@@ -154,17 +154,17 @@ void interpStretch(
 
 // find center of mass of polygon
 void findCenterMass(
-	PetscScalar *coords,
-	PetscInt     nN,
-	PetscScalar &x_cen,
-	PetscScalar &y_cen);
+    PetscScalar *coords,
+    PetscInt     nN,
+    PetscScalar &x_cen,
+    PetscScalar &y_cen);
 
 // stretch Polygon
 void stretchPolygon(
-	PetscScalar *coords,
-	PetscInt nN,
-	PetscScalar Sx,
-	PetscScalar Sy);
+    PetscScalar *coords,
+    PetscInt nN,
+    PetscScalar Sx,
+    PetscScalar Sy);
 
 //---------------------------------------------------------------------------
 // indexing functions
@@ -198,33 +198,33 @@ static inline void RotDispPoint2D(PetscScalar Xa[], PetscScalar Xb[], PetscScala
 
 // bisection algorithm for scalar nonlinear equation
 PetscInt solveBisect(
-		PetscScalar a,
-		PetscScalar b,
-		PetscScalar tol,
-		PetscInt    maxit,
-		PetscScalar &x,
-		PetscInt    &it,
-		PetscScalar (*f) (PetscScalar x, void *pctx),
-		void *pctx);
+    PetscScalar a,
+    PetscScalar b,
+    PetscScalar tol,
+    PetscInt    maxit,
+    PetscScalar &x,
+    PetscInt    &it,
+    PetscScalar (*f) (PetscScalar x, void *pctx),
+    void *pctx);
 
 //---------------------------------------------------------------------------
 // Interpolation functions
 //---------------------------------------------------------------------------
 
 static inline PetscScalar InterpLin3D(
-	PetscScalar ***lv,
-	PetscInt    i,
-	PetscInt    j,
-	PetscInt    k,
-	PetscInt    sx,
-	PetscInt    sy,
-	PetscInt    sz,
-	PetscScalar xp,
-	PetscScalar yp,
-	PetscScalar zp,
-	PetscScalar *cx,
-	PetscScalar *cy,
-	PetscScalar *cz)
+    PetscScalar ***lv,
+    PetscInt    i,
+    PetscInt    j,
+    PetscInt    k,
+    PetscInt    sx,
+    PetscInt    sy,
+    PetscInt    sz,
+    PetscScalar xp,
+    PetscScalar yp,
+    PetscScalar zp,
+    PetscScalar *cx,
+    PetscScalar *cy,
+    PetscScalar *cz)
 {
 	PetscScalar xb, yb, zb, xe, ye, ze, v;
 
@@ -235,29 +235,29 @@ static inline PetscScalar InterpLin3D(
 
 	// interpolate & return result
 	v =
-	lv[sz+k  ][sy+j  ][sx+i  ]*xb*yb*zb +
-	lv[sz+k  ][sy+j  ][sx+i+1]*xe*yb*zb +
-	lv[sz+k  ][sy+j+1][sx+i  ]*xb*ye*zb +
-	lv[sz+k  ][sy+j+1][sx+i+1]*xe*ye*zb +
-	lv[sz+k+1][sy+j  ][sx+i  ]*xb*yb*ze +
-	lv[sz+k+1][sy+j  ][sx+i+1]*xe*yb*ze +
-	lv[sz+k+1][sy+j+1][sx+i  ]*xb*ye*ze +
-	lv[sz+k+1][sy+j+1][sx+i+1]*xe*ye*ze;
+	    lv[sz+k  ][sy+j  ][sx+i  ]*xb*yb*zb +
+	    lv[sz+k  ][sy+j  ][sx+i+1]*xe*yb*zb +
+	    lv[sz+k  ][sy+j+1][sx+i  ]*xb*ye*zb +
+	    lv[sz+k  ][sy+j+1][sx+i+1]*xe*ye*zb +
+	    lv[sz+k+1][sy+j  ][sx+i  ]*xb*yb*ze +
+	    lv[sz+k+1][sy+j  ][sx+i+1]*xe*yb*ze +
+	    lv[sz+k+1][sy+j+1][sx+i  ]*xb*ye*ze +
+	    lv[sz+k+1][sy+j+1][sx+i+1]*xe*ye*ze;
 
 	return v;
 }
 
 static inline PetscScalar InterpLin2D(
-	PetscScalar ***lv,
-	PetscInt    i,
-	PetscInt    j,
-	PetscInt    L,
-	PetscInt    sx,
-	PetscInt    sy,
-	PetscScalar xp,
-	PetscScalar yp,
-	PetscScalar *cx,
-	PetscScalar *cy)
+    PetscScalar ***lv,
+    PetscInt    i,
+    PetscInt    j,
+    PetscInt    L,
+    PetscInt    sx,
+    PetscInt    sy,
+    PetscScalar xp,
+    PetscScalar yp,
+    PetscScalar *cx,
+    PetscScalar *cy)
 {
 	PetscScalar xb, yb, xe, ye, v;
 
@@ -267,10 +267,10 @@ static inline PetscScalar InterpLin2D(
 
 	// interpolate & return result
 	v =
-	lv[L][sy+j  ][sx+i  ]*xb*yb +
-	lv[L][sy+j  ][sx+i+1]*xe*yb +
-	lv[L][sy+j+1][sx+i  ]*xb*ye +
-	lv[L][sy+j+1][sx+i+1]*xe*ye;
+	    lv[L][sy+j  ][sx+i  ]*xb*yb +
+	    lv[L][sy+j  ][sx+i+1]*xe*yb +
+	    lv[L][sy+j+1][sx+i  ]*xb*ye +
+	    lv[L][sy+j+1][sx+i+1]*xe*ye;
 
 	return v;
 }
@@ -285,5 +285,4 @@ PetscErrorCode ViewSolver(KSP ksp);
 PetscErrorCode DMDAGetLocalGridSize(DM DA, PetscInt &nnods);
 
 //--------------------------------------------------------------------------
-
 #endif

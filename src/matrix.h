@@ -39,10 +39,10 @@ struct PMatMono
 };
 
 PetscErrorCode PMatMonoCreate(
-		PMatMono    *P,
-		MatData     *md,
-		PetscScalar  pgamma,
-		PetscInt     set_null_space = 0);
+    PMatMono    *P,
+    MatData     *md,
+    PetscScalar  pgamma,
+    PetscInt     set_null_space = 0);
 
 PetscErrorCode PMatMonoAssemble(PMatMono *P);
 
@@ -90,12 +90,12 @@ struct PMatBlock
 //---------------------------------------------------------------------------
 
 PetscErrorCode PMatBlockCreate(
-		PMatBlock   *P,
-		MatData     *md,
-		PetscScalar  pgamma,
-		PetscInt     buildwBFBT,
-		PetscInt     buildBvv,
-		PetscInt     set_null_space = 0);
+    PMatBlock   *P,
+    MatData     *md,
+    PetscScalar  pgamma,
+    PetscInt     buildwBFBT,
+    PetscInt     buildBvv,
+    PetscInt     set_null_space = 0);
 
 PetscErrorCode PMatBlockAssemble(PMatBlock *P);
 
@@ -108,7 +108,7 @@ PetscErrorCode PMatBlockPicard(Mat J, Vec x, Vec r);
 //---------------------------------------------------------------------------
 
 PetscErrorCode MatAIJCreate(PetscInt m, PetscInt n, PetscInt d_nz,
-	const PetscInt d_nnz[], PetscInt o_nz, const PetscInt o_nnz[], Mat *P);
+                            const PetscInt d_nnz[], PetscInt o_nz, const PetscInt o_nnz[], Mat *P);
 
 PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P);
 
@@ -118,17 +118,17 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, MatData *md);
 
 // compute cell stiffness matrix with deviatoric projection
 void getStiffMat(
-	PetscScalar eta, PetscScalar diag,
-	PetscScalar *v,  PetscScalar *cf,
-	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
-	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
-	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz);
+    PetscScalar eta, PetscScalar diag,
+    PetscScalar *v,  PetscScalar *cf,
+    PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
+    PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
+    PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz);
 
 void addDensGradStabil(
-	PetscScalar fssa, PetscScalar *v,
-	PetscScalar rho,  PetscScalar dt,   PetscScalar *grav,
-	PetscScalar fdx,  PetscScalar fdy,  PetscScalar fdz,
-	PetscScalar bdx,  PetscScalar bdy,  PetscScalar bdz);
+    PetscScalar fssa, PetscScalar *v,
+    PetscScalar rho,  PetscScalar dt,   PetscScalar *grav,
+    PetscScalar fdx,  PetscScalar fdy,  PetscScalar fdz,
+    PetscScalar bdx,  PetscScalar bdy,  PetscScalar bdz);
 
 // compute velocity Schur complement
 void getVelSchur(PetscScalar v[], PetscScalar d[], PetscScalar g[]);

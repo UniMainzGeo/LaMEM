@@ -21,7 +21,6 @@
 //---------------------------------------------------------------------------
 PetscErrorCode MatDataCreate(MatData *md, JacRes *jr, idxtype idxmod)
 {
-	
 	PetscFunctionBeginUser;
 
 	// set coarse grid flag
@@ -54,7 +53,6 @@ PetscErrorCode MatDataCreateData(MatData *md)
 	FDSTAG   *fs;
 	DOFIndex *dof;
 
-	
 	PetscFunctionBeginUser;
 
 	fs  =  md->fs;
@@ -92,7 +90,6 @@ PetscErrorCode MatDataCreateData(MatData *md)
 //---------------------------------------------------------------------------
 PetscErrorCode MatDataDestroy(MatData *md)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(VecDestroy(&md->ivx));
@@ -126,7 +123,6 @@ PetscErrorCode MatDataDestroy(MatData *md)
 //---------------------------------------------------------------------------
 PetscErrorCode MatDataCoarsen(MatData *coarse, MatData *fine)
 {
-	
 	PetscFunctionBeginUser;
 
 	// set coarse grid flag
@@ -169,7 +165,6 @@ PetscErrorCode MatDataComputeIndex(MatData *md)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, stv=0, stp=0;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 
-	
 	PetscFunctionBeginUser;
 
 	fs  =  md->fs;
@@ -255,7 +250,6 @@ PetscErrorCode MatDataComputeIndex(MatData *md)
 //---------------------------------------------------------------------------
 PetscErrorCode MatDataSetup(MatData *md, JacRes *jr)
 {
-	
 	PetscFunctionBeginUser;
 
 	// update time step
@@ -272,7 +266,6 @@ PetscErrorCode MatDataSetup(MatData *md, JacRes *jr)
 //---------------------------------------------------------------------------
 PetscErrorCode MatDataRestrict(MatData *coarse, MatData *fine, PetscInt MG2D)
 {
-	
 	PetscFunctionBeginUser;
 
 	// update time step
@@ -309,11 +302,10 @@ PetscErrorCode MatDataInitParam(MatData *md, JacRes *jr)
 	// initialize parameters on fine grid
 
 	FDSTAG     *fs;
- 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar ***Kb, ***rho, ***eta, ***etaxy, ***etaxz, ***etayz;
 	PetscScalar IKdt, dt;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -413,7 +405,6 @@ PetscErrorCode MatDataRestrictParam3D(MatData *coarse, MatData *fine)
 	PetscScalar ***Kb,  ***rho,  ***eta, ***etaxy, ***etaxz, ***etayz;
 	PetscScalar sum;
 
-	
 	PetscFunctionBeginUser;
 
 	// initialize index bounds in fine grid
@@ -618,7 +609,6 @@ PetscErrorCode MatDataRestrictParam2D(MatData *coarse, MatData *fine)
 
 	UNUSED(fine);
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(VecZeroEntries(coarse->Kb));
@@ -646,7 +636,6 @@ PetscErrorCode MatDataRestrictBC3D(MatData *coarse, MatData *fine)
 	PetscScalar ***fbcvx, ***fbcvy, ***fbcvz, ***fbcp;
 	PetscScalar ***cbcvx, ***cbcvy, ***cbcvz, ***cbcp;
 
-	
 	PetscFunctionBeginUser;
 
 	// mark all variables unconstrained
@@ -686,10 +675,10 @@ PetscErrorCode MatDataRestrictBC3D(MatData *coarse, MatData *fine)
 		K = 2*k;
 
 		// restrict constraint
-		if(fbcvx[K  ][J  ][I] != DBL_MAX
-		&& fbcvx[K  ][J+1][I] != DBL_MAX
-		&& fbcvx[K+1][J  ][I] != DBL_MAX
-		&& fbcvx[K+1][J+1][I] != DBL_MAX)
+		if(fbcvx[K  ][J  ][I] != DBL_MAX &&
+		   fbcvx[K  ][J+1][I] != DBL_MAX &&
+		   fbcvx[K+1][J  ][I] != DBL_MAX &&
+		   fbcvx[K+1][J+1][I] != DBL_MAX)
 		{
 			// store parent DOF index
 			cbcvx[k][j][i] = ivx[K][J][I];
@@ -710,10 +699,10 @@ PetscErrorCode MatDataRestrictBC3D(MatData *coarse, MatData *fine)
 		K = 2*k;
 
 		// restrict constraint
-		if(fbcvy[K  ][J][I  ] != DBL_MAX
-		&& fbcvy[K  ][J][I+1] != DBL_MAX
-		&& fbcvy[K+1][J][I  ] != DBL_MAX
-		&& fbcvy[K+1][J][I+1] != DBL_MAX)
+		if(fbcvy[K  ][J][I  ] != DBL_MAX &&
+		   fbcvy[K  ][J][I+1] != DBL_MAX &&
+		   fbcvy[K+1][J][I  ] != DBL_MAX &&
+		   fbcvy[K+1][J][I+1] != DBL_MAX)
 		{
 			// store parent DOF index
 			cbcvy[k][j][i] = ivy[K][J][I];
@@ -734,10 +723,10 @@ PetscErrorCode MatDataRestrictBC3D(MatData *coarse, MatData *fine)
 		K = 2*k;
 
 		// restrict constraint
-		if(fbcvz[K][J  ][I  ] != DBL_MAX
-		&& fbcvz[K][J  ][I+1] != DBL_MAX
-		&& fbcvz[K][J+1][I  ] != DBL_MAX
-		&& fbcvz[K][J+1][I+1] != DBL_MAX)
+		if(fbcvz[K][J  ][I  ] != DBL_MAX &&
+		   fbcvz[K][J  ][I+1] != DBL_MAX &&
+		   fbcvz[K][J+1][I  ] != DBL_MAX &&
+		   fbcvz[K][J+1][I+1] != DBL_MAX)
 		{
 			// store parent DOF index
 			cbcvz[k][j][i] = ivz[K][J][I];
@@ -758,14 +747,14 @@ PetscErrorCode MatDataRestrictBC3D(MatData *coarse, MatData *fine)
 		K = 2*k;
 
 		// restrict constraint
-		if(fbcp[K  ][J  ][I  ] != DBL_MAX
-		&& fbcp[K  ][J  ][I+1] != DBL_MAX
-		&& fbcp[K  ][J+1][I  ] != DBL_MAX
-		&& fbcp[K  ][J+1][I+1] != DBL_MAX
-		&& fbcp[K+1][J  ][I  ] != DBL_MAX
-		&& fbcp[K+1][J  ][I+1] != DBL_MAX
-		&& fbcp[K+1][J+1][I  ] != DBL_MAX
-		&& fbcp[K+1][J+1][I+1] != DBL_MAX)
+		if(fbcp[K  ][J  ][I  ] != DBL_MAX &&
+		   fbcp[K  ][J  ][I+1] != DBL_MAX &&
+		   fbcp[K  ][J+1][I  ] != DBL_MAX &&
+		   fbcp[K  ][J+1][I+1] != DBL_MAX &&
+		   fbcp[K+1][J  ][I  ] != DBL_MAX &&
+		   fbcp[K+1][J  ][I+1] != DBL_MAX &&
+		   fbcp[K+1][J+1][I  ] != DBL_MAX &&
+		   fbcp[K+1][J+1][I+1] != DBL_MAX)
 		{
 			// store parent DOF index
 			cbcp[k][j][i] = ip[K][J][I];
@@ -813,7 +802,6 @@ PetscErrorCode MatDataRestrictBC2D(MatData *coarse, MatData *fine)
 	PetscScalar ***fbcvx, ***fbcvy, ***fbcvz, ***fbcp;
 	PetscScalar ***cbcvx, ***cbcvy, ***cbcvz, ***cbcp;
 
-	
 	PetscFunctionBeginUser;
 
 	// mark all variables unconstrained
@@ -853,8 +841,8 @@ PetscErrorCode MatDataRestrictBC2D(MatData *coarse, MatData *fine)
 		K = 2*k;
 
 		// restrict constraint
-		if(fbcvx[K  ][J][I] != DBL_MAX
-		&& fbcvx[K+1][J][I] != DBL_MAX)
+		if(fbcvx[K  ][J][I] != DBL_MAX &&
+		   fbcvx[K+1][J][I] != DBL_MAX)
 		{
 			// store parent DOF index
 			cbcvx[k][j][i] = ivx[K][J][I];
@@ -875,10 +863,10 @@ PetscErrorCode MatDataRestrictBC2D(MatData *coarse, MatData *fine)
 		K = 2*k;
 
 		// restrict constraint
-		if(fbcvy[K  ][J][I  ] != DBL_MAX
-		&& fbcvy[K  ][J][I+1] != DBL_MAX
-		&& fbcvy[K+1][J][I  ] != DBL_MAX
-		&& fbcvy[K+1][J][I+1] != DBL_MAX)
+		if(fbcvy[K  ][J][I  ] != DBL_MAX &&
+		   fbcvy[K  ][J][I+1] != DBL_MAX &&
+		   fbcvy[K+1][J][I  ] != DBL_MAX &&
+		   fbcvy[K+1][J][I+1] != DBL_MAX)
 		{
 			// store parent DOF index
 			cbcvy[k][j][i] = ivy[K][J][I];
@@ -899,8 +887,8 @@ PetscErrorCode MatDataRestrictBC2D(MatData *coarse, MatData *fine)
 		K = 2*k;
 
 		// restrict constraint
-		if(fbcvz[K][J][I  ] != DBL_MAX
-		&& fbcvz[K][J][I+1] != DBL_MAX)
+		if(fbcvz[K][J][I  ] != DBL_MAX &&
+		   fbcvz[K][J][I+1] != DBL_MAX)
 		{
 			// store parent DOF index
 			cbcvz[k][j][i] = ivz[K][J][I];
@@ -921,10 +909,10 @@ PetscErrorCode MatDataRestrictBC2D(MatData *coarse, MatData *fine)
 		K = 2*k;
 
 		// restrict constraint
-		if(fbcp[K  ][J][I  ] != DBL_MAX
-		&& fbcp[K  ][J][I+1] != DBL_MAX
-		&& fbcp[K+1][J][I  ] != DBL_MAX
-		&& fbcp[K+1][J][I+1] != DBL_MAX)
+		if(fbcp[K  ][J][I  ] != DBL_MAX &&
+		   fbcp[K  ][J][I+1] != DBL_MAX &&
+		   fbcp[K+1][J][I  ] != DBL_MAX &&
+		   fbcp[K+1][J][I+1] != DBL_MAX)
 		{
 			// store parent DOF index
 			cbcp[k][j][i] = ip[K][J][I];
@@ -968,7 +956,6 @@ PetscErrorCode MatDataListSPC(MatData *md)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -999,7 +986,7 @@ PetscErrorCode MatDataListSPC(MatData *md)
 	{
 		LIST_SPC_IND(bcvx, SPCListVec, numSPC, iter)
 
-        iter++;
+		iter++;
 	}
 	END_STD_LOOP
 
@@ -1013,7 +1000,7 @@ PetscErrorCode MatDataListSPC(MatData *md)
 	{
 		LIST_SPC_IND(bcvy, SPCListVec, numSPC, iter)
 
-        iter++;
+		iter++;
 	}
 	END_STD_LOOP
 

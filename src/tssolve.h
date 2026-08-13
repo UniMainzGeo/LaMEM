@@ -32,7 +32,7 @@ struct TSSol
 	PetscInt    num_dtper;                 // number of time stepping periods
 	PetscScalar t_dtper[_max_periods_+1];  // timestamps where timestep should be fixed
 	PetscScalar dt_dtper[_max_periods_+1]; // target timesteps ar timestamps above
-	PetscScalar schedule[_max_num_steps_]; // time stepping schedule 
+	PetscScalar schedule[_max_num_steps_]; // time stepping schedule
 	PetscScalar CFL;                       // CFL (Courant-Friedrichs-Lewy) criterion
 	PetscScalar CFLMAX;                    // CFL tolerance for accepting fixed time steps
 	PetscScalar time;                      // current time
@@ -60,16 +60,16 @@ PetscInt TSSolIsRestart(TSSol *ts);
 PetscInt TSSolIsOutput(TSSol *ts);
 
 PetscErrorCode TSSolGetCFLStep(
-	TSSol       *ts,
-	PetscScalar  gidtmax,  // maximum global inverse time step
-	PetscInt    *restart); // time step restart flag
+    TSSol       *ts,
+    PetscScalar  gidtmax,  // maximum global inverse time step
+    PetscInt    *restart); // time step restart flag
 
 PetscErrorCode TSSolGetPeriodSteps(
-	PetscScalar  dt_start, // timestep at the start of the period
-	PetscScalar  dt_end,   // timestep at the end of the period
-	PetscScalar  span,     // time span of period
-	PetscScalar *dt,       // time steps in period
-	PetscInt    &n);       // number of time steps
+    PetscScalar  dt_start, // timestep at the start of the period
+    PetscScalar  dt_end,   // timestep at the end of the period
+    PetscScalar  span,     // time span of period
+    PetscScalar *dt,       // time steps in period
+    PetscInt    &n);       // number of time steps
 
 PetscErrorCode TSSolMakeSchedule(TSSol *ts);
 
@@ -79,7 +79,7 @@ PetscErrorCode TSSolAdjustSchedule(TSSol *ts, PetscScalar dt_cfl, PetscInt istep
 
 // compute CFL time step with limit
 #define GET_CFL_STEP(dt, dtmax, CFL, gidtmax) \
-	{ (gidtmax) ? dt = CFL/gidtmax : dt = dtmax;  if(dt > dtmax) dt = dtmax; }
+    { (gidtmax) ? dt = CFL/gidtmax : dt = dtmax;  if(dt > dtmax) dt = dtmax; }
 
 //---------------------------------------------------------------------------
 #endif

@@ -68,7 +68,7 @@ PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cp
 
 struct VelBox
 {
-	PetscInt 	advect;  // box advection flag
+	PetscInt    advect;  // box advection flag
 	PetscScalar cenX;    // x-coordinates of center
 	PetscScalar cenY;    // y-coordinates of center
 	PetscScalar cenZ;    // z-coordinates of center
@@ -86,7 +86,7 @@ struct VelBox
 
 struct VelCylinder
 {
-	PetscInt 	advect;  // cylinder advection flag
+	PetscInt    advect;  // cylinder advection flag
 	PetscScalar baseX;   // x-coordinates of base
 	PetscScalar baseY;   // y-coordinates of base
 	PetscScalar baseZ;   // z-coordinates of base
@@ -346,23 +346,23 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc);
 
 // get current background strain rates & reference point coordinates
 PetscErrorCode BCGetBGStrainRates(
-		BCCtx       *bc,
-		PetscScalar *Exx_,
-		PetscScalar *Eyy_,
-		PetscScalar *Ezz_,
-		PetscScalar *Exy_,
-		PetscScalar *Rxx_,
-		PetscScalar *Ryy_,
-		PetscScalar *Rzz_);
+    BCCtx       *bc,
+    PetscScalar *Exx_,
+    PetscScalar *Eyy_,
+    PetscScalar *Ezz_,
+    PetscScalar *Exy_,
+    PetscScalar *Rxx_,
+    PetscScalar *Ryy_,
+    PetscScalar *Rzz_);
 
 //change velin in accordance with given time intervals
 PetscErrorCode BCGetVelins(
-		BCCtx       *bc);
+    BCCtx       *bc);
 
 // get current bottom temperature
 PetscErrorCode BCGetTempBound(
-		BCCtx       *bc,
-		PetscScalar *Tbot);
+    BCCtx       *bc,
+    PetscScalar *Tbot);
 
 // stretch staggered grid if background strain rates are defined
 PetscErrorCode BCStretchGrid(BCCtx *bc);
@@ -375,7 +375,7 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P);
 //---------------------------------------------------------------------------
 
 #define LIST_SPC(bc, list, vals, cnt, iter)\
-	if(bc[k][j][i] != DBL_MAX) { list[cnt] = iter; vals[cnt] = bc[k][j][i]; cnt++; }
+    if(bc[k][j][i] != DBL_MAX) { list[cnt] = iter; vals[cnt] = bc[k][j][i]; cnt++; }
 
 //---------------------------------------------------------------------------
 #endif

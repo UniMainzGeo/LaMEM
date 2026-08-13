@@ -46,7 +46,7 @@ public:
 	PetscScalar APSheal2; //APS when healTau2 is activated
 	PetscScalar A;    // reduction ratio
 	PetscScalar Lm;   // material length scale
-  	PetscScalar healTau;   // material healing timescale parameter [Myr]  NEW FOR HEALING IN SOFTENING
+	PetscScalar healTau;   // material healing timescale parameter [Myr]  NEW FOR HEALING IN SOFTENING
 	PetscScalar healTau2; // timescale parameter after APS2
 };
 
@@ -79,13 +79,13 @@ struct Ph_trans_t
 {
 public:
 
-	PetscInt    ID ;				                // Phase Transition ID
-	type        Type ; 					            // Type Constant or Clapeyron
-	Parameter   Parameter_transition; 	            // Parameter in Constant
+	PetscInt    ID ;                                // Phase Transition ID
+	type        Type ;                              // Type Constant or Clapeyron
+	Parameter   Parameter_transition;               // Parameter in Constant
 	char        Name_clapeyron[_str_len_] ;         // Type [Constant or Clapeyron]
 	PetscInt    PhaseDirection;                     // Direction in which PT goes [0-both; 1-below2above; 2-above2below]
 	PetscScalar ConstantValue ;                     // Value (if Constant)
-	PetscInt    Reset;								// Rset parameters
+	PetscInt    Reset;                              // Rset parameters
 
 	// Clapeyron slope
 	PetscInt    neq ;                               // number of equation
@@ -96,7 +96,7 @@ public:
 	// Box-like condition
 	PetscScalar     bounds[6];                      //  left, right etc. of box
 	PetscInt        TempType;                       //  Temp condition [0=none, 1=constant; 2=linear; 3=halfspace]
-	PetscInt 		  BoxVicinity;					  //  0-check all particles; 1-only apply PT to particles in the vicinity of the box (*2 of bounds)
+	PetscInt          BoxVicinity;                    //  0-check all particles; 1-only apply PT to particles in the vicinity of the box (*2 of bounds)
 
 	PetscInt        number_phases;
 	PetscInt        PhaseBelow[_max_tr_];
@@ -130,7 +130,7 @@ public:
 	// for linking NotInAirBoxes
 	PetscInt      phtr_link_left;
 	PetscInt      phtr_link_right;
-  
+
 };
 
 //---------------------------------------------------------------------------
@@ -143,7 +143,7 @@ public:
 
 	PetscInt     ID;                // material ID
 	PetscInt     visID;             // visualization ID
-    char         Name[_str_len_];   // name (description) of the phase
+	char         Name[_str_len_];   // name (description) of the phase
 
 	// density parameters
 	PetscScalar  rho;               // reference density                          [kg/m^3]
@@ -171,10 +171,10 @@ public:
 	PetscScalar  gamma;             // approximation parameter                    [ ]
 	PetscScalar  q;                 // stress-dependence parameter                [ ]
 	// Frank-Kamenetzky parameters
-    PetscScalar  gamma_fk;          // parameter in Frank-Kamenetzky approximation [1/K]
+	PetscScalar  gamma_fk;          // parameter in Frank-Kamenetzky approximation [1/K]
 	PetscScalar  TRef_fk;           // Frank-Kamenetzky reference Temperature [K]
 	PetscScalar  eta_fk;            // reference viscosity for Frank-Kamenetzky [Pas]
-	
+
 	// dc-creep
 	PetscScalar  Bdc;               // pre-exponential constant                   [1/s]
 	PetscScalar  Edc;               // activation energy                          [J/mol]
@@ -192,7 +192,7 @@ public:
 	PetscScalar  rp;                // ratio of pore pressure to overburden stress
 	PetscInt     frSoftID;          // friction softening law ID (-1 if not defined)
 	PetscInt     chSoftID;          // cohesion softening law ID (-1 if not defined)
-	PetscInt     healID;            // healing ID (-1 if not defined)   
+	PetscInt     healID;            // healing ID (-1 if not defined)
 	// thermal parameters
 	PetscScalar  alpha;             // thermal expansivity                        [1/K]
 	PetscScalar  Cp;                // cpecific heat (capacity)                   [J/kg/K]
@@ -239,8 +239,8 @@ struct PData
 
 	// Melt content data
 	PetscScalar  Me_v[_max_pd_sz_][_max_num_pd_];          // Array containing the actual melt content data
-	PetscScalar  mf;					
-	
+	PetscScalar  mf;
+
 	// Rho fluid data
 	PetscScalar rho_f_v[_max_pd_sz_][_max_num_pd_];
 	PetscScalar rho_f;
@@ -272,11 +272,11 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
 // print single material parameter
 void MatPrintScalParam(
-		PetscScalar par,  const char key[],   const char label[],
-		Scaling    *scal, const char title[], PetscInt   *print_title);
+    PetscScalar par,  const char key[],   const char label[],
+    Scaling    *scal, const char title[], PetscInt   *print_title);
 
-// Overwrite material phase parameters with global values 
-PetscErrorCode DBMatOverwriteWithGlobalVariables(DBMat *dbm, FB *fb);		
+// Overwrite material phase parameters with global values
+PetscErrorCode DBMatOverwriteWithGlobalVariables(DBMat *dbm, FB *fb);
 
 //---------------------------------------------------------------------------
 //............ PREDEFINED RHEOLOGICAL PROFILES (from literature) ............

@@ -29,7 +29,6 @@ PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md)
 	PetscInt       lnv, stv;
 	const PetscInt *lx, *ly, *lz;
 
-	
 	PetscFunctionBeginUser;
 
 	// store evaluation context
@@ -53,11 +52,11 @@ PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md)
 
 	// create DMDA
 	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		BC_TYPE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
-		DMDA_STENCIL_STAR,
-		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.tcels,
-		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
-		1, 1, lx, ly, lz, &P->DA_P));
+	                            BC_TYPE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
+	                            DMDA_STENCIL_STAR,
+	                            fs->dsx.tcels, fs->dsy.tcels, fs->dsz.tcels,
+	                            fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
+	                            1, 1, lx, ly, lz, &P->DA_P));
 
 	// set proper interpolation type for multigrid
 	PetscCall(DMDASetInterpolationType(P->DA_P, DMDA_Q0));
@@ -83,7 +82,6 @@ PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md)
 //---------------------------------------------------------------------------
 PetscErrorCode wBFBTDestroy(wBFBTData *P)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(DMDestroy (&P->DA_P));
@@ -108,7 +106,6 @@ PetscErrorCode wBFBTAssemble(wBFBTData *P)
 	PetscScalar ***eta, ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context variables

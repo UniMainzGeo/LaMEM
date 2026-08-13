@@ -1,26 +1,15 @@
-# Targets:
-#  1) delete basic output (make clean)
-#  2) delete all output (make purge)
-
-
-.PHONY : clean purge
-
-
-clean :
+clean:
 	@echo "............................................."
 	@echo ".......... Performing full clean ............"
 	@echo "............................................."
-	@rm -f *.pvd
-	@rm -f *.bin
-	@rm -f *.xml
-	@rm -f *.vts
-	@rm -rf ./Timestep*
-	@rm -rf ./restart
-	@rm -rf ./markers*
+	@rm -f  **/*.xml
+	@rm -f  **/*.pvd
+	@rm -f  **/*.out
+	@rm -f  **/*.log
+	@rm -f  **/*.png
+	@rm -f  **/*.vts
+	@rm -f  **/*.bin
+	@rm -rf **/*Timestep*
+	@rm -rf **/*markers*
+	@rm -rf **/*restart
 
-
-purge : clean
-	@rm -rf *.log
-	@rm -rf *.output
-	@rm -f output/*
-	@rm -f log/*

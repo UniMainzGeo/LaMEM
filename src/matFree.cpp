@@ -29,7 +29,6 @@ PetscErrorCode MatFreeApplyPicard(Mat A, Vec x, Vec f)
 	MatData     *md;
 	PetscScalar  cfInvEta;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -50,7 +49,6 @@ PetscErrorCode MatFreeApplyPreconditioner(Mat A, Vec x, Vec f)
 	MatDataPC   *mdpc;
 	PetscScalar  cfInvEta;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -70,7 +68,6 @@ PetscErrorCode MatFreeGetDiagonal(Mat A, Vec v)
 
 	MatDataPC *mdpc;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatShellGetContext(A, (void**)&mdpc));
@@ -86,7 +83,6 @@ PetscErrorCode MatFreeApplyRestrict(Mat R, Vec vf, Vec vc)
 
 	MGInterp *mgi;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -103,7 +99,6 @@ PetscErrorCode MatFreeUpdateRestrict(Mat R, Vec vf, Vec vcb, Vec vc)
 
 	MGInterp *mgi;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -130,7 +125,6 @@ PetscErrorCode MatFreeApplyProlong(Mat P, Vec vc, Vec vf)
 
 	MGInterp *mgi;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -147,7 +141,6 @@ PetscErrorCode MatFreeUpdateProlong(Mat P, Vec vc, Vec vfb, Vec vf)
 
 	MGInterp *mgi;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -176,22 +169,21 @@ PetscErrorCode MatFreeComputeLinearOperator(MatData *md, Vec x, Vec f, PetscScal
 	Vec      vx, vy, vz, p;
 	Vec      fx, fy, fz, c;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
 	fs = md->fs;
 
 	// get temporary solution vectors
-	PetscCall(DMGetLocalVector (fs->DA_X,   &vx));
-	PetscCall(DMGetLocalVector (fs->DA_Y,   &vy));
-	PetscCall(DMGetLocalVector (fs->DA_Z,   &vz));
+	PetscCall(DMGetLocalVectorClean (fs->DA_X,   &vx));
+	PetscCall(DMGetLocalVectorClean (fs->DA_Y,   &vy));
+	PetscCall(DMGetLocalVectorClean (fs->DA_Z,   &vz));
 	PetscCall(DMGetGlobalVector(fs->DA_CEN, &p));
 
 	// get temporary residual vectors
-	PetscCall(DMGetLocalVector (fs->DA_X,   &fx));
-	PetscCall(DMGetLocalVector (fs->DA_Y,   &fy));
-	PetscCall(DMGetLocalVector (fs->DA_Z,   &fz));
+	PetscCall(DMGetLocalVectorClean (fs->DA_X,   &fx));
+	PetscCall(DMGetLocalVectorClean (fs->DA_Y,   &fy));
+	PetscCall(DMGetLocalVectorClean (fs->DA_Z,   &fz));
 	PetscCall(DMGetGlobalVector(fs->DA_CEN, &c));
 
 	// split solution vector
@@ -222,7 +214,6 @@ PetscErrorCode MatFreeComputeRestrict(MGInterp *mgi, Vec vf, Vec vc)
 	Vec       fx, fy, fz, fp;
 	Vec       cx, cy, cz, cp;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -230,9 +221,9 @@ PetscErrorCode MatFreeComputeRestrict(MGInterp *mgi, Vec vf, Vec vc)
 	fine   = mgi->fine;
 
 	// get temporary fine grid vectors
-	PetscCall(DMGetLocalVector (fine->fs->DA_X,     &fx));
-	PetscCall(DMGetLocalVector (fine->fs->DA_Y,     &fy));
-	PetscCall(DMGetLocalVector (fine->fs->DA_Z,     &fz));
+	PetscCall(DMGetLocalVectorClean (fine->fs->DA_X,     &fx));
+	PetscCall(DMGetLocalVectorClean (fine->fs->DA_Y,     &fy));
+	PetscCall(DMGetLocalVectorClean (fine->fs->DA_Z,     &fz));
 	PetscCall(DMGetGlobalVector(fine->fs->DA_CEN,   &fp));
 
 	// get temporary coarse grid vectors
@@ -269,7 +260,6 @@ PetscErrorCode MatFreeComputeProlong(MGInterp *mgi, Vec vc, Vec vf)
 	Vec       fx, fy, fz, fp;
 	Vec       cx, cy, cz, cp;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -283,9 +273,9 @@ PetscErrorCode MatFreeComputeProlong(MGInterp *mgi, Vec vc, Vec vf)
 	PetscCall(DMGetGlobalVector(fine->fs->DA_CEN,   &fp));
 
 	// get temporary coarse grid vectors
-	PetscCall(DMGetLocalVector (coarse->fs->DA_X,   &cx));
-	PetscCall(DMGetLocalVector (coarse->fs->DA_Y,   &cy));
-	PetscCall(DMGetLocalVector (coarse->fs->DA_Z,   &cz));
+	PetscCall(DMGetLocalVectorClean (coarse->fs->DA_X,   &cx));
+	PetscCall(DMGetLocalVectorClean (coarse->fs->DA_Y,   &cy));
+	PetscCall(DMGetLocalVectorClean (coarse->fs->DA_Z,   &cz));
 	PetscCall(DMGetGlobalVector(coarse->fs->DA_CEN, &cp));
 
 	// split coarse grid vector
@@ -315,16 +305,15 @@ PetscErrorCode MatFreeComputeDiagonal(MatData *md, Vec d)
 	FDSTAG  *fs;
 	Vec      dx, dy, dz, dp;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
 	fs = md->fs;
 
 	// get temporary diagoanal vectors
-	PetscCall(DMGetLocalVector (fs->DA_X,   &dx));
-	PetscCall(DMGetLocalVector (fs->DA_Y,   &dy));
-	PetscCall(DMGetLocalVector (fs->DA_Z,   &dz));
+	PetscCall(DMGetLocalVectorClean (fs->DA_X,   &dx));
+	PetscCall(DMGetLocalVectorClean (fs->DA_Y,   &dy));
+	PetscCall(DMGetLocalVectorClean (fs->DA_Z,   &dz));
 	PetscCall(DMGetGlobalVector(fs->DA_CEN, &dp));
 
 	// compute diagonal entries
@@ -353,7 +342,6 @@ PetscErrorCode MatFreeSplitVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz, Ve
 	Vec                gvx, gvy, gvz;
 	const PetscScalar *va, *iter;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = md->fs;
@@ -415,7 +403,6 @@ PetscErrorCode MatFreeAssembleVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz,
 	FDSTAG *fs;
 	Vec     gvx, gvy, gvz;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = md->fs;
@@ -449,7 +436,6 @@ PetscErrorCode MatFreeCombineVec(MatData *md, Vec v, Vec gvx, Vec gvy, Vec gvz, 
 	PetscInt     i, num, *list;
 	PetscScalar *vx, *vy, *vz, *vp, *va, *iter;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = md->fs;
@@ -500,9 +486,9 @@ PetscErrorCode MatFreeCombineVec(MatData *md, Vec v, Vec gvx, Vec gvy, Vec gvz, 
 // low-level functions
 //---------------------------------------------------------------------------
 PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
-		Vec lvx, Vec lvy, Vec lvz, Vec gp,
-		Vec lfx, Vec lfy, Vec lfz, Vec gc,
-		PetscScalar cfInvEta)
+        Vec lvx, Vec lvy, Vec lvz, Vec gp,
+        Vec lfx, Vec lfy, Vec lfz, Vec gc,
+        PetscScalar cfInvEta)
 {
 	// cfInvEta - inverse viscosity term prefactor
 	// 0.0      - Picard operator
@@ -522,7 +508,6 @@ PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 	PetscScalar ***bcvx, ***bcvy, ***bcvz, ***bcp;
 	PetscScalar cf[6];
 
-	
 	PetscFunctionBeginUser;
 
 	fs     = md->fs;     // grid context
@@ -538,7 +523,7 @@ PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 	mny = fs->dsy.tnods - 1;
 	mnz = fs->dsz.tnods - 1;
 
-    // clear residual components
+	// clear residual components
 	PetscCall(VecZeroEntries(lfx));
 	PetscCall(VecZeroEntries(lfy));
 	PetscCall(VecZeroEntries(lfz));
@@ -789,9 +774,9 @@ PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 }
 //---------------------------------------------------------------------------
 PetscErrorCode MatFreeEvaluateRestrict(
-		MatData *coarse, MatData *fine,
-		Vec fx, Vec fy, Vec fz, Vec fp,
-		Vec cx, Vec cy, Vec cz, Vec cp)
+    MatData *coarse, MatData *fine,
+    Vec fx, Vec fy, Vec fz, Vec fp,
+    Vec cx, Vec cy, Vec cz, Vec cp)
 {
 	PetscScalar vs[12], sum;
 	PetscInt    I, J, K;
@@ -799,7 +784,6 @@ PetscErrorCode MatFreeEvaluateRestrict(
 	PetscScalar ***fxa, ***fya, ***fza, ***fpa;
 	PetscScalar ***cxa, ***cya, ***cza, ***cpa;
 
-	
 	PetscFunctionBeginUser;
 
 	// access vectors in fine grid
@@ -883,7 +867,7 @@ PetscErrorCode MatFreeEvaluateRestrict(
 		+     fya[K  ][J+1][I  ]*vs[8 ]
 		+     fya[K  ][J+1][I+1]*vs[9 ]
 		+     fya[K+1][J+1][I  ]*vs[10]
-    	+     fya[K+1][J+1][I+1]*vs[11];
+		+     fya[K+1][J+1][I+1]*vs[11];
 
 		// store coarse grid value
 		cya[k][j][i] = sum;
@@ -914,7 +898,7 @@ PetscErrorCode MatFreeEvaluateRestrict(
 		+     fza[K+1][J  ][I  ]*vs[8 ]
 		+     fza[K+1][J  ][I+1]*vs[9 ]
 		+     fza[K+1][J+1][I  ]*vs[10]
-    	+     fza[K+1][J+1][I+1]*vs[11];
+		+     fza[K+1][J+1][I+1]*vs[11];
 
 		// store coarse grid value
 		cza[k][j][i] = sum;
@@ -974,9 +958,9 @@ PetscErrorCode MatFreeEvaluateRestrict(
 }
 //---------------------------------------------------------------------------
 PetscErrorCode MatFreeEvaluateProlong(
-		MatData *coarse, MatData *fine,
-		Vec fx, Vec fy, Vec fz, Vec fp,
-		Vec cx, Vec cy, Vec cz, Vec cp)
+    MatData *coarse, MatData *fine,
+    Vec fx, Vec fy, Vec fz, Vec fp,
+    Vec cx, Vec cy, Vec cz, Vec cp)
 {
 	PetscScalar vsf[8], vsr[4], sum;
 	PetscInt    I, J, K, I1, J1, K1;
@@ -984,7 +968,6 @@ PetscErrorCode MatFreeEvaluateProlong(
 	PetscScalar ***fxa, ***fya, ***fza, ***fpa;
 	PetscScalar ***cxa, ***cya, ***cza, ***cpa;
 
-	
 	PetscFunctionBeginUser;
 
 	// access vectors in fine grid
@@ -1175,7 +1158,7 @@ PetscErrorCode MatFreeEvaluateProlong(
 }
 //---------------------------------------------------------------------------
 PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
-		Vec ldx, Vec ldy, Vec ldz, Vec gdp)
+                                       Vec ldx, Vec ldy, Vec ldz, Vec gdp)
 {
 	// get diagonal of the preconditioner matrix
 
@@ -1193,7 +1176,6 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 	PetscInt    pdofidx[7];
 	PetscScalar cf[7];
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -1212,7 +1194,7 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 	mny = fs->dsy.tnods - 1;
 	mnz = fs->dsz.tnods - 1;
 
-    // clear diagonal components
+	// clear diagonal components
 	PetscCall(VecZeroEntries(ldx));
 	PetscCall(VecZeroEntries(ldy));
 	PetscCall(VecZeroEntries(ldz));

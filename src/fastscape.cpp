@@ -826,15 +826,25 @@ PetscErrorCode PVSurfFastScapeCreate(FastScapeLib *FSLib, FB *fb)
 //---------------------------------------------------------------------------
 PetscErrorCode FastScapeCopyVelocity(FastScapeLib *FSLib)
 {
-	JacRes *jr;
+	JacRes   *jr;
 	FreeSurf *surf;
+	Vec       lvx, lvy, lvz;
+
+	PetscFunctionBeginUser;
 
 	surf = FSLib->surf;
 	jr = surf->jr;
 
-	PetscCall(FreeSurfGetVelComp(surf, &InterpXFaceCorner, jr->lvx, surf->vx));
-	PetscCall(FreeSurfGetVelComp(surf, &InterpYFaceCorner, jr->lvy, surf->vy));
-	PetscCall(FreeSurfGetVelComp(surf, &InterpZFaceCorner, jr->lvz, surf->vz));
+	// get velocity vectors
+	PetscCall(JacResGetSolution(jr, jr->gsol, &lvx, &lvy, &lvz, NULL, NULL, _interp_));
+
+	// get surface velocities
+	PetscCall(FreeSurfGetVelComp(surf, &InterpXFaceCorner, lvx, surf->vx));
+	PetscCall(FreeSurfGetVelComp(surf, &InterpYFaceCorner, lvy, surf->vy));
+	PetscCall(FreeSurfGetVelComp(surf, &InterpZFaceCorner, lvz, surf->vz));
+
+	// restore velocity vectors
+	PetscCall(JacResRestoreSolution(jr, &lvx, &lvy, &lvz, NULL, NULL));
 
 	PetscFunctionReturn(0);
 }
@@ -2689,43 +2699,41 @@ PetscErrorCode FastScapeFortranCppAdvc(FastScapeLib *FSLib, PetscScalar dt_max, 
 	int istep;
 	PetscInt ind, i, j;
 	PetscScalar *kf = nullptr, *kd = nullptr;
-	PetscScalar *silt_fraction = nullptr, *basement = nullptr, *total_erosion = nullptr;
-	PetscScalar *drainage_area = nullptr, *erosion_rate = nullptr, *slope = nullptr;
-	PetscScalar *curvature = nullptr, *chi = nullptr, *catchment = nullptr, *lake_depth = nullptr;
 
 
-	std::vector<PetscScalar*> output_arrays;
-	std::vector<Vec> output_vecs;
-	std::vector<PetscInt> output_flags;
-	std::vector<void (*)(PetscScalar*)> output_functions;
 
 	PetscCall(PetscMalloc((size_t)(FSLib->nodes_solve) * sizeof(PetscScalar), &kf));
 	PetscCall(PetscMalloc((size_t)(FSLib->nodes_solve) * sizeof(PetscScalar), &kd));
 
 	// output
-	auto manage_output = [&](PetscInt flag, Vec vec, PetscScalar** array, void (*copy_func)(PetscScalar*)) -> PetscErrorCode
-	{
-		if (flag)
-	{
-		PetscCall(VecGetArray(vec, array));
-			output_flags.push_back(flag);
-			output_arrays.push_back(*array);
-			output_vecs.push_back(vec);
-			output_functions.push_back(copy_func);
-		}
-		return 0;
-	};
+	// collect the optional output fields that are actually requested; the arrays
+	// are acquired below and released in the matching loop at the end of this
+	// function (Get/Restore are deliberately kept in plain sight, see
+	// scripts/petsc_getrestore_check.jl)
+	const PetscInt   out_flags[] = { FSLib->out_silt_fraction, FSLib->out_basement, FSLib->out_total_erosion,
+	                                 FSLib->out_drainage_area, FSLib->out_erosion_rate, FSLib->out_slope,
+	                                 FSLib->out_curvature, FSLib->out_chi, FSLib->out_catchment, FSLib->out_lake_depth
+	                               };
+	Vec              out_vecs[]  = { FSLib->silt_fraction, FSLib->basement, FSLib->total_erosion,
+	                                 FSLib->drainage_area, FSLib->erosion_rate, FSLib->slope,
+	                                 FSLib->curvature, FSLib->chi, FSLib->catchment, FSLib->lake_depth
+	                               };
+	PetscScalar     *out_ptrs[10] = { nullptr };
+	void (*out_copy[])(PetscScalar*) = { fastscape_copy_f_, fastscape_copy_basement_, fastscape_copy_total_erosion_,
+	                                     fastscape_copy_drainage_area_, fastscape_copy_erosion_rate_, fastscape_copy_slope_,
+	                                     fastscape_copy_curvature_, fastscape_copy_chi_, fastscape_copy_catchment_,
+	                                     fastscape_copy_lake_depth_
+	                                   };
 
-	PetscCall(manage_output(FSLib->out_silt_fraction, FSLib->silt_fraction, &silt_fraction, fastscape_copy_f_));
-	PetscCall(manage_output(FSLib->out_basement, FSLib->basement, &basement, fastscape_copy_basement_));
-	PetscCall(manage_output(FSLib->out_total_erosion, FSLib->total_erosion, &total_erosion, fastscape_copy_total_erosion_));
-	PetscCall(manage_output(FSLib->out_drainage_area, FSLib->drainage_area, &drainage_area, fastscape_copy_drainage_area_));
-	PetscCall(manage_output(FSLib->out_erosion_rate, FSLib->erosion_rate, &erosion_rate, fastscape_copy_erosion_rate_));
-	PetscCall(manage_output(FSLib->out_slope, FSLib->slope, &slope, fastscape_copy_slope_));
-	PetscCall(manage_output(FSLib->out_curvature, FSLib->curvature, &curvature, fastscape_copy_curvature_));
-	PetscCall(manage_output(FSLib->out_chi, FSLib->chi, &chi, fastscape_copy_chi_));
-	PetscCall(manage_output(FSLib->out_catchment, FSLib->catchment, &catchment, fastscape_copy_catchment_));
-	PetscCall(manage_output(FSLib->out_lake_depth, FSLib->lake_depth, &lake_depth, fastscape_copy_lake_depth_));
+	const PetscInt n_out = (PetscInt)(sizeof(out_flags)/sizeof(out_flags[0]));
+
+	for(i = 0; i < n_out; i++)
+	{
+		if(out_flags[i])
+		{
+			PetscCall(VecGetArray(out_vecs[i], &out_ptrs[i]));
+		}
+	}
 
 	// initialize FastScape
 	if(step_fs == 0)
@@ -2831,9 +2839,9 @@ PetscErrorCode FastScapeFortranCppAdvc(FastScapeLib *FSLib, PetscScalar dt_max, 
 			// topography
 			fastscape_copy_h_(topo_pass);
 			// others
-			for (size_t i = 0; i < output_arrays.size(); i++)
+			for(i = 0; i < n_out; i++)
 			{
-				if (output_flags[i]) output_functions[i](output_arrays[i]);
+				if(out_flags[i]) out_copy[i](out_ptrs[i]);
 			}
 		}
 	}
@@ -2846,11 +2854,11 @@ PetscErrorCode FastScapeFortranCppAdvc(FastScapeLib *FSLib, PetscScalar dt_max, 
 	// fastscape_destroy_();
 
 	// save data
-	for (size_t i = 0; i < output_arrays.size(); i++)
+	for(i = 0; i < n_out; i++)
 	{
-		if(output_flags[i])
+		if(out_flags[i])
 		{
-			PetscCall(VecRestoreArray(output_vecs[i], &output_arrays[i]));
+			PetscCall(VecRestoreArray(out_vecs[i], &out_ptrs[i]));
 		}
 	}
 

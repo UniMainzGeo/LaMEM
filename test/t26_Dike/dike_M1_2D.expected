@@ -25,7 +25,7 @@ Total number of options added: 0
 -snes_linesearch_maxstep 1.0 # (source: code)
 -snes_linesearch_minlambda 0.05 # (source: code)
 -snes_linesearch_type l2 # (source: code)
--snes_max_funcs 1000000000 # (source: code)
+-snes_max_funcs unlimited # (source: code)
 -snes_max_it 50 # (source: code)
 -snes_monitor # (source: code)
 -snes_newton_maxit 20 # (source: code)
@@ -37,8 +37,8 @@ Total number of options added: 0
 #End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: May  4 2026 - Time: 12:51:48 	    
-     Version : 2.2.1 
+     Compiled: Date: Jul  1 2026 - Time: 19:41:29 	    
+     Version : 3.0.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -144,7 +144,6 @@ Dike blocks :
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Runge-Kutta 2-nd order
-   Periodic marker advection     @
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : MINMOD (correction + MINMOD)
    Marker control type           : AVD for cells + corner insertion
@@ -152,7 +151,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000662406 sec)
+Reading geometric primitives ... done (0.00119982 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : dike_M1_2D 
@@ -182,22 +181,22 @@ Preconditioner parameters:
     Residual norms for js_ solve.
     0 KSP Residual norm 1.598320489022e+00
     1 KSP Residual norm 1.826936914805e-03
-    2 KSP Residual norm 1.566805517063e-07
+    2 KSP Residual norm 1.566805517049e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.566805517064e-07
+  1 SNES Function norm 1.566805517057e-07
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.145555 (sec)
+SNES solution time      : 0.198149 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 6.156437083990e-09 
-      |Div|_2   = 1.566803335904e-07 
+      |Div|_inf = 6.156437083759e-09 
+      |Div|_2   = 1.566803335613e-07 
    Momentum: 
-      |mRes|_2  = 2.614364750878e-10 
+      |mRes|_2  = 2.614534533865e-10 
 --------------------------------------------------------------------------
-Saving output ... done (0.00180701 sec)
+Saving output ... done (0.00254841 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -205,39 +204,39 @@ Current time        : 0.00000000 [Myr]
 Tentative time step : 0.00100000 [Myr] 
 --------------------------------------------------------------------------
 Phase_Transition ... 
-done (0.00301722 sec)
+done (0.00492067 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 6.403319059423e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 6.403319059423e-01
-    1 KSP Residual norm 3.600683439562e-04
+    1 KSP Residual norm 3.600683439563e-04
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  1 SNES Function norm 3.600683439562e-04
+  1 SNES Function norm 3.600683439563e-04
   1 PICARD ||F||/||F0||=5.623152e-04 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.600683439562e-04
-    1 KSP Residual norm 7.903783583921e-08
+    0 KSP Residual norm 3.600683439563e-04
+    1 KSP Residual norm 7.903783583916e-08
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  2 SNES Function norm 7.903783583921e-08
+  2 SNES Function norm 7.903783583891e-08
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.132089 (sec)
+SNES solution time      : 0.150717 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.920523865585e-08 
-      |Div|_2   = 7.903774972950e-08 
+      |Div|_inf = 2.920523865628e-08 
+      |Div|_2   = 7.903774972921e-08 
    Momentum: 
-      |mRes|_2  = 1.166698018787e-10 
+      |mRes|_2  = 1.166697994195e-10 
 --------------------------------------------------------------------------
 Actual time step : 0.00100 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 16 markers in 1.8809e-03 s 
+Marker control [0]: (Corners ) injected 16 markers in 3.5563e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.00174833 sec)
+Saving output ... done (0.00218291 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
@@ -245,7 +244,7 @@ Current time        : 0.00100000 [Myr]
 Tentative time step : 0.00110000 [Myr] 
 --------------------------------------------------------------------------
 Phase_Transition ... 
-done (0.00306563 sec)
+done (0.00500754 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 9.263984802390e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -253,25 +252,25 @@ done (0.00306563 sec)
     0 KSP Residual norm 9.263984802390e-03
     1 KSP Residual norm 4.428049021646e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  1 SNES Function norm 4.428049021643e-07
+  1 SNES Function norm 4.428049021647e-07
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0754733 (sec)
+SNES solution time      : 0.0887416 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.555847356149e-07 
-      |Div|_2   = 4.428049017925e-07 
+      |Div|_inf = 2.555847356152e-07 
+      |Div|_2   = 4.428049017929e-07 
    Momentum: 
-      |mRes|_2  = 1.814586817014e-11 
+      |mRes|_2  = 1.814581176486e-11 
 --------------------------------------------------------------------------
 Actual time step : 0.00110 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 24 markers in 1.9730e-03 s 
+Marker control [0]: (Corners ) injected 24 markers in 3.4832e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.00169101 sec)
+Saving output ... done (0.00218775 sec)
 --------------------------------------------------------------------------
 ================================= STEP 3 =================================
 --------------------------------------------------------------------------
@@ -279,7 +278,7 @@ Current time        : 0.00210000 [Myr]
 Tentative time step : 0.00121000 [Myr] 
 --------------------------------------------------------------------------
 Phase_Transition ... 
-done (0.00319621 sec)
+done (0.0051168 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 3.400314522345e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -287,23 +286,23 @@ done (0.00319621 sec)
     0 KSP Residual norm 3.400314522345e-03
     1 KSP Residual norm 2.244262683266e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  1 SNES Function norm 2.244262683265e-07
+  1 SNES Function norm 2.244262683268e-07
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0623872 (sec)
+SNES solution time      : 0.0659134 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.566758590517e-07 
-      |Div|_2   = 2.244262683265e-07 
+      |Div|_inf = 1.566758590518e-07 
+      |Div|_2   = 2.244262683268e-07 
    Momentum: 
-      |mRes|_2  = 1.580672754185e-14 
+      |mRes|_2  = 1.574815322176e-14 
 --------------------------------------------------------------------------
 Actual time step : 0.00121 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 26 markers in 1.9291e-03 s 
+Marker control [0]: (Corners ) injected 26 markers in 3.6258e-03 s 
 --------------------------------------------------------------------------
 ================================= STEP 4 =================================
 --------------------------------------------------------------------------
@@ -311,33 +310,33 @@ Current time        : 0.00331000 [Myr]
 Tentative time step : 0.00133100 [Myr] 
 --------------------------------------------------------------------------
 Phase_Transition ... 
-done (0.00307535 sec)
+done (0.0049923 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 1.071577406901e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 1.071577406901e-03
-    1 KSP Residual norm 9.942286897955e-08
+    1 KSP Residual norm 9.942286897954e-08
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  1 SNES Function norm 9.942286897946e-08
+  1 SNES Function norm 9.942286897945e-08
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0750366 (sec)
+SNES solution time      : 0.0962312 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.669396662064e-08 
-      |Div|_2   = 9.942286894848e-08 
+      |Div|_inf = 2.669396662072e-08 
+      |Div|_2   = 9.942286894847e-08 
    Momentum: 
-      |mRes|_2  = 2.481858976588e-12 
+      |mRes|_2  = 2.481907978148e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.00133 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 25 markers in 1.9651e-03 s 
+Marker control [0]: (Corners ) injected 25 markers in 3.7795e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.00178156 sec)
+Saving output ... done (0.00218801 sec)
 --------------------------------------------------------------------------
 ================================= STEP 5 =================================
 --------------------------------------------------------------------------
@@ -345,7 +344,7 @@ Current time        : 0.00464100 [Myr]
 Tentative time step : 0.00146410 [Myr] 
 --------------------------------------------------------------------------
 Phase_Transition ... 
-done (0.00312661 sec)
+done (0.00517461 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 2.039819994939e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -353,29 +352,29 @@ done (0.00312661 sec)
     0 KSP Residual norm 2.039819994939e-03
     1 KSP Residual norm 1.570463297570e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  1 SNES Function norm 1.570463297568e-07
+  1 SNES Function norm 1.570463297569e-07
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0625785 (sec)
+SNES solution time      : 0.0885476 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 9.466545476534e-08 
-      |Div|_2   = 1.570463294492e-07 
+      |Div|_inf = 9.466545476551e-08 
+      |Div|_2   = 1.570463294494e-07 
    Momentum: 
-      |mRes|_2  = 9.828753056338e-12 
+      |mRes|_2  = 9.828666488810e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.00146 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 28 markers in 2.0068e-03 s 
+Marker control [0]: (Corners ) injected 28 markers in 3.6343e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.00154387 sec)
+Saving output ... done (0.0021885 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.750027 (sec) 
+Total solution time : 1.02082 (sec) 
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
 -jp_pc_factor_mat_solver_type mumps # (source: code)
@@ -397,7 +396,7 @@ Total solution time : 0.750027 (sec)
 -snes_linesearch_maxstep 1.0 # (source: code)
 -snes_linesearch_minlambda 0.05 # (source: code)
 -snes_linesearch_type l2 # (source: code)
--snes_max_funcs 1000000000 # (source: code)
+-snes_max_funcs unlimited # (source: code)
 -snes_max_it 50 # (source: code)
 -snes_monitor # (source: code)
 -snes_newton_maxit 20 # (source: code)

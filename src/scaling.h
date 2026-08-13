@@ -143,10 +143,10 @@ struct Scaling
 	char lbl_time_fs          [_lbl_sz_];
 	char lbl_length_fs        [_lbl_sz_];
 	char lbl_velocity_fs      [_lbl_sz_];
-	char lbl_area_fs	      [_lbl_sz_];
-	char lbl_rate		      [_lbl_sz_];
-	char lbl_fraction		  [_lbl_sz_];
-	char lbl_degree		      [_lbl_sz_];
+	char lbl_area_fs          [_lbl_sz_];
+	char lbl_rate             [_lbl_sz_];
+	char lbl_fraction         [_lbl_sz_];
+	char lbl_degree           [_lbl_sz_];
 };
 //---------------------------------------------------------------------------
 // scaling routines

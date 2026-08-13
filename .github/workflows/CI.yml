@@ -32,7 +32,7 @@ jobs:
         set -e
         uname -a
         sudo -E apt-get update
-        sudo -E apt-get -yq --no-install-suggests --no-install-recommends install make ${{ matrix.ci.packages }}
+        sudo -E apt-get -yq --no-install-suggests --no-install-recommends install make astyle ${{ matrix.ci.packages }}
         # Now create workspace directories, to later copy the pre-compiled PETSC libraries there
         sudo -E mkdir /workspace
         sudo -E mkdir /workspace/destdir
@@ -53,6 +53,12 @@ jobs:
       run: |
         cd test
         julia --project=. setup_packages.jl
+        cd ..
+
+    - name: 'Check source formatting'
+      run: |
+        cd test
+        julia --project=. compile_lamem.jl check
         cd ..
 
     - name: 'Compile LaMEM | Int32'
@@ -120,7 +126,7 @@ jobs:
         sudo -E rm -rf opt
         sudo -E cp -r opt64fs opt
         cd ..
-        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit fastscape_only
+        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit 37
 
   build_docs:
     runs-on: ubuntu-latest

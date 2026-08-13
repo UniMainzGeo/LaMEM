@@ -38,8 +38,8 @@ Total number of options added: 0
 #End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 27 2026 - Time: 20:33:00 	    
-     Version : 2.2.1 
+     Compiled: Date: Jul  1 2026 - Time: 19:41:29 	    
+     Version : 3.0.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -93,14 +93,13 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
-   Periodic marker advection     @
    Marker setup scheme           : volumes from polygons (geomIO)
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
    Markers per cell [nx, ny, nz] : [3, 3, 3] 
    Marker distribution type      : uniform
 --------------------------------------------------------------------------
-Loading polygons redundantly from file(s) <Polygons_Hollow.bin> ... done (0.101046 sec)
+Loading polygons redundantly from file(s) <Polygons_Hollow.bin> ... done (0.0949422 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Hollow 
@@ -124,7 +123,7 @@ Preconditioner parameters:
    Number of matrix-free levels  :  0
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
-Saving output ... done (0.10705 sec)
+Saving output ... done (0.146652 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -134,22 +133,22 @@ Tentative time step : 0.01000000 [ ]
   0 SNES Function norm 3.232314796416e+02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_RTOL iterations 54
-  1 SNES Function norm 3.061480878536e-05
+  1 SNES Function norm 3.061480882239e-05
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 1.62915 (sec)
+SNES solution time      : 1.60137 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 8.786851800190e-06 
-      |Div|_2   = 2.888728307749e-05 
+      |Div|_inf = 8.786851812673e-06 
+      |Div|_2   = 2.888728310265e-05 
    Momentum: 
-      |mRes|_2  = 1.013860904488e-05 
+      |mRes|_2  = 1.013860908500e-05 
 --------------------------------------------------------------------------
 Actual time step : 0.00555 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.112714 sec)
+Saving output ... done (0.151388 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
@@ -159,26 +158,26 @@ Tentative time step : 0.00554549 [ ]
   0 SNES Function norm 5.074794495261e+02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_RTOL iterations 47
-  1 SNES Function norm 4.923487342702e-05
+  1 SNES Function norm 4.923487341485e-05
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 1.32627 (sec)
+SNES solution time      : 1.30791 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.629260366049e-05 
-      |Div|_2   = 4.789215858219e-05 
+      |Div|_inf = 2.629260365067e-05 
+      |Div|_2   = 4.789215857447e-05 
    Momentum: 
-      |mRes|_2  = 1.141989088010e-05 
+      |mRes|_2  = 1.141989086001e-05 
 --------------------------------------------------------------------------
 Actual time step : 0.00555 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.112619 sec)
+Saving output ... done (0.138667 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 3.5991 (sec) 
+Total solution time : 3.67342 (sec) 
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
 -gmg_mg_coarse_ksp_type preonly # (source: code)

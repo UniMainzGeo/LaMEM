@@ -54,13 +54,9 @@ struct OutBuf
 	FILE     *fp;    // output file handler
 	float    *buff;  // direct output buffer
 	PetscInt  cn;    // current number of elements in the buffer
-
-	// grid buffer vectors
-	Vec lbcen, lbcor, lbxy, lbxz, lbyz; // local (ghosted)
-
 };
 //---------------------------------------------------------------------------
-PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr);
+PetscErrorCode OutBufCreate(OutBuf *outbuf, FDSTAG *fs);
 
 PetscErrorCode OutBufDestroy(OutBuf *outbuf);
 
@@ -71,22 +67,23 @@ void OutBufDump(OutBuf  *outbuf);
 
 // put FDSTAG coordinate vector to output buffer
 void OutBufPutCoordVec(
-	OutBuf      *outbuf,
-	Discret1D   *ds,
-	PetscScalar  cf); // scaling coefficient
+    OutBuf      *outbuf,
+    Discret1D   *ds,
+    PetscScalar  cf); // scaling coefficient
 
 // put component of 3D vector to output buffer
 PetscErrorCode OutBufPut3DVecComp(
-	OutBuf      *outbuf,
-	PetscInt     ncomp,  // number of components
-	PetscInt     dir,    // component identifier
-	PetscScalar  cf,     // scaling coefficient
-	PetscScalar  shift); // shift parameter (subtracted from scaled values)
+    OutBuf      *outbuf,
+    Vec          lbcor,  // vector containing component data
+    PetscInt     ncomp,  // number of components
+    PetscInt     dir,    // component identifier
+    PetscScalar  cf,     // scaling coefficient
+    PetscScalar  shift); // shift parameter (subtracted from scaled values)
 
 PetscErrorCode OutBufZero3DVecComp(
-	OutBuf      *outbuf,
-	PetscInt     ncomp,  // number of components
-	PetscInt     dir);   // component identifier
+    OutBuf      *outbuf,
+    PetscInt     ncomp,  // number of components
+    PetscInt     dir);   // component identifier
 
 //---------------------------------------------------------------------------
 //.......................... Vector output mask .............................
@@ -100,7 +97,6 @@ struct OutMask
 	PetscInt velocity;       // velocity
 	PetscInt pressure;       // pressure
 	PetscInt tot_pressure;   // totalpressure
-	PetscInt gradient;       // Adjoint field based gradient
 	PetscInt eff_press;      // effective pressure
 	PetscInt over_press;     // overpressure
 	PetscInt litho_press;    // lithostatic pressure
@@ -193,8 +189,8 @@ void WriteXMLHeader(FILE *fp, const char *file_type);
 // update PVD file (called every time step on first processor)
 // WARNING! this is potential bottleneck, get rid of writing every time-step
 PetscErrorCode UpdatePVDFile(
-		const char *dirName, const char *outfile, const char *ext,
-		long int *offset, PetscScalar ttime, PetscInt outpvd);
+    const char *dirName, const char *outfile, const char *ext,
+    long int *offset, PetscScalar ttime, PetscInt outpvd);
 
 //---------------------------------------------------------------------------
 #endif

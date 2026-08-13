@@ -39,7 +39,7 @@ struct LaMEMLib
 	Scaling  scal;   // scaling
 	TSSol    ts;     // time-stepping controls
 	DBMat    dbm;    // material database
-    DBPropDike dbdike;   // dike database
+	DBPropDike dbdike;   // dike database
 	FDSTAG   fs;     // staggered-grid layout
 	FreeSurf surf;   // free-surface grid
 	FastScapeLib FSLib; // fastscape grid

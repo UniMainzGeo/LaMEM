@@ -24,8 +24,8 @@ Total number of options added: 0
 #End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 23 2026 - Time: 12:13:57 	    
-     Version : 2.2.1 
+     Compiled: Date: Jul  1 2026 - Time: 19:41:29 	    
+     Version : 3.0.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -79,7 +79,6 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
-   Periodic marker advection     @
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
@@ -87,7 +86,7 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000455642 sec)
+Reading geometric primitives ... done (0.000527772 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : FB_test 
@@ -97,10 +96,10 @@ Output parameters:
    Creep effective viscosity               @ 
    Velocity                                @ 
    Pressure                                @ 
+--------------------------------------------------------------------------
 AVD output parameters:
    Write .pvd file       : yes 
    AVD refinement factor : 3 
---------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Preconditioner parameters: 
    Picard operator type          : assembled
@@ -109,7 +108,8 @@ Preconditioner parameters:
    Velocity preconditioner       : user-defined
    Schur preconditioner          : inverse viscosity
    Penalty parameter (pgamma)    : 1.000000e+03
-Saving output ... done (0.0258043 sec)
+--------------------------------------------------------------------------
+Saving output ... done (0.0349157 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -129,18 +129,18 @@ Tentative time step : 0.01000000 [ ]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 1.14689 (sec)
+SNES solution time      : 1.22643 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 5.759487656885e-07 
+      |Div|_inf = 5.759487656893e-07 
       |Div|_2   = 8.525492528320e-06 
    Momentum: 
-      |mRes|_2  = 3.695404985793e-11 
+      |mRes|_2  = 3.695931809851e-11 
 --------------------------------------------------------------------------
 Actual time step : 0.01100 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.0308205 sec)
+Saving output ... done (0.0427356 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
@@ -151,32 +151,32 @@ Tentative time step : 0.01100000 [ ]
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 1.196277599711e-02
-    1 KSP Residual norm 1.196023037103e-02
-    2 KSP Residual norm 7.749443375075e-03
-    3 KSP Residual norm 3.276197345036e-04
-    4 KSP Residual norm 3.276081590729e-04
-    5 KSP Residual norm 4.988007242901e-07
+    1 KSP Residual norm 1.196023037102e-02
+    2 KSP Residual norm 7.749443375077e-03
+    3 KSP Residual norm 3.276197345395e-04
+    4 KSP Residual norm 3.276081591087e-04
+    5 KSP Residual norm 4.988007242739e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 5
-  1 SNES Function norm 4.988007223264e-07
+  1 SNES Function norm 4.988007264550e-07
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 1.12343 (sec)
+SNES solution time      : 1.0634 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 6.123972856598e-13 
-      |Div|_2   = 9.301884194018e-12 
+      |Div|_inf = 6.123942498937e-13 
+      |Div|_2   = 9.301878050628e-12 
    Momentum: 
-      |mRes|_2  = 4.988007222397e-07 
+      |mRes|_2  = 4.988007263683e-07 
 --------------------------------------------------------------------------
 Actual time step : 0.01210 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.0288304 sec)
+Saving output ... done (0.0390311 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 2.39351 (sec) 
+Total solution time : 2.45434 (sec) 
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
 -bf_vs_type user # (source: code)

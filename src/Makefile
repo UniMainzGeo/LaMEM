@@ -146,13 +146,58 @@ endif
 
 # target list
 
-.PHONY: builddir buildlib lamemlib linkexe lamem print clean_all doc 
+.PHONY: builddir buildlib lamemlib linkexe lamem print clean_all doc format check checkformat checkgetrestore
 
 # default target (build executable)
 
 .DEFAULT_TARGET: all
 
 all : lamem
+
+#==============================================================================
+
+# format source files
+
+format:
+	@echo "Formatting source files ..."
+	@astyle --options=.astylerc *.cpp *.h
+	@echo "Done."
+
+#==============================================================================
+
+# check that source files are formatted according to .astylerc
+# (fails if `make format` would modify any file; leaves the tree untouched)
+
+checkformat:
+	@echo "Checking source formatting ..."
+	@if astyle --dry-run --options=.astylerc *.cpp *.h | grep -q '^Formatted'; then \
+		echo "............................................."; \
+		echo "ERROR: source files are not properly formatted."; \
+		astyle --dry-run --options=.astylerc *.cpp *.h | grep '^Formatted'; \
+		echo "Run 'make format' locally and commit the changes."; \
+		echo "............................................."; \
+		exit 1; \
+	else \
+		echo "All source files are properly formatted."; \
+	fi
+
+#==============================================================================
+
+# check that every PETSc VecGetArray*/DMDAVecGetArray* call (and DOF/Write
+# variants) is matched by the corresponding Restore call within its function
+# (leaves the tree untouched; see scripts/petsc_getrestore_check.jl)
+
+GETRESTORE_CHECK = ../scripts/petsc_getrestore_check.jl
+
+checkgetrestore:
+	@echo "Checking PETSc Get/Restore Array pairing ..."
+	@julia ${GETRESTORE_CHECK} .
+
+#==============================================================================
+
+# run all static checks
+
+check: checkformat checkgetrestore
 
 #==============================================================================
 

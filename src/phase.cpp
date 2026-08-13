@@ -24,7 +24,6 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	PetscInt jj;
 
-	
 	PetscFunctionBeginUser;
 
 	//===============
@@ -140,10 +139,10 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	PetscCall(FBFreeBlocks(fb));
 
-    //====================================================
+	//====================================================
 	// OVERWRITE MATERIAL PARAMETERS WITH GLOBAL VARIABLES
 	//====================================================
-    PetscCall(DBMatOverwriteWithGlobalVariables(dbm, fb));
+	PetscCall(DBMatOverwriteWithGlobalVariables(dbm, fb));
 
 	if(PrintOutput)
 	{
@@ -161,7 +160,6 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Soft_t   *s;
 	PetscInt  ID;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -177,23 +175,23 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// check ID
 	if(s->ID != -1)
 	{
-		 SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Duplicate softening law!");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Duplicate softening law!");
 	}
 
 	// set ID
 	s->ID = ID;
 
 	// read and store softening law parameters. At least one of A, APS1, APS2, or healTau must be defined
-	PetscCall(getScalarParam(fb, _OPTIONAL_, "A",    &s->A,    1, 1.0)); 
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "A",    &s->A,    1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "APS1", &s->APS1, 1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "APS2", &s->APS2, 1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "APSheal2", &s->APSheal2, 1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "Lm",   &s->Lm,   1, 1.0));
-	PetscCall(getScalarParam(fb, _OPTIONAL_, "healTau", &s->healTau,   1, 1.0));   
-    PetscCall(getScalarParam(fb, _OPTIONAL_, "healTau2", &s->healTau2,   1, 1.0));   
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "healTau", &s->healTau,   1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "healTau2", &s->healTau2,   1, 1.0));
 
-	
-    if(!s->healTau && (!s->A || !s->APS1 || !s->APS2)) 
+
+	if(!s->healTau && (!s->A || !s->APS1 || !s->APS2))
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "A, APS1, APS2 parameters must be nonzero for softening law %" PetscInt_FMT "", ID);
 	}
@@ -204,7 +202,8 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	}
 
 
-	if (PrintOutput){
+	if (PrintOutput)
+	{
 		if(s->Lm)
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%" PetscInt_FMT "] : A = %g, APS1 = %g, APS2 = %g, Lm = %g\n", (s->ID), s->A, s->APS1, s->APS2, s->Lm);
@@ -214,7 +213,7 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%" PetscInt_FMT "] : A = %g, APS1 = %g, APS2 = %g, APSheal2 = %g, healTau = %g, healTau2= %g\n", (s->ID), s->A, s->APS1, s->APS2, s->APSheal2,s->healTau, s->healTau2);
 		}
 		else if (s->healTau && !s->healTau2)
-  		{
+		{
 			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%" PetscInt_FMT "] : A = %g, APS1 = %g, APS2 = %g, healTau = %g\n", (s->ID), s->A, s->APS1, s->APS2, s->healTau);
 			s->APSheal2=s->APS2;
 			s->healTau2=s->healTau;
@@ -228,10 +227,10 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// SCALE
 
 	s->Lm /= scal->length;
-	if(s->healTau) 
+	if(s->healTau)
 	{
-		s->healTau /= scal->time; 
-		s->healTau2 /= scal->time; 
+		s->healTau /= scal->time;
+		s->healTau2 /= scal->time;
 	}
 
 	PetscFunctionReturn(0);
@@ -244,12 +243,11 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Scaling    *scal;
 	Material_t *m;
 	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, healID, MSN, print_title;
-	size_t 	    StringLength;
+	size_t      StringLength;
 	PetscScalar eta, eta0, e0, Kb, G, E, Vp, Vs, eta_st, eta_vp, nu;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
 	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_], Name[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -259,8 +257,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	eta      =  0.0;
 	eta0     =  0.0;
 	e0       =  0.0;
-	//K        =  0.0;	// note: will be deprecated and renamed to Kb; we spit put an error message for now if we still find it in the input file
-	Kb    	 =  0.0;	// bulk modulus		
+	Kb       =  0.0;    // bulk modulus
 	G        =  0.0;
 	E        =  0.0;
 	nu       =  0.0;
@@ -268,24 +265,24 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Vs       =  0.0;
 	eta_st   =  0.0;
 	eta_vp   =  0.0;
-	
+
 	chSoftID = -1;
 	frSoftID = -1;
 	healID   = -1;
-	
+
 	MSN      =  dbm->numSoft - 1;
-	
+
 	// phase ID
 	PetscCall(getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhases-1));
-	fb->ID	 = ID;
-	
+	fb->ID   = ID;
+
 	// get pointer to specified phase
 	m = dbm->phases + ID;
 
 	// check ID
 	if(m->ID != -1)
 	{
-		 SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Duplicate phase definition!");
+		SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Duplicate phase definition!");
 	}
 
 	// set ID
@@ -313,41 +310,41 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	{
 		// Note: the maximum length of the string PhaseDiagram is _str_len_
 		// internally, however, a smaller string length is employed to save spac
-		StringLength = strlen(PhaseDiagram)+3;		// 3, because we will add ".in" to the filename 
+		StringLength = strlen(PhaseDiagram)+3;      // 3, because we will add ".in" to the filename
 
 		// implies we are loading a phase diagram file from disk
 		m->pdAct = 1;
-		
+
 		// Get the directory of the phase diagram if specified
 		PetscCall(getStringParam(fb, _OPTIONAL_, "rho_ph_file", PhaseDiagram_Dir, "none"));
 		if(strcmp(PhaseDiagram_Dir, "none"))
 		{
-			StringLength = StringLength + strlen(PhaseDiagram_Dir);	
+			StringLength = StringLength + strlen(PhaseDiagram_Dir);
 			strcpy(m->pdf, PhaseDiagram_Dir);
 		}
-		// check that the length of the directory and the length of the file name does not exceed 	
+		// check that the length of the directory and the length of the file name does not exceed
 		if (StringLength>_pd_name_sz_)
 		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,
-				"The length of the Phase Diagram Name and directory exceeds the maximum allowed length of %" PetscInt_FMT "\n",
-				_pd_name_sz_);
+			        "The length of the Phase Diagram Name and directory exceeds the maximum allowed length of %" PetscInt_FMT "\n",
+			        _pd_name_sz_);
 		}
 
 		// copy string
 		strcat(m->pdf, PhaseDiagram);
-		strcat(m->pdf, ".in");		// add the file ending
+		strcat(m->pdf, ".in");      // add the file ending
 
 		strcpy(m->pdn, PhaseDiagram);
 
-	    // Take into account only the melt, and not the density from a phase diagram
+		// Take into account only the melt, and not the density from a phase diagram
 		PetscCall(getIntParam(fb, _OPTIONAL_, "Phase_Melt", &m->Phase_Diagram_melt, 1, 1));
 
 	}
 	else
 	{
-		m->pdAct = 0;	// no phase diagram is used
+		m->pdAct = 0;   // no phase diagram is used
 	}
-	
+
 	// Default Melt_Parametrization value
 
 	//============================================================
@@ -431,7 +428,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "rp",       &m->rp,     1, 1.0));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "chSoftID", &chSoftID,  1, MSN));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "frSoftID", &frSoftID,  1, MSN));
-	PetscCall(getIntParam   (fb, _OPTIONAL_, "healID",   &healID,    1, MSN)); 
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "healID",   &healID,    1, MSN));
 	//=================================================================================
 	// energy
 	//=================================================================================
@@ -441,7 +438,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "A",        &m->A,     1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "T",        &m->T,     1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "nu_k",     &m->nu_k,  1, 1.0));
-	PetscCall(getScalarParam(fb, _OPTIONAL_, "T_Nu",     &m->T_Nu,  1, 1.0));  
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "T_Nu",     &m->T_Nu,  1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "Latent_hx", &m->Latent_hx,  1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "T_liq",    &m->T_liq,  1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "T_sol",    &m->T_sol,  1, 1.0));
@@ -453,16 +450,17 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "rho_melt", &m->rho_melt,1, 1.0));
 
 	if (PrintOutput)
-	{	
-		if (m->mfc>0){
+	{
+		if (m->mfc>0)
+		{
 			PetscPrintf(PETSC_COMM_WORLD,"- Melt factor mfc = %f", m->mfc);
 		}
 	}
 
 	// check energy parameters
-	if( (m->Latent_hx && (!m->T_liq || !m->T_sol))
-	||	(m->T_liq && (!m->Latent_hx || !m->T_sol)) 
-	||  (m->T_sol && (!m->Latent_hx || !m->T_liq)))
+	if((m->Latent_hx && (!m->T_liq || !m->T_sol)) ||
+	   (m->T_liq && (!m->Latent_hx || !m->T_sol)) ||
+	   (m->T_sol && (!m->Latent_hx || !m->T_liq)))
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Some but not all dike heating parameters defined for phase %" PetscInt_FMT " (T_sol, T_liq, Latent_hx) \n", ID);
 	}
@@ -496,7 +494,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cohesion must be specified for phase %" PetscInt_FMT " (chSoftID + ch)", ID);
 	}
-	
+
 	if((!m->rho_melt && m->Phase_Diagram_melt))
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You need to specify the density of the melting phase for phase %" PetscInt_FMT "", ID);
@@ -505,7 +503,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	m->eta_st = eta_st;
 	m->eta_vp = eta_vp;
-	
+
 	// set softening law IDs
 	m->chSoftID = chSoftID;
 	m->frSoftID = frSoftID;
@@ -513,10 +511,10 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// DIFFUSION
 
-	if(!(( eta && !m->Bd)   // eta
-	||   ( !eta && m->Bd)   // Bd
-	||   ( !eta && !m->Bd)  // nothing
-	||   (eta && m->Bd && (PetscAbsScalar(m->Bd - scal->viscosity/(2.0*eta)) < PetscAbsScalar(1e-10 * m->Bd))))) //on restart both exist; compare in non-dimensional units
+	if(!(( eta && !m->Bd)  || // eta
+	     (!eta &&  m->Bd)  || // Bd
+	     (!eta && !m->Bd)  || // nothing
+	     ( eta &&  m->Bd)))
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Diffusion creep parameters are not unique for phase %" PetscInt_FMT " (eta, Bd)\n", ID);
 	}
@@ -526,10 +524,10 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// DISLOCATION
 
-	if(!(( eta0 &&  e0 &&  m->n &&  !m->Bn)   // eta0, e0, n
-	||   (!eta0 && !e0 &&  m->n &&   m->Bn)   // Bn, n
-	||   (!eta0 && !e0 &&  !m->n && !m->Bn)   // nothing
-	||   ( eta0 &&  e0 && m->n &&  m->Bn && (PetscAbsScalar(m->Bn - (pow(2.0*eta0, -m->n)*pow(e0, 1 - m->n)*pow(scal->stress_si, m->n)*scal->time_si)) < PetscAbsScalar(1e-10 * m->Bn))))) // on restart: full set, compare in non-dimensional units
+	if(!(( eta0 &&  e0 &&   m->n &&  !m->Bn) || // eta0, e0, n
+	     (!eta0 && !e0 &&   m->n &&   m->Bn) || // Bn, n
+	     (!eta0 && !e0 &&  !m->n &&  !m->Bn) || // nothing
+	     ( eta0 &&  e0 &&   m->n &&   m->Bn )))
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Dislocation creep parameters are not unique for phase %" PetscInt_FMT " (eta0 + e0 + n, Bn + n)\n", ID);
 	}
@@ -551,7 +549,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// Frank-Kamenetzky
 
-		if((m->eta_fk && (!m->gamma_fk)) || (m->gamma_fk && (!m->eta_fk)))
+	if((m->eta_fk && (!m->gamma_fk)) || (m->gamma_fk && (!m->eta_fk)))
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Frank-Kamenetzky parameters are incomplete for phase %" PetscInt_FMT " (eta_fk + gamma_fk)", ID);
 	}
@@ -586,18 +584,14 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	}
 
 	// ELASTICITY
-	// I'm taking out this warning message as it interfers with Adjoint and defining k (conductivity) from the command-line
-	//if (K){
-	//	SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "The bulk modulus parameter is now called 'Kb' and no longer 'K'; change your ParamFile accordingly");
-	//}
 
-	if(!(( G && !Kb && !E && !nu)   // G
-	||   (!G &&  Kb && !E && !nu)   // Kb
-	||   ( G &&  Kb && !E && !nu)   // G & Kb
-	||   ( G && !Kb && !E &&  nu)   // G & nu
-	||   (!G &&  Kb && !E &&  nu)   // Kb & nu
-	||   (!G && !Kb &&  E &&  nu)   // E & nu
-	||   (!G && !Kb && !E && !nu))) // nothing
+	if(!((G && !Kb && !E && !nu)  || // G
+	     (!G &&  Kb && !E && !nu) || // Kb
+	     ( G &&  Kb && !E && !nu) || // G & Kb
+	     ( G && !Kb && !E &&  nu) || // G & nu
+	     (!G &&  Kb && !E &&  nu) || // Kb & nu
+	     (!G && !Kb &&  E &&  nu) || // E & nu
+	     (!G && !Kb && !E && !nu)))  // nothing
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unsupported or nonunique combination of elasticity parameters for phase %" PetscInt_FMT " (G, Kb, G + Kb, G + nu, Kb + nu, E + nu)\n", ID);
 	}
@@ -613,9 +607,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	}
 
 	// compute elastic parameters
-	if( G  && nu)          Kb  = 2*G*(1 + nu)/(3*(1 - 2*nu));
-	if( Kb && nu)          G   = (3*Kb*(1 - 2*nu))/(2*(1 + nu));
-	if( E  && nu)        { Kb  = E/(3*(1 - 2*nu)); G = E/(2*(1 + nu)); }
+	if( G  && nu)           Kb = 2*G*(1 + nu)/(3*(1 - 2*nu));
+	if( Kb && nu)           G  = (3*Kb*(1 - 2*nu))/(2*(1 + nu));
+	if( E  && nu)         { Kb = E/(3*(1 - 2*nu)); G = E/(2*(1 + nu)); }
 	if(!E  && Kb && G)      E  = 9*Kb*G/(3*Kb + G);
 	if(!nu && Kb && G)      nu = (3*Kb - 2*G)/(2*(3*Kb + G));
 	if( Kb  && G && m->rho) Vp = sqrt((Kb + 4.0*G/3.0)/m->rho);
@@ -632,14 +626,16 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	}
 
 	// PRINT (optional)
-	if (PrintOutput){
-		if (strlen(m->Name)>0){
+	if (PrintOutput)
+	{
+		if (strlen(m->Name)>0)
+		{
 			PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %" PetscInt_FMT "     --   %s ",(m->ID), m->Name);
 		}
 		else
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %" PetscInt_FMT "  %s ",(m->ID), m->Name);
-			
+
 		}
 
 		if(strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"\n   diffusion creep profile  : %s", ndiff);
@@ -651,12 +647,11 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"- Employing phase diagram: %s", PhaseDiagram);
 		}
-		else
+
 		MatPrintScalParam(m->rho_n, "rho_n", "[ ]",      scal, title, &print_title);
 		MatPrintScalParam(m->rho_c, "rho_c", "[1/m]",    scal, title, &print_title);
 		MatPrintScalParam(m->beta,  "beta",  "[1/Pa]",   scal, title, &print_title);
 		MatPrintScalParam(m->rho_melt, "rho",     "[kg/m^3]",      scal, title, &print_title);
-
 
 		sprintf(title, "   (elast)  : "); print_title = 1;
 		MatPrintScalParam(G,     "G",  "[Pa]",  scal, title, &print_title);
@@ -694,7 +689,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->gamma_fk, "gamma_fk",  "[1/K]",  scal, title, &print_title);
 		MatPrintScalParam(m->TRef_fk,  "TRef_fk",   "[C]",    scal, title, &print_title);
 		if(m->TRef_fk == 0.0 && m->eta_fk) PetscPrintf(PETSC_COMM_WORLD, "TRef_fk = %g [C]", m->TRef_fk);
-		
+
 
 		sprintf(title, "   (dc)     : "); print_title = 1;
 		MatPrintScalParam(m->Bdc,   "Bdc",  "[1/s]",   scal, title, &print_title);
@@ -712,11 +707,11 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->fr,     "fr",     "[deg]",  scal, title, &print_title);
 		MatPrintScalParam(m->eta_st, "eta_st", "[Pa*s]", scal, title, &print_title);
 		MatPrintScalParam(m->eta_vp, "eta_vp", "[Pa*s]", scal, title, &print_title);
-		MatPrintScalParam(m->rp,     "rp",     "[ ]",    scal, title, &print_title);		
+		MatPrintScalParam(m->rp,     "rp",     "[ ]",    scal, title, &print_title);
 		if(frSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "frSoftID = %" PetscInt_FMT " ", frSoftID);
 		if(chSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "chSoftID = %" PetscInt_FMT " ", chSoftID);
 		if(healID != -1)   PetscPrintf(PETSC_COMM_WORLD, "healID = %" PetscInt_FMT " ",   healID);
-		
+
 		sprintf(title, "   (temp)   : "); print_title = 1;
 		MatPrintScalParam(m->alpha, "alpha", "[1/K]",    scal, title, &print_title);
 		MatPrintScalParam(m->Cp,    "Cp",    "[J/kg/K]", scal, title, &print_title);
@@ -775,11 +770,11 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// plasticity
 	m->ch     /= scal->stress_si;
-	m->fr     /= scal->angle;      
+	m->fr     /= scal->angle;
 
 	m->eta_st /= scal->viscosity;
 	m->eta_vp /= scal->viscosity;
-	
+
 	// temperature
 	m->alpha  /= scal->expansivity;
 	m->Cp     /= scal->cpecific_heat;
@@ -790,8 +785,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// phase-temperature
 	if(m->T) m->T = (m->T + scal->Tshift)/scal->temperature;
 	if(m->T_Nu) m->T_Nu = (m->T_Nu + scal->Tshift)/scal->temperature;
-	
-	// temperature below which conductivity is multiplied by nu_k 
+
+	// temperature below which conductivity is multiplied by nu_k
 	if(m->T_liq) m->T_liq = (m->T_liq + scal->Tshift)/scal->temperature;
 	if(m->T_sol) m->T_sol = (m->T_sol + scal->Tshift)/scal->temperature;
 
@@ -799,8 +794,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 }
 //---------------------------------------------------------------------------
 void MatPrintScalParam(
-		PetscScalar par,  const char key[],   const char label[],
-		Scaling    *scal, const char title[], PetscInt   *print_title)
+    PetscScalar par,  const char key[],   const char label[],
+    Scaling    *scal, const char title[], PetscInt   *print_title)
 {
 	// monitor parameter value
 
@@ -830,7 +825,6 @@ PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], const char key
 {
 	// read profile name from file
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(getStringParam(fb, _OPTIONAL_, key, name, NULL));
@@ -874,7 +868,6 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 	PetscScalar      d0, p;
 	PetscScalar      C_OH_0, r;
 
-	
 	PetscFunctionBeginUser;
 
 	// check for empty string
@@ -923,29 +916,29 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 	}
 	else if (!strcmp(name,"Dry_Plagioclase_RybackiDresen_2000"))
 	{
-		// after Rybacki and Dresen, 2000, JGR 
-		m->Bd            =   1.2589e12;		
+		// after Rybacki and Dresen, 2000, JGR
+		m->Bd            =   1.2589e12;
 		m->Ed            =   460e3;
 		m->Vd            =   24e-6;
 		type             =   _UniAxial_;
 		MPa              =   1;
-		d0               =   100;					// in microns in their paper
+		d0               =   100;                   // in microns in their paper
 		p                =   3;
 		C_OH_0           =   1;
 		r                =   0.0;
 	}
 	else if (!strcmp(name,"Wet_Plagioclase_RybackiDresen_2000"))
 	{
-		// after Rybacki and Dresen, 2000, JGR 
-		m->Bd            =   0.1995;		
+		// after Rybacki and Dresen, 2000, JGR
+		m->Bd            =   0.1995;
 		m->Ed            =   159e3;
 		m->Vd            =   38e-6;
 		type             =   _UniAxial_;
 		MPa              =   1;
-		d0               =   100;					// in microns in their paper
+		d0               =   100;                   // in microns in their paper
 		p                =   3;
-		C_OH_0           =   158.4893;				// fugacity water 10^2.2, not sure whether that is implemented correctly
-		r                =   1.0;					// 1.0 in Rybacki paper, but to be checked that units match
+		C_OH_0           =   158.4893;              // fugacity water 10^2.2, not sure whether that is implemented correctly
+		r                =   1.0;                   // 1.0 in Rybacki paper, but to be checked that units match
 	}
 	else
 	{
@@ -991,7 +984,6 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 	PetscInt         MPa;
 	PetscScalar      C_OH_0, r;
 
-	
 	PetscFunctionBeginUser;
 
 	// check for empty string
@@ -1203,7 +1195,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 
 	else if (!strcmp(name,"Dry_Plagioclase_RybackiDresen_2000"))
 	{
-		m->Bn            =   5.0119e12;		
+		m->Bn            =   5.0119e12;
 		m->n             =   3.0;
 		m->En            =   641e3;
 		m->Vn            =   24e-6;
@@ -1215,14 +1207,14 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 
 	else if (!strcmp(name,"Wet_Plagioclase_RybackiDresen_2000"))
 	{
-		m->Bn            =   1.5849;		
+		m->Bn            =   1.5849;
 		m->n             =   3.0;
 		m->En            =   345e3;
 		m->Vn            =   38e-6;
 		type             =   _UniAxial_;
 		MPa              =   1;
-		C_OH_0           =   158.4893;				// fugacity water 10^2.2, not sure whether that is implemented correctly
-		r                =   1.0;					// 1.0 in Rybacki paper, but to be checked that units match
+		C_OH_0           =   158.4893;              // fugacity water 10^2.2, not sure whether that is implemented correctly
+		r                =   1.0;                   // 1.0 in Rybacki paper, but to be checked that units match
 
 	}
 
@@ -1306,46 +1298,46 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		C_OH_0           =   1;
 		r                =   0;
 	}
-	
+
 	else if (!strcmp(name,"Ara_rocksalt-Urai_et_al.(2008)"))
-    {
-        // Ara rocksalt as published in Urai et al.(2008)
-        m->Bn            =   1.82e-9;
-        m->n             =   5;
-        m->En            =   32.4e3;
-        m->Vn            =   0;
-        type             =   _UniAxial_;
-        MPa              =   1;
-        C_OH_0           =   1;
-        r                =   0;
-    }
+	{
+		// Ara rocksalt as published in Urai et al.(2008)
+		m->Bn            =   1.82e-9;
+		m->n             =   5;
+		m->En            =   32.4e3;
+		m->Vn            =   0;
+		type             =   _UniAxial_;
+		MPa              =   1;
+		C_OH_0           =   1;
+		r                =   0;
+	}
 
 	else if (!strcmp(name,"RockSaltReference_BGRa_class3-Braeumer_et_al_2011"))
-    {
-        // Taken from Bräuer et al. (2011) Description of the Gorleben site (PART 4): Geotechnical exploration of the Gorleben salt dome - page 126
-        m->Bn            =   5.2083e-7; // 2^(class==3)/32 * 0.18 * 1/24/3600 * (1MPa^(-1))^5
-        m->n             =   5;
-        m->En            =   54e3;
-        m->Vn            =   0;
-        type             =   _UniAxial_;
-        MPa              =   1;
-        C_OH_0           =   1;
-        r                =   0;
-    }
+	{
+		// Taken from Bräuer et al. (2011) Description of the Gorleben site (PART 4): Geotechnical exploration of the Gorleben salt dome - page 126
+		m->Bn            =   5.2083e-7; // 2^(class==3)/32 * 0.18 * 1/24/3600 * (1MPa^(-1))^5
+		m->n             =   5;
+		m->En            =   54e3;
+		m->Vn            =   0;
+		type             =   _UniAxial_;
+		MPa              =   1;
+		C_OH_0           =   1;
+		r                =   0;
+	}
 
-    else if (!strcmp(name,"Polycrystalline_Anhydrite-Mueller_and_Briegel(1978)"))
-    {
-        //
-        m->Bn            =   3.16228e1;
-        m->n             =   2;
-        m->En            =   152.3e3;
-        m->Vn            =   0;
-        type             =   _UniAxial_;
-        MPa              =   1;
-        C_OH_0           =   1;
-        r                =   0;
-    }
-    
+	else if (!strcmp(name,"Polycrystalline_Anhydrite-Mueller_and_Briegel(1978)"))
+	{
+		//
+		m->Bn            =   3.16228e1;
+		m->n             =   2;
+		m->En            =   152.3e3;
+		m->Vn            =   0;
+		type             =   _UniAxial_;
+		MPa              =   1;
+		C_OH_0           =   1;
+		r                =   0;
+	}
+
 	else
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No such dislocation creep profile: %s! ",name);
@@ -1380,7 +1372,6 @@ PetscErrorCode SetPeirProfile(Material_t *m, char name[])
 	ExpType  type;
 	PetscInt MPa;
 
-	
 	PetscFunctionBeginUser;
 
 	// check for empty string
@@ -1396,8 +1387,8 @@ PetscErrorCode SetPeirProfile(Material_t *m, char name[])
 		m->taup          = 8.5e9;
 		m->gamma         = 0.1;
 		m->q             = 2;
-        type             = _None_; // what to use for indenter-type tests? (set to none for now)
-        MPa              = 0;
+		type             = _None_; // what to use for indenter-type tests? (set to none for now)
+		MPa              = 0;
 	}
 
 	else
@@ -1426,7 +1417,7 @@ PetscErrorCode CorrExpPreFactor(PetscScalar &B, PetscScalar n, ExpType type, Pet
 	else if (type == _SimpleShear_) B *= pow(2.0,  n - 1.0);          //  F =  2^(n-1)
 	else if (type != _None_)
 	{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown rheology experiment type!");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown rheology experiment type!");
 	}
 
 	// apply correction from [MPa^(-n) s^(-1)] to [Pa^(-n) s^(-1)] if required
@@ -1471,42 +1462,42 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
 	PetscPrintf(PETSC_COMM_WORLD,">>> Dislocation Cr.:  Bn    = %1.7e,  n     = %1.7e,    Vn    = %1.7e,    En  = %1.7e \n", MatProp->Bn, MatProp->n, MatProp->Vn, MatProp->En);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Peierls Cr.:      Bp    = %1.7e,  Ep    = %1.7e,    Vp    = %1.7e,    taup= %1.7e,    gamma  = %1.7e,     q        = %1.7e \n", MatProp->Bp, MatProp->Ep, MatProp->Vp, MatProp->taup, MatProp->gamma, MatProp->q);
 	PetscPrintf(PETSC_COMM_WORLD,">>> dc Cr.:           Bdc   = %1.7e,  Edc   = %1.7e,    Rdc   = %1.7e,    mu  = %1.7e \n", MatProp->Bdc, MatProp->Edc, MatProp->Rdc, MatProp->mu);
-    PetscPrintf(PETSC_COMM_WORLD,">>> ps Cr.:           Bps   = %1.7e,  Eps   = %1.7e,    d     = %1.7e,    \n", MatProp->Bps, MatProp->Eps, MatProp->d);
-    
-    PetscPrintf(PETSC_COMM_WORLD,">>> Plasticity:       fr    = %1.7e,  ch    = %1.7e,    eta_vp= %1.7e,    eta_st= %1.7e, rp= %1.7e,    frSoftID = %" PetscInt_FMT ",  chSoftID = %" PetscInt_FMT ",   healID = %" PetscInt_FMT " \n", MatProp->fr, MatProp->ch, MatProp->eta_st, MatProp->eta_vp, MatProp->rp, MatProp->frSoftID, MatProp->chSoftID, MatProp->healID);
+	PetscPrintf(PETSC_COMM_WORLD,">>> ps Cr.:           Bps   = %1.7e,  Eps   = %1.7e,    d     = %1.7e,    \n", MatProp->Bps, MatProp->Eps, MatProp->d);
+
+	PetscPrintf(PETSC_COMM_WORLD,">>> Plasticity:       fr    = %1.7e,  ch    = %1.7e,    eta_vp= %1.7e,    eta_st= %1.7e, rp= %1.7e,    frSoftID = %" PetscInt_FMT ",  chSoftID = %" PetscInt_FMT ",   healID = %" PetscInt_FMT " \n", MatProp->fr, MatProp->ch, MatProp->eta_st, MatProp->eta_vp, MatProp->rp, MatProp->frSoftID, MatProp->chSoftID, MatProp->healID);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Thermal:          alpha = %1.7e,  Cp    = %1.7e,    k     = %1.7e,    A = %1.7e,    T        = %1.7e \n", MatProp->alpha, MatProp->Cp, MatProp->k, MatProp->A, MatProp->T);
 	PetscPrintf(PETSC_COMM_WORLD,"          			nu_k  = %1.7e,  T_Nu  = %1.7e,   \n", MatProp->nu_k, MatProp->T_Nu);
 	PetscPrintf(PETSC_COMM_WORLD,"          			T_sol = %1.7e, T_liq  = %1.7e,   Latent_hx= %1.7e,    \n", MatProp->T_sol, MatProp->T_liq, MatProp->Latent_hx);
 
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
-  
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode DBMatOverwriteWithGlobalVariables(DBMat *dbm, FB *fb)
 {
-    PetscScalar     eta_min;
-    PetscInt        ID;
-    Material_t      *m;
-    Scaling         *scal;
+	PetscScalar     eta_min;
+	PetscInt        ID;
+	Material_t      *m;
+	Scaling         *scal;
 
 	PetscFunctionBeginUser;
 
 	// access context
 	scal    = dbm->scal;
 
-    eta_min = 0;
-    PetscCall(getScalarParam(fb, _OPTIONAL_, "eta_min",         &eta_min,        1, 1.0));
+	eta_min = 0;
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "eta_min",         &eta_min,        1, 1.0));
 
 	for(ID = 0; ID < dbm->numPhases; ID++)
-	{   
-    	// get pointer to specified phase
-        m = &dbm->phases[ID];
-      
-        // Plasticity stabilization viscosity: set to eta_min, if not defined 
-        if(!m->eta_st) m->eta_st = eta_min/scal->viscosity; // set default stabilization viscosity if not defined    
-        
+	{
+		// get pointer to specified phase
+		m = &dbm->phases[ID];
+
+		// Plasticity stabilization viscosity: set to eta_min, if not defined
+		if(!m->eta_st) m->eta_st = eta_min/scal->viscosity; // set default stabilization viscosity if not defined
+
 	}
 
 	PetscFunctionReturn(0);

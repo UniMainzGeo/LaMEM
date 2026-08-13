@@ -23,7 +23,7 @@ Total number of options added: 0
 -snes_linesearch_maxstep 1.0 # (source: code)
 -snes_linesearch_minlambda 0.05 # (source: code)
 -snes_linesearch_type l2 # (source: code)
--snes_max_funcs 1000000000 # (source: code)
+-snes_max_funcs unlimited # (source: code)
 -snes_max_it 50 # (source: code)
 -snes_monitor # (source: code)
 -snes_newton_maxit 20 # (source: code)
@@ -35,8 +35,8 @@ Total number of options added: 0
 #End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: May  4 2026 - Time: 12:51:48 	    
-     Version : 2.2.1 
+     Compiled: Date: Jul  1 2026 - Time: 19:41:29 	    
+     Version : 3.0.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -130,7 +130,6 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
-   Periodic marker advection     @
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : AVD for cells + corner insertion
@@ -138,7 +137,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 2 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00198086 sec)
+Reading geometric primitives ... done (0.00379538 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : 2D_ridge 
@@ -171,22 +170,22 @@ Preconditioner parameters:
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 4.287061971378e+01
-    1 KSP Residual norm 5.342222402965e-05
+    1 KSP Residual norm 5.342222402923e-05
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  1 SNES Function norm 5.342222402964e-05
+  1 SNES Function norm 5.342222402922e-05
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.154589 (sec)
+SNES solution time      : 0.21599 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.474921667826e-06 
-      |Div|_2   = 5.342222063653e-05 
+      |Div|_inf = 4.474921667535e-06 
+      |Div|_2   = 5.342222063609e-05 
    Momentum: 
-      |mRes|_2  = 1.904033993303e-08 
+      |mRes|_2  = 1.904039856675e-08 
 --------------------------------------------------------------------------
-Saving output ... done (0.0435685 sec)
+Saving output ... done (0.0815414 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -198,27 +197,27 @@ Tentative time step : 0.01000000 [Myr]
     Residual norms for js_ solve.
     0 KSP Residual norm 8.277854612904e+00
     1 KSP Residual norm 1.012858717180e-02
-    2 KSP Residual norm 7.321337521983e-06
+    2 KSP Residual norm 7.321337521984e-06
     Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 7.321337521982e-06
+  1 SNES Function norm 7.321337521984e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0915649 (sec)
+SNES solution time      : 0.0922553 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 8.794181139451e-07 
-      |Div|_2   = 7.321337521979e-06 
+      |Div|_inf = 8.794181139463e-07 
+      |Div|_2   = 7.321337521981e-06 
    Momentum: 
-      |mRes|_2  = 6.563240994466e-12 
+      |mRes|_2  = 6.568532649351e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.01000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 121 markers in 2.4938e-03 s 
+Marker control [0]: (Corners ) injected 121 markers in 4.6861e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0368913 sec)
+Saving output ... done (0.0772586 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
@@ -235,21 +234,21 @@ Tentative time step : 0.01100000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.104004 (sec)
+SNES solution time      : 0.112834 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
       |Div|_inf = 4.123851896497e-06 
       |Div|_2   = 2.300487413983e-05 
    Momentum: 
-      |mRes|_2  = 1.944303188225e-11 
+      |mRes|_2  = 1.949646087861e-11 
 --------------------------------------------------------------------------
 Actual time step : 0.01100 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 188 markers in 2.6542e-03 s 
+Marker control [0]: (Corners ) injected 188 markers in 4.9219e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.034441 sec)
+Saving output ... done (0.0722342 sec)
 --------------------------------------------------------------------------
 ================================= STEP 3 =================================
 --------------------------------------------------------------------------
@@ -266,25 +265,25 @@ Tentative time step : 0.01210000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0875507 (sec)
+SNES solution time      : 0.0875253 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
       |Div|_inf = 6.855612998242e-06 
       |Div|_2   = 3.187861886907e-05 
    Momentum: 
-      |mRes|_2  = 1.039637867431e-11 
+      |mRes|_2  = 1.157660046558e-11 
 --------------------------------------------------------------------------
 Actual time step : 0.01210 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 197 markers in 3.6794e-03 s 
+Marker control [0]: (Corners ) injected 197 markers in 5.0641e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0340994 sec)
+Saving output ... done (0.0724933 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.697648 (sec) 
+Total solution time : 0.995938 (sec) 
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
 -jp_pc_factor_mat_solver_type mumps # (source: code)
@@ -304,7 +303,7 @@ Total solution time : 0.697648 (sec)
 -snes_linesearch_maxstep 1.0 # (source: code)
 -snes_linesearch_minlambda 0.05 # (source: code)
 -snes_linesearch_type l2 # (source: code)
--snes_max_funcs 1000000000 # (source: code)
+-snes_max_funcs unlimited # (source: code)
 -snes_max_it 50 # (source: code)
 -snes_monitor # (source: code)
 -snes_newton_maxit 20 # (source: code)
