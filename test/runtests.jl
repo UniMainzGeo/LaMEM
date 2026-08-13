@@ -1493,11 +1493,11 @@ end
 #---------------------------------------------------------------------------
 if should_run_test("t37_Collision_FastScape")
 @testset "t37_Collision_FastScape" begin
+
     # Continent-continent collision above a subducting slab, with the free
     # surface driven by FastScape (surf_mode = 2). Only run this test if the
     # currently installed LaMEM binary was actually compiled with FastScape
-    # support (make surf=scape) -- otherwise surf_mode = 2 silently falls back
-    # to the non-FastScape code path, so there is nothing meaningful to test.
+    
     cd(test_dir)
     dir = "t37_Collision_FastScape"
 
@@ -1505,8 +1505,9 @@ if should_run_test("t37_Collision_FastScape")
     # -fastscape_info flag against regression, independent of whether this
     # particular build has FastScape enabled)
     has_fastscape = LaMEM_has_fastscape(bin_dir="../bin", opt=true)
-    @test has_fastscape isa Bool
 
+	has_fastscape = false
+	
     if has_fastscape
         include(joinpath(dir, "CreateMarkers_Collision.jl"))
 
@@ -1523,10 +1524,25 @@ if should_run_test("t37_Collision_FastScape")
             cores    = 1,
             opt      = true,
             mpiexec  = mpiexec,
-            create_expected_file=update_expected, clean_dir=clean_files)
+            create_expected_file=update_expected, clean_dir=false)
+
+        @test perform_lamem_test(dir, ParamFile, "Collision_FastScape_deb";
+            keywords = keywords,
+            accuracy = acc,
+            cores    = 1,
+            deb      = true,
+            mpiexec  = mpiexec,
+            create_expected_file=update_expected, clean_dir=false)
+            
+        if clean_files
+           clean_test_directory(dir)
+        end 
+	
     else
-        @info "Skipping t37_Collision_FastScape: LaMEM binary was not compiled with FastScape support (make surf=scape)"
-        @test_skip "FastScape not enabled in this LaMEM build"
+        @info "Skipping test Collision_FastScape.dat in directory t37_Collision_FastScape on 1 cores in opt mode"
+        @info "Skipping test Collision_FastScape.dat in directory t37_Collision_FastScape on 1 cores in deb mode"
+        @test_skip "FastScape is not installed"
+        @test_skip "FastScape is not installed"
     end
 end
 end

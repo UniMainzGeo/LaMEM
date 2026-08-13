@@ -25,8 +25,15 @@ append!(args_local, test_selectors)
 # compile LaMEM if required
 cur_dir = pwd()
 cd("../src")
-run(`make mode=opt surf=scape all`)
-run(`make mode=deb surf=scape all`)
+
+if haskey(ENV, "FASTSCAPE_LIB")
+    run(`make mode=opt surf=scape all`)
+    run(`make mode=deb surf=scape all`)
+else
+    run(`make mode=opt all`)
+    run(`make mode=deb all`)
+end
+
 cd(cur_dir)
 
 # run test suite
