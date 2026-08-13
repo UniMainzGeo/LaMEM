@@ -146,7 +146,7 @@ endif
 
 # target list
 
-.PHONY: builddir buildlib lamemlib linkexe lamem print clean_all doc format check checkformat checkgetrestore
+.PHONY: builddir buildlib lamemlib linkexe lamem print clean_all doc format check checkastyle checkformat checkgetrestore
 
 # default target (build executable)
 
@@ -157,8 +157,32 @@ all : lamem
 #==============================================================================
 
 # format source files
+#
+# NOTE: different astyle versions format the code differently, so the version
+# is pinned here and verified before formatting/checking. Use the same one as
+# the CI (the version shipped with Ubuntu 22.04/24.04). Homebrew currently
+# installs a much newer astyle, which reformats files that this version
+# considers correct (and vice versa).
 
-format:
+ASTYLE_VERSION = 3.1
+
+checkastyle:
+	@if ! command -v astyle > /dev/null 2>&1; then \
+		echo "ERROR: astyle not found; LaMEM formatting requires astyle ${ASTYLE_VERSION}."; \
+		exit 1; \
+	fi
+	@if ! astyle --version 2>&1 | grep -q "Version ${ASTYLE_VERSION}"; then \
+		echo "............................................."; \
+		echo "ERROR: wrong astyle version."; \
+		echo "  required : ${ASTYLE_VERSION}"; \
+		echo "  found    : `astyle --version 2>&1`"; \
+		echo "Different astyle versions format the code differently, so using"; \
+		echo "another version would reformat unrelated files and break the CI."; \
+		echo "............................................."; \
+		exit 1; \
+	fi
+
+format: checkastyle
 	@echo "Formatting source files ..."
 	@astyle --options=.astylerc *.cpp *.h
 	@echo "Done."
@@ -168,7 +192,7 @@ format:
 # check that source files are formatted according to .astylerc
 # (fails if `make format` would modify any file; leaves the tree untouched)
 
-checkformat:
+checkformat: checkastyle
 	@echo "Checking source formatting ..."
 	@if astyle --dry-run --options=.astylerc *.cpp *.h | grep -q '^Formatted'; then \
 		echo "............................................."; \

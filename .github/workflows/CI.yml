@@ -32,7 +32,12 @@ jobs:
         set -e
         uname -a
         sudo -E apt-get update
+        # NOTE: the formatting checks require astyle 3.1 (what Ubuntu 22.04/24.04
+        # ship). Different astyle versions format the code differently, so
+        # 'make checkformat' verifies the version explicitly and fails with a
+        # clear message if it ever changes (see ASTYLE_VERSION in src/Makefile).
         sudo -E apt-get -yq --no-install-suggests --no-install-recommends install make astyle ${{ matrix.ci.packages }}
+        astyle --version
         # Now create workspace directories, to later copy the pre-compiled PETSC libraries there
         sudo -E mkdir /workspace
         sudo -E mkdir /workspace/destdir
