@@ -139,7 +139,7 @@ function StressStrainrate0D_LaMEM(FileName::String, DirName::String="", OutFile=
     τ = zeros(length(ε_vec))
     cd(DirName)
     for (i,ε) in enumerate(ε_vec)
-        out = run_lamem_local_test(FileName, 1, "-exx_strain_rates $ε"; opt=true, bin_dir="../../bin")  # run LaMEM
+        out = run_lamem_local_test(FileName, 1, "-exx_strain_rates $ε"; bin_dir="../../bin")  # run LaMEM
         data, t = read_LaMEM_timestep(OutFile, 2, pwd(), fields=("j2_dev_stress [MPa]",))   # read stress
         τ[i] = mean(data.fields.j2_dev_stress)  # store
     end

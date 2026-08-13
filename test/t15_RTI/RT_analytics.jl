@@ -9,7 +9,7 @@ function Compute_RT_growthrate_LaMEM(wav_x, FileName, DirName, OutFile="RTI_test
     q_num = zero(wav_x)
     for (i,wav) in enumerate(wav_x)
         args = "-coord_x -$(wav/2),$(wav/2) -FreeSurf_Wavelength $wav"
-        out = run_lamem_local_test(FileName, 1, args; opt=true, bin_dir="../../bin")  # run LaMEM
+        out = run_lamem_local_test(FileName, 1, args; bin_dir="../../bin")  # run LaMEM
         
         data, t = read_LaMEM_timestep(OutFile, 0, pwd(), fields=("velocity [ ]","amplitude [ ]"), surf=true, last=true)   # read surface
 

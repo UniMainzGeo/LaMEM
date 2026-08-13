@@ -8,10 +8,10 @@ function compare_APS(dir, param_file, dir_markers_APS0, dir_markers_APS1)
     outfile1 = "test_markers_APS"
 
     # Tests must be run on 1 core as markers were created with 1 core
-    out0 = run_lamem_local_test(param_file, 1, "-mark_load_file $dir_markers_APS0/mdb -out_pvd 1 -out_file_name $outfile0 -out_ptr 1 -out_ptr_APS 1", opt=true)
+    out0 = run_lamem_local_test(param_file, 1, "-mark_load_file $dir_markers_APS0/mdb -out_pvd 1 -out_file_name $outfile0 -out_ptr 1 -out_ptr_APS 1")
     data0, t0 = read_LaMEM_timestep(outfile0, 2, pwd(), fields=("plast_strain [ ]",), surf=false, last=true) 
     
-    out1 = run_lamem_local_test(param_file, 1, "-mark_load_file $dir_markers_APS1/mdb -out_pvd 1 -out_file_name $outfile1 -out_ptr 1 -out_ptr_APS 1", opt=true) 
+    out1 = run_lamem_local_test(param_file, 1, "-mark_load_file $dir_markers_APS1/mdb -out_pvd 1 -out_file_name $outfile1 -out_ptr 1 -out_ptr_APS 1") 
     data1, t1 = read_LaMEM_timestep(outfile1, 2, pwd(), fields=("plast_strain [ ]",), surf=false, last=true) 
     
     # get the mean value of plast_strain from each model
