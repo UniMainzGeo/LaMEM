@@ -2252,7 +2252,7 @@ PetscErrorCode PVSurfWriteVTSFS(FastScapeLib *FSLib, const char *dirName, PetscS
 	// offset & nodes
 	fprintf(fp, "\t\t<Points>\n");
 	fprintf(fp, "\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" "
-	            "format=\"appended\" offset=\"%zu\"/>\n", offset);
+	        "format=\"appended\" offset=\"%zu\"/>\n", offset);
 	offset += sizeof(uint64_t) + sizeof(float) * gridSize * 3;
 	fprintf(fp, "\t\t</Points>\n");
 
@@ -2289,7 +2289,7 @@ PetscErrorCode PVSurfWriteVTSFS(FastScapeLib *FSLib, const char *dirName, PetscS
 		if (*(fields[i].flag))
 		{
 			fprintf(fp, "\t\t\t<DataArray type=\"Float32\" Name=\"%s %s\" "
-			            "NumberOfComponents=\"1\" format=\"appended\" offset=\"%zu\"/>\n",
+			        "NumberOfComponents=\"1\" format=\"appended\" offset=\"%zu\"/>\n",
 			        fields[i].name, fields[i].unit, offset);
 			offset += sizeof(uint64_t) + sizeof(float) * gridSize;
 		}

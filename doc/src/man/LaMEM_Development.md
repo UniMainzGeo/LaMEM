@@ -88,6 +88,17 @@ brew install astyle
 ```
 The formatting options are described in the hidden file `.astylerc` which is located in the source directory. Please do not modify this file, since otherwise LaMEM coding style will be broken.
 
+!!! warning
+    Different astyle versions format the code differently, so make sure you use
+    the same version as the CI, which is the one shipped with Ubuntu 22.04
+    (**astyle 3.1**). Homebrew currently installs a much newer version (3.6.x),
+    which reformats files that astyle 3.1 considers correct (and vice versa) -
+    the CI `make checkformat` job will then fail on files you did not touch.
+    You can check your version with `astyle --version`. If it does not match,
+    build 3.1 from
+    [sourceforge](https://sourceforge.net/projects/astyle/files/astyle/) and use
+    that binary instead.
+
 To perform formatting of your changes you can simply use the `format` target from `Makefile` in `LaMEM/src` directory:
  
 ```

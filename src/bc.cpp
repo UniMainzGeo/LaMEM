@@ -1630,9 +1630,9 @@ PetscErrorCode BCApplyVelTPC(BCCtx *bc)
 		{
 			// set tangential velocity
 			if(Exy)
-		{
-			// get coordinate and cell size
-			y  = COORD_CELL_GHOST(j, fs->dsy);
+			{
+				// get coordinate and cell size
+				y  = COORD_CELL_GHOST(j, fs->dsy);
 				dy = SIZE_CELL(j, sy, fs->dsy);
 
 				// compute velocity

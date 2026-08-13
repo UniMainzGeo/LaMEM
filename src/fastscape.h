@@ -251,25 +251,25 @@ void fastscape_init_f_(double *Fmixp);
 // Set FastScape erosional parameters on land. These parameters will apply to the stream power law (SPL)
 // and hillslope diffusion for basement and sediment. This can be set between timesteps.
 void fastscape_set_erosional_parameters_(double *kkf,
-const double *kkfsed,
-const double *mm,
-const double *nnn,
-double *kkd,
-const double *kkdsed,
-const double *gg1,
-const double *gg2,
-const double *pp);
+        const double *kkfsed,
+        const double *mm,
+        const double *nnn,
+        double *kkd,
+        const double *kkdsed,
+        const double *gg1,
+        const double *gg2,
+        const double *pp);
 
 // Set FastScape marine erosional parameters. This can be set between timesteps.
 void fastscape_set_marine_parameters_(const double *sl,
-const double *p1,
-const double *p2,
-const double *z1,
-const double *z2,
-const double *r,
-const double *l,
-const double *kds1,
-const double *kds2);
+                                      const double *p1,
+                                      const double *p2,
+                                      const double *z1,
+                                      const double *z2,
+                                      const double *r,
+                                      const double *l,
+                                      const double *kds1,
+                                      const double *kds2);
 
 // Set FastScape boundary conditions.
 void fastscape_set_bc_(const int *jbc);
@@ -306,8 +306,8 @@ void fastscape_set_all_layers_(double *dhp);
 // set the convergence parameters for the Gauss-Seidel iterations performed while
 // numerically solving the Stream Power law.
 void fastscape_set_tolerance_(const double *tol_relp,
-const double *tol_absp,
-const int *nGSStreamPowerLawMaxp);
+                              const double *tol_absp,
+                              const int *nGSStreamPowerLawMaxp);
 
 // get the actual number of Gauss-Seidel iterations performed while numerically solving
 // the Stream Power law during the last time step.
@@ -359,8 +359,8 @@ of the erosion/deposition rate and the boundary flux which is the integral of se
 the four boundaries (all in m3/yr)Extract from the model the model dimensions.
 */
 void fastscape_get_fluxes_(double *ttectonic_flux,
-double *eerosion_flux,
-double *bboundary_flux);
+                           double *eerosion_flux,
+                           double *bboundary_flux);
 
 // Display on the screen basic information about the model
 void fastscape_view_();
@@ -376,9 +376,9 @@ void fastscape_vtk_(const double *fp, const double *vexp);
 
 // Creates a set of .vtk files containing stratigraphic information
 void fastscape_strati_(const int *nstepp,
-const int *nreflectorp,
-const int *nfreqp,
-const double *vexp);
+                       const int *nreflectorp,
+                       const int *nfreqp,
+                       const double *vexp);
 
 #ifdef __cplusplus
 }
