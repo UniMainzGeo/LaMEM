@@ -808,15 +808,15 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 	PetscInt        jj, I, J, K, L, AirPhase;
 	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp, bz,ez,by,ey,bx,ex;
 	PetscScalar     *Xp, *Yp,*Zp,*phaseptr;
-#ifndef WITH_FASTSCAPE
-	// only used by the nearest-rock-marker search of the numerical sedimentation
-	// model, which is bypassed when FastScape drives the free surface
+	// used by the nearest-rock-marker search of the numerical sedimentation
+	// model; needed regardless of build configuration, since SurfMode is a
+	// runtime setting (FastScape support being compiled in doesn't imply
+	// FastScape is actually driving the free surface at runtime)
 	Marker          *IP;
 	PetscInt        ID, sz, ii, phaseID, nmark, *markind, markid;
 	PetscScalar     *IX, Xm[3];
 	spair           d;
 	vector <spair>  dist;
-#endif
 
 	PetscFunctionBeginUser;
 
@@ -839,12 +839,10 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 
 	PetscCall(FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez));
 
-#ifndef WITH_FASTSCAPE
 	sz = fs->dsz.pstart;
 
 	// reserve marker distance buffer
 	dist.reserve(_mark_buff_sz_);
-#endif
 
 	// request local vector for reference sedimentation phases
 	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &vphase));
@@ -876,9 +874,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 			PetscCall(Discret1DFindPoint(&fs->dsy, yp, J));
 			PetscCall(Discret1DFindPoint(&fs->dsz, zp, K));
 
-#ifndef WITH_FASTSCAPE
 			GET_CELL_ID(ID, I, J, K, fs->dsx.ncels, fs->dsy.ncels)
-#endif
 
 			// compute surface topography at marker position
 			topo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
@@ -893,14 +889,16 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 			// check whether air marker is below the free surface
 			if(phaseptr[jj] == ((PetscScalar) AirPhase) && zp < topo)
 			{
-#ifdef WITH_FASTSCAPE
+				// NOTE: SurfMode is a runtime setting - FastScape support being
+				// compiled in does not mean FastScape is actually driving the
+				// free surface for this particular run, so the branch below
+				// must be chosen at runtime, not via #ifdef WITH_FASTSCAPE
 				if(surf->SurfMode == 2)
 				{
-					// sedimentation (physical) -> air turns into a prescribed rock
+					// sedimentation (FastScape) -> air turns into a prescribed rock
 					phaseptr[jj]= (PetscScalar) surf->phase;
 				}
-#else
-				if(surf->SedimentModel > 0)
+				else if(surf->SedimentModel > 0)
 				{
 					// sedimentation (physical) -> air turns into a prescribed rock
 					phaseptr[jj]= (PetscScalar) surf->phase;
@@ -962,7 +960,6 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 						phaseptr[jj] = (PetscScalar) phaseID;
 					}
 				}
-#endif
 				//=======================================================================
 				// WARNING! At best clone history from nearest rock marker
 				//=======================================================================

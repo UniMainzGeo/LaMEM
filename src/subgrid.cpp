@@ -472,15 +472,15 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 	PetscInt        sx, sy, nx, ny;
 	PetscInt        jj, ID, I, J, K, L, AirPhase;
 	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp;
-#ifndef WITH_FASTSCAPE
-	// only used by the nearest-rock-marker search of the numerical sedimentation
-	// model, which is bypassed when FastScape drives the free surface
+	// used by the nearest-rock-marker search of the numerical sedimentation
+	// model; needed regardless of build configuration, since SurfMode is a
+	// runtime setting (FastScape support being compiled in doesn't imply
+	// FastScape is actually driving the free surface at runtime)
 	Marker          *IP;
 	PetscInt        sz, ii, phaseID, nmark, *markind, markid;
 	PetscScalar     *X, *IX;
 	spair           d;
 	vector <spair>  dist;
-#endif
 
 	PetscFunctionBeginUser;
 
@@ -501,12 +501,10 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 	ncx = fs->dsx.ncoor;
 	ncy = fs->dsy.ncoor;
 
-#ifndef WITH_FASTSCAPE
 	sz = fs->dsz.pstart;
 
 	// reserve marker distance buffer
 	dist.reserve(_mark_buff_sz_);
-#endif
 
 	// request local vector for reference sedimentation phases
 	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &vphase));
@@ -552,14 +550,16 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 		// check whether air marker is below the free surface
 		if(P->phase == AirPhase && zp < topo)
 		{
-#ifdef WITH_FASTSCAPE
+			// NOTE: SurfMode is a runtime setting - FastScape support being
+			// compiled in does not mean FastScape is actually driving the
+			// free surface for this particular run, so the branch below
+			// must be chosen at runtime, not via #ifdef WITH_FASTSCAPE
 			if(surf->SurfMode == 2)
 			{
-				// sedimentation (physical) -> air turns into a prescribed rock
+				// sedimentation (FastScape) -> air turns into a prescribed rock
 				P->phase = surf->phase;
 			}
-#else
-			if(surf->SedimentModel > 0)
+			else if(surf->SedimentModel > 0)
 			{
 				// sedimentation (physical) -> air turns into a prescribed rock
 				P->phase = surf->phase;
@@ -623,7 +623,6 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 				// WARNING! At best clone history from nearest rock marker
 				//=======================================================================
 			}
-#endif
 		}
 	}
 
