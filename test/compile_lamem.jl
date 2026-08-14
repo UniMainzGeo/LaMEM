@@ -15,7 +15,7 @@ if is64bit
                     "PETSC_OPT"=>"/workspace/destdir/lib/petsc/double_real_Int64",
                     "PETSC_DEB"=>"/workspace/destdir/lib/petsc/double_real_Int64_deb",
                 )
-    
+
 else
     println("Using PETSc that has 32bit integers")
     cmd = addenv(PETSc_jll.ex42(), 
@@ -23,6 +23,8 @@ else
                     "PETSC_DEB"=>"/workspace/destdir/lib/petsc/double_real_Int32",
                 )
 end
+
+cmd = addenv(cmd, "FASTSCAPE_LIB"=>"/workspace/destdir/lib/fastscape")
 
 @show pkgversion(PETSc_jll)
 #@show pkgversion(MPICH_jll)
@@ -36,10 +38,12 @@ else
     println("Compiling LaMEM")
 
     println("---- Compiling LaMEM opt version ----")
-    compile_lamem = Cmd(`make mode=opt all`, env = cmd.env)
+    compile_lamem = Cmd(`make mode=opt surf=scape all`, env = cmd.env)
     run(compile_lamem)
 
     println("---- Compiling LaMEM deb version ----")
-    compile_lamem = Cmd(`make mode=deb all`, env = cmd.env)
+    compile_lamem = Cmd(`make mode=deb surf=scape all`, env = cmd.env)
     run(compile_lamem)
+
+
 end

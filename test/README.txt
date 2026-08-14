@@ -75,7 +75,7 @@ c) Add the test to "runtests.jl".
 	    # Perform tests
 	    @test perform_lamem_test(dir,ParamFile, "FallingBlock_PhaseDiagrams",
 	                             args="-mfmax 0.15",
-	                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
+	                             keywords=keywords, accuracy=acc, cores=2, mpiexec=mpiexec,
 	                             create_expected_file=update_expected, clean_dir=clean_files)
 	end
 	end

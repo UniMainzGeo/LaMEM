@@ -9,7 +9,7 @@ if use_dynamic_lib
 end
 
 export run_lamem_local_test, perform_lamem_test, clean_test_directory, run_lamem_save_grid_local, mpiexec
-export CreatePartitioningFile_local
+export CreatePartitioningFile_local, LaMEM_has_fastscape
 
 
 if use_dynamic_lib
@@ -32,7 +32,7 @@ end
 
 """
     run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""; 
-                        outfile="test.out", bin_dir="../../bin", opt=true, deb=false,
+                        outfile="test.out", bin_dir="../../bin", deb=false,
                         mpiexec="mpiexec", valgrind=false)
 
 This runs a LaMEM simulation with given `ParamFile` on 1 or more cores, while writing the output to a local log file.
@@ -40,13 +40,13 @@ This runs a LaMEM simulation with given `ParamFile` on 1 or more cores, while wr
 If `valgrind=true`, the run is instead performed under Valgrind (memcheck), invoked directly - for
 cores==1 as `valgrind ... exec`, for cores>1 as `mpiexec -n cores valgrind ... exec`, using the same
 `mpiexec` as a normal parallel run - and always uses the debug (`deb`) build regardless of the
-`opt`/`deb` kwargs passed in, since Valgrind needs debug info to produce useful reports. Valgrind's XML
+`deb` kwarg passed in, since Valgrind needs debug info to produce useful reports. Valgrind's XML
 report(s) are written next to the log file as `outfile_<pid>.xml`, and its combined stdout/stderr as
 `outfile.out`.
 
 """
 function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""; 
-                outfile="test.out", bin_dir="../../bin", opt=true, deb=false,
+                outfile="test.out", bin_dir="../../bin", deb=false,
                 mpiexec="mpiexec", valgrind::Bool=false)
     
     cur_dir = pwd()
@@ -54,10 +54,10 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
         # Valgrind needs debug info (and is far more useful against an unoptimized build) - always use
         # the debug binary here, regardless of which one the test itself asked for.
         exec = joinpath(cur_dir,bin_dir,"deb","LaMEM")
-    elseif opt
-        exec=joinpath(cur_dir,bin_dir,"opt","LaMEM")
     elseif deb
         exec=joinpath(cur_dir,bin_dir,"deb","LaMEM")
+    else
+        exec=joinpath(cur_dir,bin_dir,"opt","LaMEM")
     end
 
     success = true
@@ -153,6 +153,40 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
     return success
 end
 
+"""
+    LaMEM_has_fastscape(; bin_dir="../bin", deb=false)
+
+Checks whether the LaMEM binary currently installed in `bin_dir` was compiled
+with FastScape support (`make surf=scape`), by running it with the
+`-fastscape_info` flag and inspecting its output. Used to skip FastScape-only
+tests when running against a binary that wasn't built with FastScape enabled.
+"""
+function LaMEM_has_fastscape(; bin_dir="../bin", deb=false)
+
+    cur_dir = pwd()
+    if deb
+        exec = joinpath(cur_dir, bin_dir, "deb", "LaMEM")
+    else
+        exec = joinpath(cur_dir, bin_dir, "opt", "LaMEM")
+    end
+
+    if !isfile(exec)
+        return false
+    end
+
+    dylibs, _ = get_dylibs()
+    has_fastscape = false
+    try
+        perform_run = addenv(Cmd(`$(exec) -fastscape_info`), "DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
+        out = read(perform_run, String)
+        has_fastscape = contains(out, "FASTSCAPE_ENABLED")
+    catch
+        has_fastscape = false
+    end
+
+    return has_fastscape
+end
+
 function get_line_containing(stringarray::Vector{SubString{String}}, lookfor::String)
 
 	for line in stringarray
@@ -245,12 +279,12 @@ end
 
 
 """
-    Procpartname = CreatePartitioningFile_local(ParamFile::String, cores::Int64=1, args::String=""; bin_dir="../../bin", opt=true, deb=false,mpiexec="mpiexec", dylibs="")
+    Procpartname = CreatePartitioningFile_local(ParamFile::String, cores::Int64=1, args::String=""; bin_dir="../../bin", deb=false,mpiexec="mpiexec", dylibs="")
 
 Create a processor partitioning file with a locally build version of LaMEM (potentially compiled vs. dynamic libraries)
 """
 function CreatePartitioningFile_local(ParamFile::String, cores::Int64=1, args::String=""; 
-                LaMEM_dir="../../bin", opt=true, deb=false,
+                LaMEM_dir="../../bin", deb=false,
                 mpiexec="mpiexec", verbose=false)
     
 
@@ -264,7 +298,7 @@ function CreatePartitioningFile_local(ParamFile::String, cores::Int64=1, args::S
 
     # run local lamem & save output to file. This takes care of locally build LaMEM vs 
     run_lamem_local_test(ParamFile, cores, args; 
-            outfile="savegrid.log", bin_dir=LaMEM_dir, opt=opt, deb=deb,
+            outfile="savegrid.log", bin_dir=LaMEM_dir, deb=deb,
             mpiexec=mpiexec)
             
     logoutput = String(read("savegrid.log"))
@@ -548,7 +582,6 @@ end
                         cores::Int64=1, 
                         args::String="",
                         bin_dir="../bin",  
-                        opt=true, 
                         deb=false, 
                         mpiexec="mpiexec",
                         split_sign="=", 
@@ -569,7 +602,6 @@ Parameters:
 - `cores`: Number of cores on which to perform the test
 - `args`: Optional LaMEM command line Arguments
 - `bin_dir`: directory where the LaMEM binaries are, relative to the current one
-- `opt`: run with optimized LaMEM?
 - `deb`: run with debug version of LaMEM?
 - `mpiexec`: mpi executable
 - `split_sign`: split sign (or Tuple of it)
@@ -588,7 +620,7 @@ Parameters:
 function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String; 
                 keywords=("|Div|_inf","|Div|_2","|mRes|_2"), accuracy=((rtol=1e-6,), (rtol=1e-6,), (rtol=1e-6,)), 
                 cores::Int64=1, args::String="",
-                bin_dir="../bin",  opt=true, deb=false, mpiexec="mpiexec",
+                bin_dir="../bin", deb=false, mpiexec="mpiexec",
                 split_sign="=", 
                 debug::Bool=false, create_expected_file::Bool=false, clean_dir::Bool=true,
                 valgrind::Bool = (@isdefined(use_valgrind) ? use_valgrind : false),
@@ -601,9 +633,15 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
     else
         valgrind_flag = ""
     end
+    
+    if deb
+        opt_mod="deb"
+    else
+        opt_mod="opt"
+    end 
 
     # print info about running tests                
-    @info "Performing test $ParamFile in directory $dir on $cores cores $valgrind_flag"
+    @info "Performing test $ParamFile in directory $dir on $cores cores in $opt_mod mode $valgrind_flag"
     
     cur_dir = pwd();
     cd(dir)
@@ -629,12 +667,10 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
     end
 
     # perform simulation 
-    success = run_lamem_local_test(ParamFile, cores, args, outfile=outfile, bin_dir=bin_dir, opt=opt, deb=deb, mpiexec=mpiexec, valgrind=valgrind);
+    success = run_lamem_local_test(ParamFile, cores, args, outfile=outfile, bin_dir=bin_dir, deb=deb, mpiexec=mpiexec, valgrind=valgrind);
 
-    # Under Valgrind we always run the debug binary (see run_lamem_local_test), even for tests written
-    # as opt=true - so the log wouldn't be a fair comparison against a *_opt.expected file generated by
-    # the optimized build (minor floating-point differences between build variants can happen). Since
-    # the point of a valgrind run is leak detection, not numeric validation, skip that comparison here.
+    # Under Valgrind we always run the debug binary (see run_lamem_local_test),
+    # Since the point of a valgrind run is leak detection, not numeric validation, skip that comparison here.
     if success==true && debug==false && memcheck
         # Memory-leak check instead of the usual numeric comparison - see check_memory_usage.
         success = check_memory_usage(outfile)
@@ -655,10 +691,9 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
         println("  args=$(args) ")
         println("  outfile=$(outfile) ")
         println("  bindir=$(bin_dir) ")
-        println("  opt=$(opt) ")
         println("  deb=$(deb) ")
         println("  mpiexec=$(mpiexec) ")
-        println("  success = run_lamem_local_test(ParamFile, cores, args, outfile=nothing, bin_dir=bin_dir, opt=opt, deb=deb, mpiexec=mpiexec);")
+        println("  success = run_lamem_local_test(ParamFile, cores, args, outfile=nothing, bin_dir=bin_dir, deb=deb, mpiexec=mpiexec);")
     end
 
     cd(cur_dir)  # return to directory       

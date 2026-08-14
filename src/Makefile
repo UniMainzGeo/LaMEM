@@ -11,6 +11,8 @@
 #  make mode=deb all (compile debug version of LaMEM and put in /bin/deb)
 #  make mode=opt all (compile optimized version of LaMEM and put in /bin/opt)
 #  make all          (compile optimized version of LaMEM and put in /bin/opt)
+#  make mode=deb surf=scape (compile debug version of LaMEM with fastscape)
+#  surf_mode = 1 in .dat file; don't use fastscape; surf_mode = 2 in .dat file; use fastscape 
 #==============================================================================
 
 # define compilation mode
@@ -18,10 +20,12 @@
 # opt - optimized (default)
 
 mode = opt
+surf = none
 
 # define PETSc installation directories:
 # PETSC_DEB = /directory/where/petsc/debug/is/installed
 # PETSC_OPT = /directory/where/petsc/optimized/is/installed
+# FASTSCAPELIB = /directory/where/FastScapeLib/is/located
 
 ifeq ($(mode), deb)
    ifeq (${PETSC_DEB},)
@@ -35,6 +39,13 @@ else ifeq ($(mode), opt)
    PETSC_DIR = ${PETSC_OPT}
 else
    $(error Unknown compilation mode specified)
+endif
+
+ifeq ($(surf), scape)
+   ifeq (${FASTSCAPE_LIB},)
+      ${error Environmental variable FASTSCAPE_LIB must be set to installation directory}
+   endif
+   FASTSCAPE_DIR = ${FASTSCAPE_LIB}
 endif
 
 # include PETSc environmental variables:
@@ -83,6 +94,11 @@ else
     $(error Unsupported compiler: $(CXX_COMPILER))
 endif
 
+# fastscape part
+ifeq ($(surf), scape)
+LAMEM_FLAGS += -DWITH_FASTSCAPE
+endif
+
 # add debuggiing flag if in debug mode
 ifeq ($(mode), deb)
    LAMEM_FLAGS += -g
@@ -95,6 +111,13 @@ ifneq ($(filter MSYS%,$(UNAME)),)
 endif
 
 #==============================================================================
+
+# Define FastScapeFortranLib
+# FS_LIB = -L${FASTSCAPE_DIR} -lfastscapelib_fortran -lgfortran
+# (embed an rpath so the resulting binary finds libfastscapelib_fortran at
+# runtime without requiring LD_LIBRARY_PATH/DYLD_FALLBACK_LIBRARY_PATH to be set)
+FS_LIB = ${CC_LINKER_SLFLAG}${FASTSCAPE_DIR} -L${FASTSCAPE_DIR} -lfastscapelib_fortran
+#====================================================
 
 # define list of LaMEM library source files
 # list files to be excluded after filter-out
@@ -134,8 +157,32 @@ all : lamem
 #==============================================================================
 
 # format source files
+#
+# NOTE: different astyle versions format the code differently, so the version
+# is pinned here and verified before formatting/checking. Use the same one as
+# the CI (the version shipped with Ubuntu 22.04/24.04). Homebrew currently
+# installs a much newer astyle, which reformats files that this version
+# considers correct (and vice versa).
 
-format:
+ASTYLE_VERSION = 3.1
+
+checkastyle:
+	@if ! command -v astyle > /dev/null 2>&1; then \
+		echo "ERROR: astyle not found; LaMEM formatting requires astyle ${ASTYLE_VERSION}."; \
+		exit 1; \
+	fi
+	@if ! astyle --version 2>&1 | grep -q "Version ${ASTYLE_VERSION}"; then \
+		echo "............................................."; \
+		echo "ERROR: wrong astyle version."; \
+		echo "  required : ${ASTYLE_VERSION}"; \
+		echo "  found    : `astyle --version 2>&1`"; \
+		echo "Different astyle versions format the code differently, so using"; \
+		echo "another version would reformat unrelated files and break the CI."; \
+		echo "............................................."; \
+		exit 1; \
+	fi
+
+format: checkastyle
 	@echo "Formatting source files ..."
 	@astyle --options=.astylerc *.cpp *.h
 	@echo "Done."
@@ -230,8 +277,11 @@ ${LAMEM_LIB} : ../dep/$(mode)/makefile.stat ${COBJ}
 
 # create a dynamic library
 dylib: ${COBJ}
+ifeq ($(surf), scape)
+	$(MPI_COMPILER) -shared -fPIC -o ../lib/$(mode)/LaMEMLib.dylib ${COBJ}  ${PETSC_LIB} ${FS_LIB}
+else
 	$(MPI_COMPILER) -shared -fPIC -o ../lib/$(mode)/LaMEMLib.dylib ${COBJ}  ${PETSC_LIB} 
-
+endif
 #==============================================================================
 
 # link LaMEM executable
@@ -244,7 +294,11 @@ ${LAMEM} : ${LAMEM_LIB} ${LAMEM_OBJ}
 	@echo "............................................."
 	@echo "......... Linking LaMEM Executable .........."
 	@echo "............................................."
-	${LINKER} ${LAMEM_OBJ} ${LAMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} -o $@
+ifeq ($(surf), scape)
+	${LINKER} ${LAMEM_OBJ} ${LAMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} ${FS_LIB} -o  $@
+else
+	${LINKER} ${LAMEM_OBJ} ${LAMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} -o  $@
+endif
 
 #==============================================================================
 
@@ -290,6 +344,11 @@ print :
 	@echo "............................................."
 	@echo "CLIB_FLAGS   : " ${CLIB_FLAGS}
 	@echo "............................................."
+ifeq ($(surf), scape)
+	@echo "............................................."
+	@echo "FASTSCAPE_LIB   : " ${FS_LIB}
+	@echo "............................................."
+endif
 
 #==============================================================================
 

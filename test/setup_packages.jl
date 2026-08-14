@@ -4,9 +4,10 @@
 using Pkg
 Pkg.add(name="PETSc_jll", version="3.22.0")
 Pkg.add(name="MPICH_jll", version="4.2.3")
+Pkg.add(name="Fastscapelib_jll")
 
 # Copy the relevant directories over
-using PETSc_jll, MPICH_jll
+using PETSc_jll, MPICH_jll, Fastscapelib_jll
 
 # copy the contents of all directories in a single one
 for path in PETSc_jll.PATH_list
@@ -50,6 +51,13 @@ end
 
 # print
 run(`ls /workspace/destdir/lib`);
+
+# Stage the FastScape library where the LaMEM Makefile expects it (FASTSCAPE_LIB)
+run(`sudo -E mkdir -p /workspace/destdir/lib/fastscape`)
+for srcdir in Fastscapelib_jll.LIBPATH_list
+    cp_files(srcdir, "/workspace/destdir/lib/fastscape/")
+end
+run(`ls /workspace/destdir/lib/fastscape`);
 
 
 

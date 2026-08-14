@@ -23,6 +23,7 @@ makedocs(;
             "Installation" =>  "man/Installation.md",
             "Getting Started" =>  "man/GettingStarted.md",
             "Initial Model setup" =>  "man/InitialModelSetup.md",
+            "Surface processes with FastScape" =>  "man/FastScape.md",
         ],
         "Release Notes" => Any[
             "Upgrading from v2.2.1 to v3.0.0" => "man/Upgrade_v2.2.1_to_v3.0.0.md",

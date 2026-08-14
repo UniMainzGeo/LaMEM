@@ -19,6 +19,8 @@
 #include "surf.h"
 #include "JacRes.h"
 #include "tools.h"
+#include "fastscape.h"
+
 //---------------------------------------------------------------------------
 PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 {
@@ -60,6 +62,11 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 
 	// set file name
 	sprintf(pvsurf->outfile, "%s_surf", filename);
+
+	// FastScape output
+#ifdef WITH_FASTSCAPE
+	if(pvsurf->surf->SurfMode == 2) PetscCall(PVSurfFastScapeCreate(pvsurf->surf->FSLib, fb));
+#endif
 
 	// create output buffer
 	PetscCall(PVSurfCreateData(pvsurf));
