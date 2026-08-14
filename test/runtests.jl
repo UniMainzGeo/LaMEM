@@ -633,7 +633,7 @@ if should_run_test("t10_Compressibility")
     if clean_files
     	clean_directory(dir)
     end
-    # --------------
+    # -------------
 
 end
 end
