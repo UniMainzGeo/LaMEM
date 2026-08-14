@@ -29,6 +29,8 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 	Scaling        *scal;
 	ScalingFS      *scalfs;
 	FreeSurf       *surf;
+	FDSTAG         *fs;
+	MeshSeg1D       msx, msy;
 
 	PetscFunctionBeginUser;
 
@@ -36,6 +38,7 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 	surf    =  FSLib->surf;
 	scal    =  FSLib->scal;
 	scalfs  = &FSLib->scalfs;
+	fs      =  surf->jr->fs;
 
 	// create scaling
 	PetscCall(FastScapeCreateScaling(FSLib));
@@ -154,6 +157,14 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 	}
 
 	PetscCall(FBFreeBlocks(fb));
+
+	//=================================================================================
+	// Copy x & y mesh segment info from FDSTAG (grid is already built at this point)
+	//=================================================================================
+	PetscCall(MeshSeg1DReadParam(&msx, scal->length, fs->gtol, "x", fb));
+	PetscCall(MeshSeg1DReadParam(&msy, scal->length, fs->gtol, "y", fb));
+	PetscCall(FastScapeCopyMeshSeg1D(FSLib, &msx, "x"));
+	PetscCall(FastScapeCopyMeshSeg1D(FSLib, &msy, "y"));
 
 	//=================================================================================
 	// Load grid information from LaMEM

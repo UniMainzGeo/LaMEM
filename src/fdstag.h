@@ -16,7 +16,6 @@
 
 struct FB;
 struct Scaling;
-struct FastScapeLib;
 
 //---------------------------------------------------------------------------
 // mesh segments data (temporary structure)
@@ -165,7 +164,6 @@ PetscErrorCode DOFIndexCreate(DOFIndex *dof, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_
 struct FDSTAG
 {
 	Scaling  *scal;
-	FastScapeLib *FSLib;
 
 	// local discretization data (coordinates, indexing & domain decomposition)
 	Discret1D dsx;

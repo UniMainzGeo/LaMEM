@@ -465,7 +465,6 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->dbm.scal    = &lm->scal;
 	// FDSTAG
 	lm->fs.scal     = &lm->scal;
-	lm->fs.FSLib    = &lm->FSLib;
 	// FreeSurf
 	lm->surf.jr     = &lm->jr;
 	lm->surf.FSLib  = &lm->FSLib;

@@ -15,7 +15,6 @@
 #include "parsing.h"
 #include "scaling.h"
 #include "tools.h"
-#include "fastscape.h"
 
 //---------------------------------------------------------------------------
 // MeshSeg1D functions
@@ -885,7 +884,6 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	// to compute strain/rates/stresses/residuals including boundary conditions.
 
 	Scaling         *scal;
-	FastScapeLib    *FSLib;
 	PetscInt         rank;
 	const PetscInt  *plx, *ply, *plz;
 	PetscInt        *lx,  *ly,  *lz;
@@ -898,8 +896,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 
 	PetscFunctionBeginUser;
 
-	scal  = fs->scal;
-	FSLib = fs->FSLib;
+	scal = fs->scal;
 
 	// set & read geometry tolerance
 	fs->gtol = 1e-6;
@@ -922,16 +919,6 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	PetscCall(MeshSeg1DReadParam(&msx, scal->length, fs->gtol, "x", fb));
 	PetscCall(MeshSeg1DReadParam(&msy, scal->length, fs->gtol, "y", fb));
 	PetscCall(MeshSeg1DReadParam(&msz, scal->length, fs->gtol, "z", fb));
-
-#ifdef WITH_FASTSCAPE
-	if(complete_build)
-	{
-		PetscCall(FastScapeCopyMeshSeg1D(FSLib, &msx, "x"));
-		PetscCall(FastScapeCopyMeshSeg1D(FSLib, &msy, "y"));
-	}
-#else
-	UNUSED(FSLib);
-#endif
 
 	// get total number of nodes
 	Nx = msx.tcels + 1;
