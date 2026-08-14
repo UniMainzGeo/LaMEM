@@ -27,13 +27,18 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 {
 	PetscInt       maxPhaseID;
 	Scaling        *scal;
+	ScalingFS      *scalfs;
 	FreeSurf       *surf;
 
 	PetscFunctionBeginUser;
 
 	// access context
-	surf    = FSLib->surf;
-	scal    = FSLib->scal;
+	surf    =  FSLib->surf;
+	scal    =  FSLib->scal;
+	scalfs  = &FSLib->scalfs;
+
+	// create scaling
+	PetscCall(FastScapeCreateScaling(FSLib));
 
 	//=================================================================================
 	// Load data from .dat file
@@ -45,11 +50,11 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 	FSLib->fs2D              =   0;
 	// extend range & nodes
 	FSLib->extendedNodes     =   101;
-	FSLib->extendedRange     =   100 * scal->length_fs;
+	FSLib->extendedRange     =   100 * scalfs->length_fs;
 	// refine times & load refined grid
 	FSLib->refine            =   1;
 	// max timestep
-	FSLib->max_fs_dt            =   0.01 * scal->time_fs;
+	FSLib->max_fs_dt            =   0.01 * scalfs->time_fs;
 	// random noise
 	FSLib->random_noise      =   1;
 	// sedimentation
@@ -76,7 +81,7 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 		PetscCall(getIntParam(fb, _OPTIONAL_, "fs2D",             &FSLib->fs2D,             1,  1)); // flag
 		if(FSLib->fs2D)
 		{
-			PetscCall(getScalarParam(fb, _REQUIRED_, "extendedRange",    &FSLib->extendedRange,    1,  1/scal->length_fs)); // km (LaMEM) -> m (FastScape)
+			PetscCall(getScalarParam(fb, _REQUIRED_, "extendedRange",    &FSLib->extendedRange,    1,  1/scalfs->length_fs)); // km (LaMEM) -> m (FastScape)
 
 			if (!FSLib->non_uniform_grid)
 			{
@@ -91,7 +96,7 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 		// FastScape PARAMETER
 		//===============================
 		// dt & boundary condition
-		PetscCall(getScalarParam(fb, _REQUIRED_, "max_fs_dt",            &FSLib->max_fs_dt,           1,  1 / scal->time_fs)); // Myr (LaMEM) ->yr (FastScape)
+		PetscCall(getScalarParam(fb, _REQUIRED_, "max_fs_dt",            &FSLib->max_fs_dt,           1,  1 / scalfs->time_fs)); // Myr (LaMEM) ->yr (FastScape)
 
 		// bottom-right-top-left; 0 = reflective, 1 = fixed height boundary; When two reflective boundaris face each other they become cyclic
 		PetscCall(getStringParam(fb, _REQUIRED_, "topo_boundary",     FSLib->FS_BC,                 "1111"));
@@ -130,13 +135,13 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 		PetscCall(getIntParam   (fb, _OPTIONAL_, "set_marine",         &FSLib->set_marine,        1,         1)); // flag
 		if(FSLib->set_marine)
 		{
-			PetscCall(getScalarParam(fb, _REQUIRED_, "sealevel",      &FSLib->sealevel,         1,         1 / scal->length_fs)); // m
+			PetscCall(getScalarParam(fb, _REQUIRED_, "sealevel",      &FSLib->sealevel,         1,         1 / scalfs->length_fs)); // m
 			PetscCall(getScalarParam(fb, _REQUIRED_, "poroSilt",      &FSLib->poro_silt,        1,         1.0)); // non-dimensional
 			PetscCall(getScalarParam(fb, _REQUIRED_, "poroSand",      &FSLib->poro_sand,        1,         1.0)); // non-dimensional
-			PetscCall(getScalarParam(fb, _REQUIRED_, "zporoSilt",     &FSLib->zporo_silt,       1,         1 / scal->length_fs));
-			PetscCall(getScalarParam(fb, _REQUIRED_, "zporoSand",     &FSLib->zporo_sand,       1,         1 / scal->length_fs));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "zporoSilt",     &FSLib->zporo_silt,       1,         1 / scalfs->length_fs));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "zporoSand",     &FSLib->zporo_sand,       1,         1 / scalfs->length_fs));
 			PetscCall(getScalarParam(fb, _REQUIRED_, "ratio",         &FSLib->ratio,            1,         1.0)); // non-dimensional
-			PetscCall(getScalarParam(fb, _REQUIRED_, "depth_siltsand_solve",        &FSLib->depth_siltsand_solve,           1,         1 / scal->length_fs)); // m
+			PetscCall(getScalarParam(fb, _REQUIRED_, "depth_siltsand_solve",        &FSLib->depth_siltsand_solve,           1,         1 / scalfs->length_fs)); // m
 			PetscCall(getScalarParam(fb, _REQUIRED_, "kdsSilt",       &FSLib->kds_silt,         1,         1.0)); // m2/yr
 			PetscCall(getScalarParam(fb, _REQUIRED_, "kdsSand",       &FSLib->kds_sand,         1,         1.0)); // m2/yr
 		}
@@ -217,7 +222,7 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 	if(FSLib->fs2D)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "    Extended  grid: \n");
-		PetscPrintf(PETSC_COMM_WORLD, "    [rangeX,rangeY]       : [%g, %g] %s\n",   FSLib->extendedXRange / scal->length_fs, FSLib->extendedYRange / scal->length_fs, scal->lbl_length);
+		PetscPrintf(PETSC_COMM_WORLD, "    [rangeX,rangeY]       : [%g, %g] %s\n",   FSLib->extendedXRange / scalfs->length_fs, FSLib->extendedYRange / scalfs->length_fs, scal->lbl_length);
 		PetscPrintf(PETSC_COMM_WORLD, "    [nodeX, nodeY]        : [%" PetscInt_FMT ", %" PetscInt_FMT "]\n",      FSLib->extendedXNodes, FSLib->extendedYNodes);
 	}
 	// refined grid
@@ -233,7 +238,7 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 
 	// surface process parameter
 	PetscPrintf(PETSC_COMM_WORLD, "  Surface process: \n");
-	PetscPrintf(PETSC_COMM_WORLD, "    Max timestep          : %g %s\n",        FSLib->max_fs_dt / scal->time_fs, scal->lbl_time);
+	PetscPrintf(PETSC_COMM_WORLD, "    Max timestep          : %g %s\n",        FSLib->max_fs_dt / scalfs->time_fs, scal->lbl_time);
 	PetscPrintf(PETSC_COMM_WORLD, "    Topography boundary   : %s\n",           FSLib->FS_BC);
 	PetscPrintf(PETSC_COMM_WORLD, "    Velocity boundary     : %s\n",           FSLib->FS_VELBC);
 	PetscPrintf(PETSC_COMM_WORLD, "    Sedimentation phase   : %" PetscInt_FMT "\n",           FSLib->sedPhases);
@@ -252,7 +257,7 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 	if(FSLib->set_marine)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "    Marine process: \n");
-		PetscPrintf(PETSC_COMM_WORLD, "      sealevel            : %g %s\n",    FSLib->sealevel / scal->length_fs, scal->lbl_length);
+		PetscPrintf(PETSC_COMM_WORLD, "      sealevel            : %g %s\n",    FSLib->sealevel / scalfs->length_fs, scal->lbl_length);
 		PetscPrintf(PETSC_COMM_WORLD, "      poro_silt           : %g\n",       FSLib->poro_silt);
 		PetscPrintf(PETSC_COMM_WORLD, "      poro_sand           : %g\n",       FSLib->poro_sand);
 		PetscPrintf(PETSC_COMM_WORLD, "      zporo_silt          : %g\n",       FSLib->zporo_silt);
@@ -263,6 +268,64 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 		PetscPrintf(PETSC_COMM_WORLD, "      kds_sand            : %g\n",       FSLib->kds_sand);
 	}
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FastScapeCreateScaling(FastScapeLib *FSLib)
+{
+	Scaling    *scal;
+	ScalingFS  *scalfs;
+	PetscScalar km, yr, m;
+
+	PetscFunctionBeginUser;
+
+	// access context
+	scal   =  FSLib->scal;
+	scalfs = &FSLib->scalfs;
+
+	// read unit values
+	km     = 1e3;
+	m      = 1e2;
+	yr     = 3600.0*24.0*365.25;
+
+	if(scal->utype == _SI_)
+	{
+		// s (LaMEM) -> yr (FastScape)
+		scalfs->time_fs             = 1/yr;                      snprintf(scalfs->lbl_time_fs, sizeof(scalfs->lbl_time_fs),        "[yr]");
+		// m (LaMEM) -> m (FastSCape)
+		scalfs->length_fs           = 1.0;                       snprintf(scalfs->lbl_length_fs, sizeof(scalfs->lbl_length_fs),    "[m]");
+		// m/s (LaMEM) -> m/yr (FastScape)
+		scalfs->velocity_fs         = 1/yr;                      snprintf(scalfs->lbl_velocity_fs, sizeof(scalfs->lbl_velocity_fs),   "[m/yr]");
+
+		// output
+		// m^2 --> m^2
+		scalfs->area_fs             = 1.0;                       snprintf(scalfs->lbl_area_fs, sizeof(scalfs->lbl_area_fs),       "[m^2]");
+		// m/yr --> m/yr
+		scalfs->rate                = 1.0;                       snprintf(scalfs->lbl_rate, sizeof(scalfs->lbl_rate),        "[m/yr]");
+		scalfs->degree              = 1.0;                       snprintf(scalfs->lbl_degree, sizeof(scalfs->lbl_degree),       "[°]");
+		// dimensionless (e.g. silt fraction)
+		scalfs->fraction            = 1.0;                       snprintf(scalfs->lbl_fraction, sizeof(scalfs->lbl_fraction),      "[ ]");
+	}
+	else if(scal->utype == _GEO_)
+	{
+		// Myr (LaMEM) -> yr (FastScape)
+		scalfs->time_fs             = 1e6;                       snprintf(scalfs->lbl_time_fs, sizeof(scalfs->lbl_time_fs),     "[yr]");
+		// km (LaMEM) -> m (FastScape)
+		scalfs->length_fs           = km;                        snprintf(scalfs->lbl_length_fs, sizeof(scalfs->lbl_length_fs),     "[m]");
+		// cm/yr (LaMEM) -> m/yr (FastScape)
+		scalfs->velocity_fs         = m;                         snprintf(scalfs->lbl_velocity_fs, sizeof(scalfs->lbl_velocity_fs),    "[m/yr]");
+
+		// output
+		// m^2 --> km^2
+		scalfs->area_fs             = km * km;                   snprintf(scalfs->lbl_area_fs, sizeof(scalfs->lbl_area_fs),       "[km^2]");
+		// m/yr --> km/yr
+		scalfs->rate                = 1.0 * km;                  snprintf(scalfs->lbl_rate, sizeof(scalfs->lbl_rate),         "[km/yr]");
+		scalfs->degree              = 1.0;                       snprintf(scalfs->lbl_degree, sizeof(scalfs->lbl_degree),      "[°]");
+		// dimensionless (e.g. silt fraction)
+		scalfs->fraction            = 1.0;                       snprintf(scalfs->lbl_fraction, sizeof(scalfs->lbl_fraction),      "[ ]");
+	}
+	else    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect unit type for FastScape");
 
 	PetscFunctionReturn(0);
 }
@@ -370,13 +433,15 @@ PetscErrorCode FastScapeLoadGridInf(FastScapeLib *FSLib)
 	PetscFunctionBeginUser;
 
 	// load global nx, ny, rangeX, rangeY, rangeZ
-	FDSTAG   *fs;
-	Scaling  *scal;
+	FDSTAG     *fs;
+	Scaling    *scal;
+	ScalingFS  *scalfs;
 	PetscInt baseNodesX, baseNodesY;
 	PetscScalar bx, by, bz, ex, ey, ez;
 
-	fs    = FSLib->surf->jr->fs;
-	scal  = fs->scal;
+	fs      = FSLib->surf->jr->fs;
+	scal    = FSLib->scal;
+	scalfs  = &FSLib->scalfs;
 
 	// range X, Y, Z
 	PetscCall(FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez));
@@ -389,8 +454,8 @@ PetscErrorCode FastScapeLoadGridInf(FastScapeLib *FSLib)
 	FSLib->rangeZ_begin = bz * scal->length;
 	FSLib->rangeZ_end   = ez * scal->length;
 
-	FSLib->rangeX       = (FSLib->rangeX_end - FSLib->rangeX_begin) * scal->length_fs; //(km) in LaMEM to (m) in FastScape (GEO)
-	FSLib->rangeY       = (FSLib->rangeY_end - FSLib->rangeY_begin) * scal->length_fs;
+	FSLib->rangeX       = (FSLib->rangeX_end - FSLib->rangeX_begin) * scalfs->length_fs; //(km) in LaMEM to (m) in FastScape (GEO)
+	FSLib->rangeY       = (FSLib->rangeY_end - FSLib->rangeY_begin) * scalfs->length_fs;
 
 	// original nx, ny
 	FSLib->nx_LaMEM        = fs->dsx.tnods;
@@ -437,7 +502,7 @@ PetscErrorCode FastScapeLoadGridInf(FastScapeLib *FSLib)
 			FSLib->extendedYRange = FSLib->extendedRange;
 			FSLib->extendedXNodes = FSLib->non_uniform_grid ? FSLib->fsX.nodes : FSLib->nx_LaMEM;;
 			FSLib->extendedYNodes = FSLib->non_uniform_grid ?
-			                        (PetscInt)(FSLib->extendedYRange / scal->length_fs / FSLib->msx_fs.min_spacing) + 2 :
+			                        (PetscInt)(FSLib->extendedYRange / scalfs->length_fs / FSLib->msx_fs.min_spacing) + 2 :
 			                        FSLib->extendedNodes;
 			FSLib->extendedX      = 0;
 			FSLib->extendedY      = 1;
@@ -448,7 +513,7 @@ PetscErrorCode FastScapeLoadGridInf(FastScapeLib *FSLib)
 			FSLib->extendedXRange = FSLib->extendedRange;
 			FSLib->extendedYRange = FSLib->rangeY;
 			FSLib->extendedXNodes = FSLib->non_uniform_grid ?
-			                        (PetscInt)(FSLib->extendedXRange / scal->length_fs / FSLib->msy_fs.min_spacing) + 2 :
+			                        (PetscInt)(FSLib->extendedXRange / scalfs->length_fs / FSLib->msy_fs.min_spacing) + 2 :
 			                        FSLib->extendedNodes;
 			FSLib->extendedYNodes = FSLib->non_uniform_grid ? FSLib->fsY.nodes : FSLib->ny_LaMEM;;
 			FSLib->extendedX      = 1;
@@ -570,11 +635,12 @@ void GenerateGridCoordinates(PetscScalar *coords, PetscInt numNodes, PetscScalar
 PetscErrorCode FastScapeCreateSurfaceGrid(FastScapeLib *FSLib, PetscInt mode)
 {
 	//mode = 1, normal run (create), = 2, restart, = 0, update range
-	FSGrid   *fsX;
-	FSGrid   *fsY;
-	Scaling  *scal;
-	TSSol    *ts;
-	JacRes   *jr;
+	FSGrid     *fsX;
+	FSGrid     *fsY;
+	Scaling    *scal;
+	ScalingFS  *scalfs;
+	TSSol      *ts;
+	JacRes     *jr;
 	PetscInt i, step_fs;
 
 	PetscFunctionBeginUser;
@@ -582,12 +648,13 @@ PetscErrorCode FastScapeCreateSurfaceGrid(FastScapeLib *FSLib, PetscInt mode)
 	fsX     = &FSLib->fsX;
 	fsY     = &FSLib->fsY;
 	scal    = FSLib->scal;
+	scalfs  = &FSLib->scalfs;
 	jr      = FSLib->jr;
 	ts      = jr->ts;
 	step_fs = ts->istep;
 
-	fsX->dx = FSLib->rangeX / scal->length_fs / (PetscScalar)(fsX->nodes - 1);
-	fsY->dx = FSLib->rangeY / scal->length_fs / (PetscScalar)(fsY->nodes - 1);
+	fsX->dx = FSLib->rangeX / scalfs->length_fs / (PetscScalar)(fsX->nodes - 1);
+	fsY->dx = FSLib->rangeY / scalfs->length_fs / (PetscScalar)(fsY->nodes - 1);
 
 	// original fastscape grid
 	if(mode == 1 || mode == 2)
@@ -610,8 +677,8 @@ PetscErrorCode FastScapeCreateSurfaceGrid(FastScapeLib *FSLib, PetscInt mode)
 				PetscCall(PetscMalloc((size_t)(fsY->nodes_refine) * sizeof(PetscScalar), &fsY->ncoor_refine));
 			}
 
-			fsX->dx_refine = FSLib->rangeX / scal->length_fs  / (PetscScalar)(fsX->nodes_refine - 1);
-			fsY->dx_refine = FSLib->rangeY / scal->length_fs  / (PetscScalar)(fsY->nodes_refine - 1);
+			fsX->dx_refine = FSLib->rangeX / scalfs->length_fs  / (PetscScalar)(fsX->nodes_refine - 1);
+			fsY->dx_refine = FSLib->rangeY / scalfs->length_fs  / (PetscScalar)(fsY->nodes_refine - 1);
 
 			GenerateGridCoordinates(fsX->ncoor_refine, fsX->nodes_refine, FSLib->rangeX_begin, fsX->dx_refine);
 			GenerateGridCoordinates(fsY->ncoor_refine, fsY->nodes_refine, FSLib->rangeY_begin, fsY->dx_refine);
@@ -626,8 +693,8 @@ PetscErrorCode FastScapeCreateSurfaceGrid(FastScapeLib *FSLib, PetscInt mode)
 			PetscCall(PetscMalloc((size_t)(fsY->nodes_extend) * sizeof(PetscScalar), &fsY->ncoor_extend));
 		}
 
-		fsX->dx_extend = FSLib->extendedXRange / scal->length_fs  / (PetscScalar)(fsX->nodes_extend - 1);
-		fsY->dx_extend = FSLib->extendedYRange / scal->length_fs  / (PetscScalar)(fsY->nodes_extend - 1);
+		fsX->dx_extend = FSLib->extendedXRange / scalfs->length_fs  / (PetscScalar)(fsX->nodes_extend - 1);
+		fsY->dx_extend = FSLib->extendedYRange / scalfs->length_fs  / (PetscScalar)(fsY->nodes_extend - 1);
 
 		GenerateGridCoordinates(fsX->ncoor_extend, fsX->nodes_extend, FSLib->rangeX_begin, fsX->dx_extend);
 		GenerateGridCoordinates(fsY->ncoor_extend, fsY->nodes_extend, FSLib->rangeY_begin, fsY->dx_extend);
@@ -641,8 +708,8 @@ PetscErrorCode FastScapeCreateSurfaceGrid(FastScapeLib *FSLib, PetscInt mode)
 				PetscCall(PetscMalloc((size_t)(fsY->nodes_refine) * sizeof(PetscScalar), &fsY->ncoor_refine));
 			}
 
-			fsX->dx_refine = FSLib->extendedXRange / scal->length_fs  / (PetscScalar)(fsX->nodes_refine - 1);
-			fsY->dx_refine = FSLib->extendedYRange / scal->length_fs  / (PetscScalar)(fsY->nodes_refine - 1);
+			fsX->dx_refine = FSLib->extendedXRange / scalfs->length_fs  / (PetscScalar)(fsX->nodes_refine - 1);
+			fsY->dx_refine = FSLib->extendedYRange / scalfs->length_fs  / (PetscScalar)(fsY->nodes_refine - 1);
 
 			GenerateGridCoordinates(fsX->ncoor_refine, fsX->nodes_refine, FSLib->rangeX_begin, fsX->dx_refine);
 			GenerateGridCoordinates(fsY->ncoor_refine, fsY->nodes_refine, FSLib->rangeY_begin, fsY->dx_refine);
@@ -708,54 +775,6 @@ PetscErrorCode FastScapeCreateSurfaceGrid(FastScapeLib *FSLib, PetscInt mode)
 			}
 		}
 	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode ScalingFastScapeCreate(Scaling *scal)
-{
-	PetscScalar km, yr, m;
-
-	PetscFunctionBeginUser;
-
-	// read unit values
-	km     = 1e3;
-	m      = 1e2;
-	yr     = 3600.0*24.0*365.25;
-
-	if(scal->utype == _SI_)
-	{
-		// s (LaMEM) -> yr (FastScape)
-		scal->time_fs             = 1/yr;                      snprintf(scal->lbl_time_fs, sizeof(scal->lbl_time_fs),        "[yr]");
-		// m (LaMEM) -> m (FastSCape)
-		scal->length_fs           = 1.0;                       snprintf(scal->lbl_length_fs, sizeof(scal->lbl_length_fs),    "[m]");
-		// m/s (LaMEM) -> m/yr (FastScape)
-		scal->velocity_fs         = 1/yr;                      snprintf(scal->lbl_velocity_fs, sizeof(scal->lbl_velocity_fs),   "[m/yr]");
-
-		// output
-		// m^2 --> m^2
-		scal->area_fs             = 1.0;                       snprintf(scal->lbl_area_fs, sizeof(scal->lbl_area_fs),       "[m^2]");
-		// m/yr --> m/yr
-		scal->rate                = 1.0;                       snprintf(scal->lbl_rate, sizeof(scal->lbl_rate),        "[m/yr]");
-		scal->degree              = 1.0;                       snprintf(scal->lbl_degree, sizeof(scal->lbl_degree),       "[°]");
-	}
-	else if(scal->utype == _GEO_)
-	{
-		// Myr (LaMEM) -> yr (FastScape)
-		scal->time_fs             = 1e6;                       snprintf(scal->lbl_time_fs, sizeof(scal->lbl_time_fs),     "[yr]");
-		// km (LaMEM) -> m (FastScape)
-		scal->length_fs           = km;                        snprintf(scal->lbl_length_fs, sizeof(scal->lbl_length_fs),     "[m]");
-		// cm/yr (LaMEM) -> m/yr (FastScape)
-		scal->velocity_fs         = m;                         snprintf(scal->lbl_velocity_fs, sizeof(scal->lbl_velocity_fs),    "[m/yr]");
-
-		// output
-		// m^2 --> km^2
-		scal->area_fs             = km * km;                 snprintf(scal->lbl_area_fs, sizeof(scal->lbl_area_fs),       "[km^2]");
-		// m/yr --> km/yr
-		scal->rate                = 1.0 * km;                    snprintf(scal->lbl_rate, sizeof(scal->lbl_rate),         "[km/yr]");
-		scal->degree              = 1.0;                       snprintf(scal->lbl_degree, sizeof(scal->lbl_degree),      "[°]");
-	}
-	else    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect unit type for FastScape");
 
 	PetscFunctionReturn(0);
 }
@@ -1304,8 +1323,11 @@ PetscErrorCode GatherVariableFromLaMEM(FastScapeLib *FSLib, PetscScalar *topo_al
 }
 //---------------------------------------------------------------------------
 PetscErrorCode BilinearInterpolate(FastScapeLib *FSLib, PetscScalar *data, PetscScalar *data_refine,
-                                   PetscScalar *data_refine_pass, Scaling *scal, PetscInt corMode, PetscInt nx_refine, PetscInt ny_refine)
+                                   PetscScalar *data_refine_pass, PetscInt corMode, PetscInt nx_refine, PetscInt ny_refine)
 {
+	Scaling    *scal   =  FSLib->scal;
+	ScalingFS  *scalfs = &FSLib->scalfs;
+
 	PetscFunctionBeginUser;
 
 	//PetscInt interpolationMode = 1;
@@ -1317,11 +1339,11 @@ PetscErrorCode BilinearInterpolate(FastScapeLib *FSLib, PetscScalar *data, Petsc
 
 	if (corMode == 1)
 	{
-		unit_factor = scal->length * scal->length_fs;
+		unit_factor = scal->length * scalfs->length_fs;
 	}
 	else if (corMode == 2)
 	{
-		unit_factor = scal->velocity / scal->velocity_fs;
+		unit_factor = scal->velocity / scalfs->velocity_fs;
 	}
 
 	const PetscInt nx_source = (nx_refine - 1) / FSLib->refine + 1;
@@ -1361,8 +1383,10 @@ PetscErrorCode BilinearInterpolate(FastScapeLib *FSLib, PetscScalar *data, Petsc
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode Extended2D(FastScapeLib *FSLib, PetscScalar *data, PetscScalar *data_extended, PetscScalar *data_extend_pass, Scaling *scal, PetscInt corMode, PetscBool isRefine)
+PetscErrorCode Extended2D(FastScapeLib *FSLib, PetscScalar *data, PetscScalar *data_extended, PetscScalar *data_extend_pass, PetscInt corMode, PetscBool isRefine)
 {
+	Scaling    *scal   =  FSLib->scal;
+	ScalingFS  *scalfs = &FSLib->scalfs;
 	PetscScalar sum, unit_factor    = 1.0;
 	PetscInt i, j, idx, linearIdx;
 	PetscScalar *data_aver_ori = nullptr;
@@ -1380,10 +1404,10 @@ PetscErrorCode Extended2D(FastScapeLib *FSLib, PetscScalar *data, PetscScalar *d
 		switch (corMode)
 		{
 		case 1: // topography: (LaMEM) → m (FastScape)
-			unit_factor = scal->length * scal->length_fs;
+			unit_factor = scal->length * scalfs->length_fs;
 			break;
 		case 2: // velocity：cm/yr (LaMEM) → m/yr (FastScape)
-			unit_factor = scal->velocity / scal->velocity_fs;
+			unit_factor = scal->velocity / scalfs->velocity_fs;
 			break;
 		default: // no transtition
 			unit_factor = 1.0;
@@ -1474,20 +1498,22 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
 
 	// load global nx, ny, dt, time, rangeX, rangeY
 	// nx, ny, dt, time
-	FDSTAG   *fs;
-	TSSol    *ts;
-	Scaling  *scal;
-	JacRes   *jr;
+	FDSTAG     *fs;
+	TSSol      *ts;
+	Scaling    *scal;
+	ScalingFS  *scalfs;
+	JacRes     *jr;
 
 	jr      = surf->jr;
 	fs      = jr->fs;
 	ts      = jr->ts;
-	scal    = ts->scal;
+	scal    = FSLib->scal;
+	scalfs  = &FSLib->scalfs;
 
 	// load time
 	dt      = ts->dt;
 	dt_scal = dt * scal->time;
-	dt_fs   = dt_scal * scal->time_fs; // (Myr) in LaMEM to (yr) in FastScape (GEO)
+	dt_fs   = dt_scal * scalfs->time_fs; // (Myr) in LaMEM to (yr) in FastScape (GEO)
 	time_fs = ts->time * scal->time + dt_scal; // time after finishing surface processes
 	step_fs = ts->istep;
 
@@ -1558,11 +1584,11 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
 
 					for(i = 0; i < tnodes; i++)
 					{
-						if (0 == step_fs)   topo_pass[i] = topo_alloc[i] * scal->length * scal->length_fs; // (km) in LaMEM to (m) in FastScape (GEO)
-						else    topo_pass[i] = gtopo_rank0[i] * scal->length_fs;
-						vx_pass[i]   = vx_alloc[i] * scal->velocity / scal->velocity_fs; // (cm/yr) in LaMEM to (m/yr) in FastScape (GEO)
-						vy_pass[i]   = vy_alloc[i] * scal->velocity / scal->velocity_fs; // (cm/yr) in LaMEM to (m/yr) in FastScape (GEO)
-						vz_pass[i]   = vz_alloc[i] * scal->velocity / scal->velocity_fs; // (cm/yr) in LaMEM to (m/yr) in FastScape (GEO)
+						if (0 == step_fs)   topo_pass[i] = topo_alloc[i] * scal->length * scalfs->length_fs; // (km) in LaMEM to (m) in FastScape (GEO)
+						else    topo_pass[i] = gtopo_rank0[i] * scalfs->length_fs;
+						vx_pass[i]   = vx_alloc[i] * scal->velocity / scalfs->velocity_fs; // (cm/yr) in LaMEM to (m/yr) in FastScape (GEO)
+						vy_pass[i]   = vy_alloc[i] * scal->velocity / scalfs->velocity_fs; // (cm/yr) in LaMEM to (m/yr) in FastScape (GEO)
+						vz_pass[i]   = vz_alloc[i] * scal->velocity / scalfs->velocity_fs; // (cm/yr) in LaMEM to (m/yr) in FastScape (GEO)
 
 					}
 
@@ -1577,10 +1603,10 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
 
 					for(i = 0; i < tnodes; i++)
 					{
-						topo_pass[i] = topo_solve[i] * scal->length_fs; // (km) in LaMEM to (m) in FastScape (GEO)
-						vx_pass[i]   = vx_solve[i] * scal->velocity / scal->velocity_fs; // (cm/yr) in LaMEM to (m/yr) in FastScape (GEO)
-						vy_pass[i]   = vy_solve[i] * scal->velocity / scal->velocity_fs; // (cm/yr) in LaMEM to (m/yr) in FastScape (GEO)
-						vz_pass[i]   = vz_solve[i] * scal->velocity / scal->velocity_fs; // (cm/yr) in LaMEM to (m/yr) in FastScape (GEO)
+						topo_pass[i] = topo_solve[i] * scalfs->length_fs; // (km) in LaMEM to (m) in FastScape (GEO)
+						vx_pass[i]   = vx_solve[i] * scal->velocity / scalfs->velocity_fs; // (cm/yr) in LaMEM to (m/yr) in FastScape (GEO)
+						vy_pass[i]   = vy_solve[i] * scal->velocity / scalfs->velocity_fs; // (cm/yr) in LaMEM to (m/yr) in FastScape (GEO)
+						vz_pass[i]   = vz_solve[i] * scal->velocity / scalfs->velocity_fs; // (cm/yr) in LaMEM to (m/yr) in FastScape (GEO)
 					}
 
 					PetscCall(VecRestoreArray(FSLib->gtopo_nug, &topo_solve));
@@ -1605,19 +1631,19 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
 					// load velocity and topography field
 					if(step_fs == 0)
 					{
-						PetscCall(BilinearInterpolate(FSLib, topo_alloc, topo_solve_refine, topo_pass, scal, 1, FSLib->nx_refine, FSLib->ny_refine));
+						PetscCall(BilinearInterpolate(FSLib, topo_alloc, topo_solve_refine, topo_pass, 1, FSLib->nx_refine, FSLib->ny_refine));
 					}
 					else
 					{
 						for(i = 0; i < tnodes; i++)
 						{
-							topo_pass[i] = topo_solve_refine[i] * scal->length_fs;
+							topo_pass[i] = topo_solve_refine[i] * scalfs->length_fs;
 
 						}
 					}
-					PetscCall(BilinearInterpolate(FSLib, vx_alloc, vx_solve_refine, vx_pass, scal, 2, FSLib->nx_refine, FSLib->ny_refine));
-					PetscCall(BilinearInterpolate(FSLib, vy_alloc, vy_solve_refine, vy_pass, scal, 2, FSLib->nx_refine, FSLib->ny_refine));
-					PetscCall(BilinearInterpolate(FSLib, vz_alloc, vz_solve_refine, vz_pass, scal, 2, FSLib->nx_refine, FSLib->ny_refine));
+					PetscCall(BilinearInterpolate(FSLib, vx_alloc, vx_solve_refine, vx_pass, 2, FSLib->nx_refine, FSLib->ny_refine));
+					PetscCall(BilinearInterpolate(FSLib, vy_alloc, vy_solve_refine, vy_pass, 2, FSLib->nx_refine, FSLib->ny_refine));
+					PetscCall(BilinearInterpolate(FSLib, vz_alloc, vz_solve_refine, vz_pass, 2, FSLib->nx_refine, FSLib->ny_refine));
 
 				}
 				else
@@ -1630,21 +1656,21 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
 					// load velocity and topography field
 					if(step_fs == 0)
 					{
-						PetscCall(BilinearInterpolate(FSLib, topo_solve, topo_solve_refine, topo_pass, scal, 1, FSLib->nx_refine, FSLib->ny_refine));
+						PetscCall(BilinearInterpolate(FSLib, topo_solve, topo_solve_refine, topo_pass, 1, FSLib->nx_refine, FSLib->ny_refine));
 					}
 					else
 					{
 						for(i = 0; i < tnodes; i++)
 						{
 
-							topo_pass[i] = topo_solve_refine[i] * scal->length_fs;
+							topo_pass[i] = topo_solve_refine[i] * scalfs->length_fs;
 
 						}
 					}
 
-					PetscCall(BilinearInterpolate(FSLib, vx_solve, vx_solve_refine, vx_pass, scal, 2, FSLib->nx_refine, FSLib->ny_refine));
-					PetscCall(BilinearInterpolate(FSLib, vy_solve, vy_solve_refine, vy_pass, scal, 2, FSLib->nx_refine, FSLib->ny_refine));
-					PetscCall(BilinearInterpolate(FSLib, vz_solve, vz_solve_refine, vz_pass, scal, 2, FSLib->nx_refine, FSLib->ny_refine));
+					PetscCall(BilinearInterpolate(FSLib, vx_solve, vx_solve_refine, vx_pass, 2, FSLib->nx_refine, FSLib->ny_refine));
+					PetscCall(BilinearInterpolate(FSLib, vy_solve, vy_solve_refine, vy_pass, 2, FSLib->nx_refine, FSLib->ny_refine));
+					PetscCall(BilinearInterpolate(FSLib, vz_solve, vz_solve_refine, vz_pass, 2, FSLib->nx_refine, FSLib->ny_refine));
 
 					PetscCall(VecRestoreArray(FSLib->gtopo_nug, &topo_solve));
 					PetscCall(VecRestoreArray(FSLib->vz_nug, &vz_solve));
@@ -1676,13 +1702,13 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
 					// topography, advect in FastScape, Advect1D: advect in x or y direction, FastScape: advect in z direction
 					if(step_fs == 0)
 					{
-						PetscCall(Extended2D(FSLib, topo_alloc, topo_solve, topo_pass, scal, 1, PETSC_FALSE));
+						PetscCall(Extended2D(FSLib, topo_alloc, topo_solve, topo_pass, 1, PETSC_FALSE));
 					}
 					else
 					{
 						for(i = 0; i < tnodes; i++)
 						{
-							topo_pass[i] = topo_solve[i] * scal->length_fs;
+							topo_pass[i] = topo_solve[i] * scalfs->length_fs;
 						}
 					}
 
@@ -1690,16 +1716,16 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
 					// vx, vy
 					if(FSLib->extendedX == 1)
 					{
-						PetscCall(Extended2D(FSLib, vy_alloc, vy_solve, vy_pass, scal, 2, PETSC_FALSE));
+						PetscCall(Extended2D(FSLib, vy_alloc, vy_solve, vy_pass, 2, PETSC_FALSE));
 						std::fill(vx_pass, vx_pass + tnodes, 0);
 					}
 					else
 					{
-						PetscCall(Extended2D(FSLib, vx_alloc, vx_solve, vx_pass, scal, 2, PETSC_FALSE));
+						PetscCall(Extended2D(FSLib, vx_alloc, vx_solve, vx_pass, 2, PETSC_FALSE));
 						std::fill(vy_pass, vy_pass + tnodes, 0);
 					}
 					// vz
-					PetscCall(Extended2D(FSLib, vz_alloc, vz_solve, vz_pass, scal, 2, PETSC_FALSE));
+					PetscCall(Extended2D(FSLib, vz_alloc, vz_solve, vz_pass, 2, PETSC_FALSE));
 
 				}
 				// apply refinement
@@ -1713,33 +1739,33 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
 
 					if(step_fs == 0)
 					{
-						PetscCall(Extended2D(FSLib, topo_alloc, topo_solve, NULL, NULL, 0, PETSC_TRUE));
-						PetscCall(BilinearInterpolate(FSLib, topo_solve, topo_solve_refine, topo_pass, scal, 1, FSLib->etRefineXNodes, FSLib->etRefineYNodes));
+						PetscCall(Extended2D(FSLib, topo_alloc, topo_solve, NULL, 0, PETSC_TRUE));
+						PetscCall(BilinearInterpolate(FSLib, topo_solve, topo_solve_refine, topo_pass, 1, FSLib->etRefineXNodes, FSLib->etRefineYNodes));
 					}
 					else
 					{
 						for(i = 0; i < tnodes; i++)
 						{
-							topo_pass[i] = topo_solve_refine[i] * scal->length_fs;
+							topo_pass[i] = topo_solve_refine[i] * scalfs->length_fs;
 						}
 					}
 
 					if(FSLib->extendedX == 1)
 					{
-						PetscCall(Extended2D(FSLib, vy_alloc, vy_solve, NULL, NULL, 0, PETSC_TRUE));
+						PetscCall(Extended2D(FSLib, vy_alloc, vy_solve, NULL, 0, PETSC_TRUE));
 						std::fill(vx_solve, vx_solve + tnodes, 0);
 					}
 					else
 					{
-						PetscCall(Extended2D(FSLib, vx_alloc, vx_solve, NULL, NULL, 0, PETSC_TRUE));
+						PetscCall(Extended2D(FSLib, vx_alloc, vx_solve, NULL, 0, PETSC_TRUE));
 						std::fill(vy_solve, vy_solve + tnodes, 0);
 					}
 
-					PetscCall(Extended2D(FSLib, vz_alloc, vz_solve, NULL, NULL, 0, PETSC_TRUE));
+					PetscCall(Extended2D(FSLib, vz_alloc, vz_solve, NULL, 0, PETSC_TRUE));
 
-					PetscCall(BilinearInterpolate(FSLib, vx_solve, vx_solve_refine, vx_pass, scal, 2, FSLib->etRefineXNodes, FSLib->etRefineYNodes));
-					PetscCall(BilinearInterpolate(FSLib, vy_solve, vy_solve_refine, vy_pass, scal, 2, FSLib->etRefineXNodes, FSLib->etRefineYNodes));
-					PetscCall(BilinearInterpolate(FSLib, vz_solve, vz_solve_refine, vz_pass, scal, 2, FSLib->etRefineXNodes, FSLib->etRefineYNodes));
+					PetscCall(BilinearInterpolate(FSLib, vx_solve, vx_solve_refine, vx_pass, 2, FSLib->etRefineXNodes, FSLib->etRefineYNodes));
+					PetscCall(BilinearInterpolate(FSLib, vy_solve, vy_solve_refine, vy_pass, 2, FSLib->etRefineXNodes, FSLib->etRefineYNodes));
+					PetscCall(BilinearInterpolate(FSLib, vz_solve, vz_solve_refine, vz_pass, 2, FSLib->etRefineXNodes, FSLib->etRefineYNodes));
 
 					PetscCall(VecRestoreArray(FSLib->gtopo_et_refine, &topo_solve_refine));
 					PetscCall(VecRestoreArray(FSLib->vx_et_refine, &vx_solve_refine));
@@ -1758,13 +1784,13 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
 					// topography, advect in FastScape, Advect1D: advect in x or y direction, FastScape: advect in z direction
 					if(step_fs == 0)
 					{
-						PetscCall(Extended2D(FSLib, topo_alloc, topo_solve, topo_pass, scal, 1, PETSC_FALSE));
+						PetscCall(Extended2D(FSLib, topo_alloc, topo_solve, topo_pass, 1, PETSC_FALSE));
 					}
 					else
 					{
 						for(i = 0; i < tnodes; i++)
 						{
-							topo_pass[i] = topo_solve[i] * scal->length_fs;
+							topo_pass[i] = topo_solve[i] * scalfs->length_fs;
 						}
 					}
 
@@ -1772,16 +1798,16 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
 					// vx, vy
 					if(FSLib->extendedX == 1)
 					{
-						PetscCall(Extended2D(FSLib, vy_alloc, vy_solve, vy_pass, scal, 2, PETSC_FALSE));
+						PetscCall(Extended2D(FSLib, vy_alloc, vy_solve, vy_pass, 2, PETSC_FALSE));
 						std::fill(vx_pass, vx_pass + tnodes, 0);
 					}
 					else
 					{
-						PetscCall(Extended2D(FSLib, vx_alloc, vx_solve, vx_pass, scal, 2, PETSC_FALSE));
+						PetscCall(Extended2D(FSLib, vx_alloc, vx_solve, vx_pass, 2, PETSC_FALSE));
 						std::fill(vy_pass, vy_pass + tnodes, 0);
 					}
 					// vz
-					PetscCall(Extended2D(FSLib, vz_alloc, vz_solve, vz_pass, scal, 2, PETSC_FALSE));
+					PetscCall(Extended2D(FSLib, vz_alloc, vz_solve, vz_pass, 2, PETSC_FALSE));
 				}
 				// apply refinement
 				else
@@ -1794,34 +1820,34 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
 
 					if(step_fs == 0)
 					{
-						PetscCall(Extended2D(FSLib, topo_alloc, topo_solve, NULL, NULL, 0, PETSC_TRUE));
-						PetscCall(BilinearInterpolate(FSLib, topo_solve, topo_solve_refine, topo_pass, scal, 1, FSLib->etRefineXNodes, FSLib->etRefineYNodes));
+						PetscCall(Extended2D(FSLib, topo_alloc, topo_solve, NULL, 0, PETSC_TRUE));
+						PetscCall(BilinearInterpolate(FSLib, topo_solve, topo_solve_refine, topo_pass, 1, FSLib->etRefineXNodes, FSLib->etRefineYNodes));
 					}
 					else
 					{
 						for(i = 0; i < tnodes; i++)
 						{
-							topo_pass[i] = topo_solve_refine[i] * scal->length_fs;
+							topo_pass[i] = topo_solve_refine[i] * scalfs->length_fs;
 
 						}
 					}
 
 					if(FSLib->extendedX == 1)
 					{
-						PetscCall(Extended2D(FSLib, vy_alloc, vy_solve, NULL, NULL, 0, PETSC_TRUE));
+						PetscCall(Extended2D(FSLib, vy_alloc, vy_solve, NULL, 0, PETSC_TRUE));
 						std::fill(vx_solve, vx_solve + tnodes, 0);
 					}
 					else
 					{
-						PetscCall(Extended2D(FSLib, vx_alloc, vx_solve, NULL, NULL, 0, PETSC_TRUE));
+						PetscCall(Extended2D(FSLib, vx_alloc, vx_solve, NULL, 0, PETSC_TRUE));
 						std::fill(vy_solve, vy_solve + tnodes, 0);
 					}
 
-					PetscCall(Extended2D(FSLib, vz_alloc, vz_solve, NULL, NULL, 0, PETSC_TRUE));
+					PetscCall(Extended2D(FSLib, vz_alloc, vz_solve, NULL, 0, PETSC_TRUE));
 
-					PetscCall(BilinearInterpolate(FSLib, vx_solve, vx_solve_refine, vx_pass, scal, 2, FSLib->etRefineXNodes, FSLib->etRefineYNodes));
-					PetscCall(BilinearInterpolate(FSLib, vy_solve, vy_solve_refine, vy_pass, scal, 2, FSLib->etRefineXNodes, FSLib->etRefineYNodes));
-					PetscCall(BilinearInterpolate(FSLib, vz_solve, vz_solve_refine, vz_pass, scal, 2, FSLib->etRefineXNodes, FSLib->etRefineYNodes));
+					PetscCall(BilinearInterpolate(FSLib, vx_solve, vx_solve_refine, vx_pass, 2, FSLib->etRefineXNodes, FSLib->etRefineYNodes));
+					PetscCall(BilinearInterpolate(FSLib, vy_solve, vy_solve_refine, vy_pass, 2, FSLib->etRefineXNodes, FSLib->etRefineYNodes));
+					PetscCall(BilinearInterpolate(FSLib, vz_solve, vz_solve_refine, vz_pass, 2, FSLib->etRefineXNodes, FSLib->etRefineYNodes));
 
 					PetscCall(VecRestoreArray(FSLib->gtopo_et_refine, &topo_solve_refine));
 					PetscCall(VecRestoreArray(FSLib->vx_et_refine, &vx_solve_refine));
@@ -1904,9 +1930,9 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
 PetscErrorCode PassValue2D(FastScapeLib *FSLib, PetscScalar *topo_pass_f, PetscScalar *topo_fs)
 {
 	// initialize
-	FSGrid  *fsX = &FSLib->fsX;
-	FSGrid  *fsY = &FSLib->fsY;
-	Scaling *scal = FSLib->scal;
+	FSGrid    *fsX    = &FSLib->fsX;
+	FSGrid    *fsY    = &FSLib->fsY;
+	ScalingFS *scalfs = &FSLib->scalfs;
 	PetscScalar *topo_extend, *topo_aver, *topo_aver_ori, *topo_et_refine;
 	PetscInt mainNodes, secNodes, laMEMNodes, i, j, ind, ind2, idx, sec, n, nn, countY = 0, countX = 0;
 	PetscScalar sum, coord, begin, delta, coord0, coord1;
@@ -1916,7 +1942,7 @@ PetscErrorCode PassValue2D(FastScapeLib *FSLib, PetscScalar *topo_pass_f, PetscS
 	// scaling function
 	auto convertValue = [&](PetscScalar value) -> PetscScalar
 	{
-		PetscScalar converted = value / scal->length_fs;
+		PetscScalar converted = value / scalfs->length_fs;
 		if (converted > FSLib->rangeZ_end) return FSLib->rangeZ_end;
 		if (converted < FSLib->rangeZ_begin) return FSLib->rangeZ_begin;
 		return converted;
@@ -2035,9 +2061,9 @@ PetscErrorCode PassValue2D(FastScapeLib *FSLib, PetscScalar *topo_pass_f, PetscS
 //---------------------------------------------------------------------------
 PetscErrorCode PassValue3D(FastScapeLib *FSLib, PetscScalar *topo_pass_f, PetscScalar *topo_fs)
 {
-	FSGrid  *fsX;
-	FSGrid  *fsY;
-	Scaling *scal;
+	FSGrid    *fsX;
+	FSGrid    *fsY;
+	ScalingFS *scalfs;
 	PetscInt m, n, mm, nn, ind_a, ind_b, ind_c, ind_d, refine, i, j, ind, ind2, countX = 0, countY = 0;
 	PetscScalar dx, dy, wtx, wty, x_coor, y_coor, x_begin = 0.0, y_begin = 0.0;
 	PetscScalar *topo_refine = nullptr, *topo_nug = nullptr;
@@ -2046,13 +2072,13 @@ PetscErrorCode PassValue3D(FastScapeLib *FSLib, PetscScalar *topo_pass_f, PetscS
 
 	fsX     = &FSLib->fsX;
 	fsY     = &FSLib->fsY;
-	scal    = FSLib->scal;
-	refine  = FSLib->refine;
+	scalfs  = &FSLib->scalfs;
+	refine  =  FSLib->refine;
 
 	// for scaling
 	auto convertValue = [&](PetscScalar value) -> PetscScalar
 	{
-		PetscScalar converted = value / scal->length_fs;
+		PetscScalar converted = value / scalfs->length_fs;
 		if (FSLib->rangeZ_end < converted) return FSLib->rangeZ_end;
 		if (FSLib->rangeZ_begin > converted) return FSLib->rangeZ_begin;
 		return converted;
@@ -2231,9 +2257,8 @@ PetscErrorCode PVSurfWriteVTSFS(FastScapeLib *FSLib, const char *dirName, PetscS
 {
 	FILE      *fp;
 	Scaling   *scal;
-	FreeSurf  *surf;
+	ScalingFS *scalfs;
 	size_t    offset = 0;
-	PVSurf    *pvsurf;
 
 	PetscFunctionBeginUser;
 
@@ -2243,9 +2268,8 @@ PetscErrorCode PVSurfWriteVTSFS(FastScapeLib *FSLib, const char *dirName, PetscS
 	PetscScalar *curvature = nullptr, *chi = nullptr, *catchment = nullptr, *lake_depth = nullptr;
 
 	// access context
-	pvsurf  = FSLib->pvsurf;
-	surf    = pvsurf->surf;
-	scal    = surf->jr->scal;
+	scal    =  FSLib->scal;
+	scalfs  = &FSLib->scalfs;
 
 	// only processor 0 run the code
 	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
@@ -2263,7 +2287,7 @@ PetscErrorCode PVSurfWriteVTSFS(FastScapeLib *FSLib, const char *dirName, PetscS
 	// create file name
 	PetscCall(PetscSNPrintf(fname, sizeof(fname), "%s/%s_p0.vts", dirName, FSLib->outfile_fs));
 
-	// 打开文件
+	// open file
 	fp = fopen(fname, "wb");
 	if (fp == NULL)     SETERRQ(PETSC_COMM_SELF, PETSC_ERR_FILE_OPEN, "Failed to open file %s", fname);
 
@@ -2297,15 +2321,15 @@ PetscErrorCode PVSurfWriteVTSFS(FastScapeLib *FSLib, const char *dirName, PetscS
 	OutputField fields[] =
 	{
 		{&FSLib->out_topofs, "topoFs", scal->lbl_length},
-		{&FSLib->out_silt_fraction, "silt_fraction", scal->lbl_unit},
+		{&FSLib->out_silt_fraction, "silt_fraction", scalfs->lbl_fraction},
 		{&FSLib->out_basement, "basement", scal->lbl_length},
 		{&FSLib->out_total_erosion, "total_erosion", scal->lbl_length},
-		{&FSLib->out_drainage_area, "drainage_area", scal->lbl_area_fs},
-		{&FSLib->out_erosion_rate, "erosion_rate", scal->lbl_rate},
-		{&FSLib->out_slope, "slope", scal->lbl_degree},
+		{&FSLib->out_drainage_area, "drainage_area", scalfs->lbl_area_fs},
+		{&FSLib->out_erosion_rate, "erosion_rate", scalfs->lbl_rate},
+		{&FSLib->out_slope, "slope", scalfs->lbl_degree},
 		{&FSLib->out_curvature, "curvature", scal->lbl_unit},
 		{&FSLib->out_chi, "chi", scal->lbl_length},
-		{&FSLib->out_catchment, "catchment", scal->lbl_area_fs},
+		{&FSLib->out_catchment, "catchment", scalfs->lbl_area_fs},
 		{&FSLib->out_lake_depth, "lake_depth", scal->lbl_length}
 	};
 
@@ -2422,11 +2446,10 @@ PetscErrorCode PVSurfWriteVTSFS(FastScapeLib *FSLib, const char *dirName, PetscS
 //---------------------------------------------------------------------------
 PetscErrorCode PVSurfWriteCoordFS(FastScapeLib *FSLib, FILE *fp, PetscScalar *topo, PetscInt mode)
 {
-	float       *buff;
-	PetscInt    i, j, ind, cn, nx, ny;
-	FSGrid  *fsX;
-	FSGrid  *fsY;
-
+	float    *buff;
+	PetscInt  i, j, ind, cn, nx, ny;
+	FSGrid   *fsX;
+	FSGrid   *fsY;
 	PetscFunctionBeginUser;
 
 	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
@@ -2435,7 +2458,7 @@ PetscErrorCode PVSurfWriteCoordFS(FastScapeLib *FSLib, FILE *fp, PetscScalar *to
 	fsY = &FSLib->fsY;
 
 	// initialize
-	buff   = FSLib->buff_fs;
+	buff = FSLib->buff_fs;
 
 	nx = FSLib->nx_solve;
 	ny = FSLib->ny_solve;
@@ -2478,16 +2501,16 @@ PetscErrorCode PVSurfWriteCoordFS(FastScapeLib *FSLib, FILE *fp, PetscScalar *to
 //---------------------------------------------------------------------------
 PetscErrorCode PVSurfWriteInfFS(FastScapeLib *FSLib, FILE *fp, PetscScalar *Inf, PetscInt InfMode)
 {
-	float    *buff;
-	PetscInt ind, cn, nx, ny;
-	Scaling  *scal;
+	float      *buff;
+	PetscInt   ind, cn, nx, ny;
+	ScalingFS  *scalfs;
 
 	PetscFunctionBeginUser;
 
-	scal = FSLib->scal;
+	scalfs = &FSLib->scalfs;
 
 	// initialize
-	buff   = FSLib->buff_fs;
+	buff = FSLib->buff_fs;
 
 	nx = FSLib->nx_solve;
 	ny = FSLib->ny_solve;
@@ -2513,11 +2536,11 @@ PetscErrorCode PVSurfWriteInfFS(FastScapeLib *FSLib, FILE *fp, PetscScalar *Inf,
 			case 6:  // erosion
 			case 9:  // chi
 			case 11: // lake_depth
-				buff[cn++] = (float)(Inf[ind] / scal->length_fs);
+				buff[cn++] = (float)(Inf[ind] / scalfs->length_fs);
 				break;
 			case 5:  // drainage_area
 			case 10: // catchment
-				buff[cn++] = (float)(Inf[ind] / scal->area_fs);
+				buff[cn++] = (float)(Inf[ind] / scalfs->area_fs);
 				break;
 			}
 		}

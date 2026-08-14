@@ -250,9 +250,6 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 		sprintf(scal->lbl_gas_constant,      "[J/mol/K]");
 	}
 
-#ifdef WITH_FASTSCAPE
-	PetscCall(ScalingFastScapeCreate(scal));
-#endif
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

@@ -57,16 +57,22 @@ struct FSGrid
 	PetscScalar *ncoor_refine;
 };
 //---------------------------------------------------------------------------
-struct FSScaling
+// standalone scaling object for FastScape
+// converts between LaMEM's internal (non-dimensional) units and the
+// dimensional units FastScape itself expects/reports (SI or geological)
+// completely independent of LaMEM's own Scaling object
+struct ScalingFS
 {
-	// units in FastScape
-	PetscScalar time_fs;
-	PetscScalar length_fs;
-	PetscScalar velocity_fs;
-	PetscScalar area_fs;
-	PetscScalar rate;
-	PetscScalar fraction;
-	PetscScalar degree;
+	// units used internally by FastScape
+	PetscScalar time_fs;     // s (LaMEM) -> yr (FastScape)
+	PetscScalar length_fs;   // m (LaMEM) -> m  (FastScape)
+	PetscScalar velocity_fs; // m/s (LaMEM) -> m/yr (FastScape)
+
+	// units used for FastScape output
+	PetscScalar area_fs;     // m^2 -> m^2 (SI) or km^2 (GEO)
+	PetscScalar rate;        // m/yr -> m/yr (SI) or km/yr (GEO)
+	PetscScalar fraction;    // dimensionless (e.g. silt fraction)
+	PetscScalar degree;      // slope angle, degrees
 
 	char lbl_time_fs          [_lbl_sz_];
 	char lbl_length_fs        [_lbl_sz_];
@@ -79,11 +85,11 @@ struct FSScaling
 //---------------------------------------------------------------------------
 struct FastScapeLib
 {
-	FreeSurf *surf;
-	PVSurf   *pvsurf;
-	JacRes   *jr;
-	Scaling  *scal;
-	ProcInfo *proc_info;
+	FreeSurf  *surf;
+	PVSurf    *pvsurf;
+	JacRes    *jr;
+	Scaling   *scal;    // LaMEM scaling (length, time, velocity, ...)
+	ScalingFS  scalfs;  // standalone FastScape scaling (length_fs, time_fs, velocity_fs, ...)
 
 	// restart mode
 	PetscInt restart;
@@ -203,14 +209,14 @@ struct FastScapeLib
 	PetscInt   out_lake_depth;
 };
 //---------------------------------------------------------------------------
-PetscErrorCode FastScapeCreate(FastScapeLib*, FB*);
+PetscErrorCode FastScapeCreate       (FastScapeLib*, FB*);
+PetscErrorCode FastScapeCreateScaling(FastScapeLib*);
 PetscErrorCode FastScapeCreateData(FastScapeLib*);
 PetscErrorCode FastScapeLoadGridInf(FastScapeLib*);
 PetscErrorCode FastScapeCopyMeshSeg1D(FastScapeLib*, MeshSeg1D*, const char*);
 PetscErrorCode FSLoadNonUniformGrid(MeshSeg1DFS*, PetscScalar, Scaling*);
 void           GenerateGridCoordinates(PetscScalar*, PetscInt, PetscScalar, PetscScalar);
 PetscErrorCode FastScapeCreateSurfaceGrid(FastScapeLib*, PetscInt);
-PetscErrorCode ScalingFastScapeCreate(Scaling*);
 PetscErrorCode PVSurfFastScapeCreate(FastScapeLib*, FB*);
 PetscErrorCode FastScapeCopyVelocity(FastScapeLib*);
 PetscErrorCode FastScapeCreateGlobalGrid(PetscScalar*, MeshSeg1DFS, PetscInt, Scaling*);
@@ -219,8 +225,8 @@ PetscScalar    ReturnBiInterFunction(PetscScalar, PetscScalar, PetscScalar, Pets
 PetscErrorCode InterpolationFor3DNonUniformGrid(FastScapeLib*, PetscScalar*, PetscInt);
 PetscErrorCode InterpolationFor2DNonUniformGrid(FastScapeLib*, PetscScalar*, PetscScalar*);
 PetscErrorCode GatherVariableFromLaMEM(FastScapeLib*, PetscScalar*, PetscScalar*, PetscScalar*, PetscScalar*, PetscInt);
-PetscErrorCode BilinearInterpolate(FastScapeLib*, PetscScalar*, PetscScalar*, PetscScalar*, Scaling*, PetscInt, PetscInt, PetscInt);
-PetscErrorCode Extended2D(FastScapeLib*, PetscScalar*, PetscScalar*, PetscScalar*, Scaling*, PetscInt, PetscInt, PetscInt);
+PetscErrorCode BilinearInterpolate(FastScapeLib*, PetscScalar*, PetscScalar*, PetscScalar*, PetscInt, PetscInt, PetscInt);
+PetscErrorCode Extended2D(FastScapeLib*, PetscScalar*, PetscScalar*, PetscScalar*, PetscInt, PetscBool);
 PetscErrorCode FastScapeRun(FastScapeLib*);
 PetscErrorCode PassValue2D(FastScapeLib*, PetscScalar*, PetscScalar*);
 PetscErrorCode PassValue3D(FastScapeLib*, PetscScalar*, PetscScalar*);
