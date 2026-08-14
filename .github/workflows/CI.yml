@@ -32,12 +32,6 @@ jobs:
         set -e
         uname -a
         sudo -E apt-get update
-        # NOTE: the formatting checks require astyle 3.1 (what Ubuntu 22.04/24.04
-        # ship). Different astyle versions format the code differently, so
-        # 'make checkformat' verifies the version explicitly and fails with a
-        # clear message if it ever changes (see ASTYLE_VERSION in src/Makefile).
-        sudo -E apt-get -yq --no-install-suggests --no-install-recommends install make astyle ${{ matrix.ci.packages }}
-        astyle --version
         sudo -E apt-get -yq --no-install-suggests --no-install-recommends install make astyle ${{ matrix.ci.packages }}
         # Now create workspace directories, to later copy the pre-compiled PETSC libraries there
         sudo -E mkdir /workspace
@@ -91,20 +85,6 @@ jobs:
         sudo -E mv -f deb deb64
         cd ..
 
-    - name: 'Compile LaMEM | Int64 + FastScape'
-      run: |
-        # cleanup stale objects from the previous (non-FastScape) build so the
-        # -DWITH_FASTSCAPE flag actually takes effect (make only tracks the
-        # Makefile's mtime, not compiler flags, so it won't recompile otherwise)
-        rm -rf lib/opt/*
-        rm -rf dep/opt/*
-        cd test
-        julia --project=. compile_lamem.jl int64 fastscape
-        pwd
-        cd ../bin
-        sudo -E mv -f opt opt64fs
-        cd ..
-
     - name: 'Test LaMEM | Int32'
       run: |
         cd bin
@@ -119,21 +99,13 @@ jobs:
         # rename directories
         sudo -E rm -rf opt
         sudo -E rm -rf deb
-
+        
         sudo -E cp -r opt64 opt
         sudo -E cp -r deb64 deb
-
+        
         cd ..
-        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit
-
-    - name: 'Test LaMEM | Int64 + FastScape'
-      run: |
-        cd bin
-        sudo -E rm -rf opt
-        sudo -E cp -r opt64fs opt
-        cd ..
-        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit 37
-
+        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit 
+        
   build_docs:
     runs-on: ubuntu-latest
     steps:

@@ -8,8 +8,6 @@ cd("../src")
 is64bit  = any(contains.(ARGS, "int64"))
 do_check = any(contains.(ARGS, "check"))
 
-with_fastscape = any(contains.(ARGS, "fastscape"))
-
 # Take the environment (dynamic libraries etc.) from the PETSc
 if is64bit
     println("Using PETSc that has 64bit integers")
@@ -26,9 +24,7 @@ else
                 )
 end
 
-if with_fastscape
-    cmd = addenv(cmd, "FASTSCAPE_LIB"=>"/workspace/destdir/lib/fastscape")
-end
+cmd = addenv(cmd, "FASTSCAPE_LIB"=>"/workspace/destdir/lib/fastscape")
 
 @show pkgversion(PETSc_jll)
 #@show pkgversion(MPICH_jll)
@@ -42,10 +38,12 @@ else
     println("Compiling LaMEM")
 
     println("---- Compiling LaMEM opt version ----")
-    compile_lamem = Cmd(`make mode=opt all`, env = cmd.env)
+    compile_lamem = Cmd(`make mode=opt surf=scape all`, env = cmd.env)
     run(compile_lamem)
 
     println("---- Compiling LaMEM deb version ----")
-    compile_lamem = Cmd(`make mode=deb all`, env = cmd.env)
+    compile_lamem = Cmd(`make mode=deb surf=scape all`, env = cmd.env)
     run(compile_lamem)
+
+
 end
