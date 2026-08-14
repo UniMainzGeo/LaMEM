@@ -55,6 +55,19 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "erosion_model",      &surf->ErosionModel,  1,  3));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "sediment_model",     &surf->SedimentModel, 1,  3));
 
+	//===========================================================
+	// immediate failure if FastScape is requested but not linked
+	//===========================================================
+
+#ifndef WITH_FASTSCAPE
+	if(surf->SurfMode == 2)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP,
+		        "surf_mode = 2 (FastScape) requested, but this LaMEM binary was built without FastScape support. "
+		        "Recompile with WITH_FASTSCAPE enabled, or select a different surf_mode.");
+	}
+#endif
+
 	if(surf->SurfMode == 1)
 	{
 		if(surf->ErosionModel == 2)
@@ -184,17 +197,13 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 	PetscInt       bc_node;
 	DMBoundaryType BC_TYPE_X;
 	const PetscInt *lx, *ly;
-#ifdef WITH_FASTSCAPE
 	FastScapeLib   *FSLib;
-#endif
 
 	PetscFunctionBeginUser;
 
 	// access context
-	fs = surf->jr->fs;
-#ifdef WITH_FASTSCAPE
+	fs    = surf->jr->fs;
 	FSLib = surf->FSLib;
-#endif
 
 	// set boundary type in x direction
 	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; bc_node = 1; }
@@ -226,6 +235,8 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 	//FastScape data
 #ifdef WITH_FASTSCAPE
 	PetscCall(FastScapeCreateData(FSLib));
+#else
+	UNUSED(FSLib);
 #endif
 
 	PetscFunctionReturn(0);

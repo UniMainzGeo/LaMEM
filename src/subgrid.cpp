@@ -28,7 +28,6 @@
 #include "Tensor.h"
 #include "tools.h"
 #include "phase_transition.h"
-#include "fastscape.h"
 
 //---------------------------------------------------------------------------
 PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
@@ -465,20 +464,13 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 {
 	// change marker phase when crossing free surface
 
-	Marker          *P;
+	Marker          *P, *IP;
 	FDSTAG          *fs;
 	FreeSurf        *surf;
 	Vec             vphase;
-	PetscInt        sx, sy, nx, ny;
-	PetscInt        jj, ID, I, J, K, L, AirPhase;
-	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp;
-	// used by the nearest-rock-marker search of the numerical sedimentation
-	// model; needed regardless of build configuration, since SurfMode is a
-	// runtime setting (FastScape support being compiled in doesn't imply
-	// FastScape is actually driving the free surface at runtime)
-	Marker          *IP;
-	PetscInt        sz, ii, phaseID, nmark, *markind, markid;
-	PetscScalar     *X, *IX;
+	PetscInt        sx, sy, sz, nx, ny;
+	PetscInt        ii, jj, ID, I, J, K, L, AirPhase, phaseID, nmark, *markind, markid;
+	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp, *X, *IX;
 	spair           d;
 	vector <spair>  dist;
 
@@ -496,12 +488,11 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 	// starting indices & number of cells
 	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
 	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+	sz = fs->dsz.pstart;
 
 	// grid coordinates
 	ncx = fs->dsx.ncoor;
 	ncy = fs->dsy.ncoor;
-
-	sz = fs->dsz.pstart;
 
 	// reserve marker distance buffer
 	dist.reserve(_mark_buff_sz_);
@@ -550,15 +541,13 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 		// check whether air marker is below the free surface
 		if(P->phase == AirPhase && zp < topo)
 		{
-			// NOTE: SurfMode is a runtime setting - FastScape support being
-			// compiled in does not mean FastScape is actually driving the
-			// free surface for this particular run, so the branch below
-			// must be chosen at runtime, not via #ifdef WITH_FASTSCAPE
+			// FASTSCAPE
 			if(surf->SurfMode == 2)
 			{
 				// sedimentation (FastScape) -> air turns into a prescribed rock
 				P->phase = surf->phase;
 			}
+			// STANDARD MODEL
 			else if(surf->SedimentModel > 0)
 			{
 				// sedimentation (physical) -> air turns into a prescribed rock

@@ -1,12 +1,13 @@
 #ifndef _FASTSCAPELIB_H_
 #define _FASTSCAPELIB_H_
-
+//---------------------------------------------------------------------------
 #define NO_NEED -1
 #define MAX_LABEL_LEN 200
-
+//---------------------------------------------------------------------------
 #include "paraViewOutSurf.h"
-
+//---------------------------------------------------------------------------
 struct JacRes;
+//---------------------------------------------------------------------------
 // for gather information
 struct  ProcInfo
 {
@@ -14,6 +15,7 @@ struct  ProcInfo
 	PetscInt nx, ny, nz;
 	PetscMPIInt rankZ_id;
 };
+//---------------------------------------------------------------------------
 // for interploation
 struct GridIndex
 {
@@ -23,6 +25,7 @@ struct GridIndex
 	PetscInt nn;
 	bool found;
 };
+//---------------------------------------------------------------------------
 struct MeshSeg1DFS
 {
 	PetscInt    nsegs;                    // number of segments
@@ -40,6 +43,7 @@ struct MeshSeg1DFS
 	PetscScalar max_spacing;
 
 };
+//---------------------------------------------------------------------------
 struct FSGrid
 {
 	PetscInt nodes;
@@ -52,7 +56,27 @@ struct FSGrid
 	PetscScalar *ncoor_extend;
 	PetscScalar *ncoor_refine;
 };
+//---------------------------------------------------------------------------
+struct FSScaling
+{
+	// units in FastScape
+	PetscScalar time_fs;
+	PetscScalar length_fs;
+	PetscScalar velocity_fs;
+	PetscScalar area_fs;
+	PetscScalar rate;
+	PetscScalar fraction;
+	PetscScalar degree;
 
+	char lbl_time_fs          [_lbl_sz_];
+	char lbl_length_fs        [_lbl_sz_];
+	char lbl_velocity_fs      [_lbl_sz_];
+	char lbl_area_fs          [_lbl_sz_];
+	char lbl_rate             [_lbl_sz_];
+	char lbl_fraction         [_lbl_sz_];
+	char lbl_degree           [_lbl_sz_];
+};
+//---------------------------------------------------------------------------
 struct FastScapeLib
 {
 	FreeSurf *surf;
@@ -151,7 +175,6 @@ struct FastScapeLib
 	PetscScalar kds_silt; // marine transport coefficient (diffusivity) for silt in meters squared per year
 	PetscScalar kds_sand; // marine transport coefficient (diffusivity) for sand in meters squared per year
 
-
 	// output parameter
 	PetscInt    surf_out_nstep;
 	PetscScalar vec_times;
@@ -179,7 +202,7 @@ struct FastScapeLib
 	PetscInt   out_catchment;
 	PetscInt   out_lake_depth;
 };
-
+//---------------------------------------------------------------------------
 PetscErrorCode FastScapeCreate(FastScapeLib*, FB*);
 PetscErrorCode FastScapeCreateData(FastScapeLib*);
 PetscErrorCode FastScapeLoadGridInf(FastScapeLib*);
@@ -212,20 +235,19 @@ PetscErrorCode FastScapeFortranCppAdvc(FastScapeLib*, PetscScalar, PetscScalar, 
 PetscErrorCode FastScapeReadRestart(FastScapeLib*, FILE*);
 PetscErrorCode FastScapeWriteRestart(FastScapeLib*, FILE*);
 PetscErrorCode FastScapeDestroy(FastScapeLib*);
-
+//---------------------------------------------------------------------------
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-/*
-Define FastScape functions as C functions. Must use the exact same function/variable name
-and type as used in FastScape. All function names must be made lowercase, and an
-underscore added at the end. Types must be defined as pointers, and sent to
-FastScape as a reference. Additional functions are available within FastScape,
-see https://fastscape.org/fastscapelib-fortran/ for a list of all functions and
-their input parameters. These functions must be defined at the top here before
-they are used.
-*/
+
+// Define FastScape functions as C functions. Must use the exact same function/variable name
+// and type as used in FastScape. All function names must be made lowercase, and an
+// underscore added at the end. Types must be defined as pointers, and sent to
+// FastScape as a reference. Additional functions are available within FastScape,
+// see https://fastscape.org/fastscapelib-fortran/ for a list of all functions and
+// their input parameters. These functions must be defined at the top here before
+// they are used.
 
 // Function to initialize FastScape.
 void fastscape_init_();
@@ -292,12 +314,11 @@ void fastscape_get_step_(int *sstep);
 // Set FastScape topography. This can be set between timesteps.
 void fastscape_set_h_(double *hp);
 
-/*
-Set FastScape basement. This can be set between timesteps. Sediment within FastScape
-is considered as the difference between the topography and basement, though this may differ
-from sediment as seen in LaMEM because the FastScape basement only takes the surface
-velocities into consideration.
-*/
+// Set FastScape basement. This can be set between timesteps. Sediment within FastScape
+// is considered as the difference between the topography and basement, though this may differ
+// from sediment as seen in LaMEM because the FastScape basement only takes the surface
+// velocities into consideration.
+
 void fastscape_set_basement_(double *b);
 
 // increment (or uplift) the topography h, the basement height b and the stratigraphic horizons
@@ -352,12 +373,11 @@ void fastscape_copy_lake_depth_(double *Lp);
 // Extract from the model the model dimensions.
 void fastscape_get_sizes_(int *nnx, int *nny);
 
-/*
-Extract three fluxes from the model at the current time step: the tectonic flux which is the integral
-over the model of the uplift/subsidence function, the erosion flux which is the integral over the model
-of the erosion/deposition rate and the boundary flux which is the integral of sedimentary flux across
-the four boundaries (all in m3/yr)Extract from the model the model dimensions.
-*/
+// Extract three fluxes from the model at the current time step: the tectonic flux which is the integral
+// over the model of the uplift/subsidence function, the erosion flux which is the integral over the model
+// of the erosion/deposition rate and the boundary flux which is the integral of sedimentary flux across
+// the four boundaries (all in m3/yr)Extract from the model the model dimensions.
+
 void fastscape_get_fluxes_(double *ttectonic_flux,
                            double *eerosion_flux,
                            double *bboundary_flux);
@@ -385,3 +405,5 @@ void fastscape_strati_(const int *nstepp,
 #endif
 
 #endif
+//---------------------------------------------------------------------------
+

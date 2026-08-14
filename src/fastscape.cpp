@@ -3,11 +3,10 @@
 #include <random>
 #include <functional>
 #include <algorithm>
-
 #include <stdio.h>
 #include <string.h>
 
-// LaMEM header file
+// LaMEM header files
 #include "LaMEM.h"
 #include "surf.h"
 #include "interpolate.h"

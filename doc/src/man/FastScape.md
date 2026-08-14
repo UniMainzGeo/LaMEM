@@ -43,7 +43,7 @@ This defines `-DWITH_FASTSCAPE` and links against `libfastscapelib_fortran`. You
 which prints either `FASTSCAPE_ENABLED` or `FASTSCAPE_DISABLED`.
 
 !!! note
-    A binary compiled *without* FastScape support will silently fall back to the built-in surface processes if you set `surf_mode = 2`, rather than reporting an error. If you are unsure which binary you are using, check it with `-fastscape_info`.
+    If you run a binary compiled *without* FastScape support with `surf_mode = 2` in the input file, LaMEM will immediately stop with an error asking you to either recompile with FastScape support or choose a different `surf_mode`. If you are unsure which binary you are using, check it with `-fastscape_info`.
 
 ## Activating FastScape in the input file
 
@@ -129,8 +129,11 @@ Which fields end up in the FastScape output is controlled by the `out_surf_*` fl
 **The build cannot find FastScape.**
 Check that `FASTSCAPE_LIB` is set and visible in the current shell (`echo $FASTSCAPE_LIB`), and that it points to the directory that actually contains `libfastscapelib_fortran`. Also confirm that PETSc, FastScape and LaMEM were built with compatible compilers and MPI installations.
 
+**LaMEM stops with an error about `surf_mode = 2` and FastScape support.**
+This means the input file requests FastScape (`surf_mode = 2`), but the binary you are running was compiled without it. Either recompile with `surf=scape` (see [Compiling LaMEM with FastScape](#compiling-lamem-with-fastscape)), or use a binary that has FastScape support. You can check any given binary with `LaMEM -fastscape_info`.
+
 **FastScape does not seem to do anything.**
-Verify that `surf_use = 1` and `surf_mode = 2`, and that the binary really has FastScape support (`LaMEM -fastscape_info`). A binary built without it falls back silently to the built-in surface processes.
+Verify that `surf_use = 1` and `surf_mode = 2`, and that the binary really has FastScape support (`LaMEM -fastscape_info`). If `surf_mode = 2` were requested with a binary that lacks FastScape support, LaMEM would already have stopped at startup with an explicit error, so if the run completes without that error, FastScape is genuinely active — double check the FastScape-specific output flags (`out_surf_fs`, `out_surf_topofs`, etc.) rather than the coupling itself.
 
 **Sediment disappears through the boundaries.**
 Review `topo_boundary`: open boundaries permit sediment discharge out of the domain.

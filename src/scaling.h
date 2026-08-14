@@ -147,6 +147,7 @@ struct Scaling
 	char lbl_rate             [_lbl_sz_];
 	char lbl_fraction         [_lbl_sz_];
 	char lbl_degree           [_lbl_sz_];
+
 };
 //---------------------------------------------------------------------------
 // scaling routines
