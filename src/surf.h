@@ -19,6 +19,7 @@ struct FB;
 struct InterpFlags;
 struct FDSTAG;
 struct JacRes;
+struct FastScapeLib;
 
 //---------------------------------------------------------------------------
 
@@ -26,11 +27,13 @@ struct JacRes;
 
 struct FreeSurf
 {
-	JacRes *jr;             // global residual context
-	DM      DA_SURF;        // free surface grid
-	Vec     ltopo, gtopo;   // topography vectors                (local and global)
-	Vec     vx, vy, vz;     // velocity vectors                  (local)
-	Vec     vpatch, vmerge; // patch and merged velocity vectors (global)
+	FastScapeLib *FSLib; // FastScape library
+	JacRes       *jr;    // global residual context
+
+	DM  DA_SURF;        // free surface grid
+	Vec ltopo, gtopo;   // topography vectors                (local and global)
+	Vec vx, vy, vz;     // velocity vectors                  (local)
+	Vec vpatch, vmerge; // patch and merged velocity vectors (global)
 
 	// flags/parameters
 	PetscInt    UseFreeSurf; // free surface activation flag
@@ -38,6 +41,7 @@ struct FreeSurf
 	PetscScalar InitLevel;   // initial level
 	PetscInt    AirPhase;    // air phase number
 	PetscScalar MaxAngle;    // maximum angle with horizon (smoothed if larger)
+	PetscInt    SurfMode;    // [0-none, 1-original code, 2-FastScape...]
 
 	// erosion/sedimentation parameters
 	PetscInt    ErosionModel;               // [0-none, 1-infinitely fast, 2-prescribed rate...]

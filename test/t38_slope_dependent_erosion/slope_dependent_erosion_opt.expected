@@ -37,7 +37,7 @@ Total number of options added: 0
 #End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Aug 13 2026 - Time: 15:02:28 	    
+     Compiled: Date: Aug 14 2026 - Time: 18:23:55 	    
      Version : 3.1.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -95,7 +95,7 @@ Free surface parameters:
    Slope-dependent erosion   : active (E = 0.05 [m/yr] * slope^2.)
    Topographic diffusion     : none
 --------------------------------------------------------------------------
-Loading topography redundantly from file(s) <t37_topo.bin> ... done (0.000179417 sec)
+Loading topography redundantly from file(s) <t38_topo.bin> ... done (0.000187924 sec)
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
@@ -122,7 +122,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 1 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00195368 sec)
+Reading geometric primitives ... done (0.0019137 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : output 
@@ -163,7 +163,7 @@ Preconditioner parameters:
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 0.283279 (sec)
+SNES solution time      : 0.284382 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -172,7 +172,7 @@ Residual summary:
    Momentum: 
       |mRes|_2  = 1.279641928468e-11 
 --------------------------------------------------------------------------
-Saving output ... done (0.00250819 sec)
+Saving output ... done (0.00244794 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -193,7 +193,7 @@ Tentative time step : 0.00200000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 0.20627 (sec)
+SNES solution time      : 0.203152 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -206,9 +206,9 @@ Actual time step : 0.00200 [Myr]
 --------------------------------------------------------------------------
 Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 209 markers and merged 0 markers in 4.8249e-03 s
+Marker control [0]: (subgrid) cloned 209 markers and merged 0 markers in 4.6229e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.00215051 sec)
+Saving output ... done (0.00210569 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
@@ -232,7 +232,7 @@ Tentative time step : 0.00200000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.237198 (sec)
+SNES solution time      : 0.230947 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -245,7 +245,7 @@ Actual time step : 0.00200 [Myr]
 --------------------------------------------------------------------------
 Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 196 markers and merged 0 markers in 4.8602e-03 s
+Marker control [0]: (subgrid) cloned 196 markers and merged 0 markers in 4.6802e-03 s
 --------------------------------------------------------------------------
 ================================= STEP 3 =================================
 --------------------------------------------------------------------------
@@ -267,7 +267,7 @@ Tentative time step : 0.00200000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 0.25403 (sec)
+SNES solution time      : 0.249636 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -280,7 +280,7 @@ Actual time step : 0.00200 [Myr]
 --------------------------------------------------------------------------
 Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 189 markers and merged 0 markers in 4.9084e-03 s
+Marker control [0]: (subgrid) cloned 189 markers and merged 0 markers in 4.7418e-03 s
 --------------------------------------------------------------------------
 ================================= STEP 4 =================================
 --------------------------------------------------------------------------
@@ -303,7 +303,7 @@ Tentative time step : 0.00200000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.224356 (sec)
+SNES solution time      : 0.221958 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -316,7 +316,7 @@ Actual time step : 0.00200 [Myr]
 --------------------------------------------------------------------------
 Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 204 markers and merged 0 markers in 4.9758e-03 s
+Marker control [0]: (subgrid) cloned 204 markers and merged 0 markers in 4.7993e-03 s
 --------------------------------------------------------------------------
 ================================= STEP 5 =================================
 --------------------------------------------------------------------------
@@ -338,7 +338,7 @@ Tentative time step : 0.00200000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.21548 (sec)
+SNES solution time      : 0.21291 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -351,9 +351,9 @@ Actual time step : 0.00200 [Myr]
 --------------------------------------------------------------------------
 Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 207 markers and merged 0 markers in 5.0403e-03 s
+Marker control [0]: (subgrid) cloned 207 markers and merged 0 markers in 4.8371e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.00212804 sec)
+Saving output ... done (0.00207792 sec)
 --------------------------------------------------------------------------
 ================================= STEP 6 =================================
 --------------------------------------------------------------------------
@@ -375,7 +375,7 @@ Tentative time step : 0.00200000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 0.266678 (sec)
+SNES solution time      : 0.263172 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -388,7 +388,7 @@ Actual time step : 0.00200 [Myr]
 --------------------------------------------------------------------------
 Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 220 markers and merged 0 markers in 5.1183e-03 s
+Marker control [0]: (subgrid) cloned 220 markers and merged 0 markers in 4.9130e-03 s
 --------------------------------------------------------------------------
 ================================= STEP 7 =================================
 --------------------------------------------------------------------------
@@ -410,7 +410,7 @@ Tentative time step : 0.00200000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.215074 (sec)
+SNES solution time      : 0.212419 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -423,7 +423,7 @@ Actual time step : 0.00200 [Myr]
 --------------------------------------------------------------------------
 Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 206 markers and merged 0 markers in 5.1149e-03 s
+Marker control [0]: (subgrid) cloned 206 markers and merged 0 markers in 4.9227e-03 s
 --------------------------------------------------------------------------
 ================================= STEP 8 =================================
 --------------------------------------------------------------------------
@@ -445,7 +445,7 @@ Tentative time step : 0.00200000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.267417 (sec)
+SNES solution time      : 0.261942 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -458,7 +458,7 @@ Actual time step : 0.00200 [Myr]
 --------------------------------------------------------------------------
 Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 181 markers and merged 0 markers in 5.1077e-03 s
+Marker control [0]: (subgrid) cloned 181 markers and merged 0 markers in 4.9884e-03 s
 --------------------------------------------------------------------------
 ================================= STEP 9 =================================
 --------------------------------------------------------------------------
@@ -480,7 +480,7 @@ Tentative time step : 0.00200000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.215754 (sec)
+SNES solution time      : 0.213409 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -493,7 +493,7 @@ Actual time step : 0.00200 [Myr]
 --------------------------------------------------------------------------
 Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 180 markers and merged 0 markers in 5.1391e-03 s
+Marker control [0]: (subgrid) cloned 180 markers and merged 0 markers in 5.0069e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 10 =================================
 --------------------------------------------------------------------------
@@ -515,7 +515,7 @@ Tentative time step : 0.00200000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.216309 (sec)
+SNES solution time      : 0.212505 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -528,13 +528,13 @@ Actual time step : 0.00200 [Myr]
 --------------------------------------------------------------------------
 Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 180 markers and merged 0 markers in 5.2098e-03 s
+Marker control [0]: (subgrid) cloned 180 markers and merged 0 markers in 5.0124e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.00224906 sec)
+Saving output ... done (0.00210521 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 3.55454 (sec) 
+Total solution time : 3.49907 (sec) 
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
 -bf_vs_type user # (source: code)

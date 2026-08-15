@@ -27,6 +27,21 @@ int main(int argc, char **argv)
 	// Initialize PETSC
 	PetscCall(PetscInitialize(&argc,&argv,(char *)0, help));
 
+	// report whether this binary was compiled with FastScape support & exit
+	// (used by the testing framework to skip FastScape-only tests otherwise)
+	PetscBool fastscape_info = PETSC_FALSE;
+	PetscCall(PetscOptionsHasName(NULL, NULL, "-fastscape_info", &fastscape_info));
+	if(fastscape_info)
+	{
+#ifdef WITH_FASTSCAPE
+		PetscPrintf(PETSC_COMM_WORLD, "FASTSCAPE_ENABLED\n");
+#else
+		PetscPrintf(PETSC_COMM_WORLD, "FASTSCAPE_DISABLED\n");
+#endif
+		PetscCall(PetscFinalize());
+		return 0;
+	}
+
 	// set default to be a forward run and overwrite it with input file options
 	IOparam.use = _none_;
 

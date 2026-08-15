@@ -8,7 +8,7 @@ using GeophysicalModelGenerator
 # Slope-dependent erosion (E = prefactor_slope * slope^n_slope) erodes the dome
 # flanks where the slope is largest, while the flat far field stays untouched.
 
-function t37_CreateSetup(dir, topo_file)
+function t38_CreateSetup(dir, topo_file)
 
     cur_dir = pwd()
     cd(dir)

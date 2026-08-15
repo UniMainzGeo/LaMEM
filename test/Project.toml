@@ -1,6 +1,7 @@
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+Fastscapelib_jll = "85b6c75f-dabe-5cb8-ba5f-2ccb8070923d"
 GeophysicalModelGenerator = "3700c31b-fa53-48a6-808a-ef22d5a84742"
 Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
 Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"

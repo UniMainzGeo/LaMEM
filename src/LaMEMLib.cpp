@@ -40,6 +40,7 @@
 #include "paraViewOutPassiveTracers.h"
 #include "phase_transition.h"
 #include "passive_tracer.h"
+#include "fastscape.h"
 #include "LaMEMLib.h"
 
 //---------------------------------------------------------------------------
@@ -466,6 +467,12 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->fs.scal     = &lm->scal;
 	// FreeSurf
 	lm->surf.jr     = &lm->jr;
+	lm->surf.FSLib  = &lm->FSLib;
+	// FastScape
+	lm->FSLib.surf  = &lm->surf;
+	lm->FSLib.pvsurf= &lm->pvsurf;
+	lm->FSLib.jr    = &lm->jr;
+	lm->FSLib.scal  = &lm->scal;
 	// BCCtx
 	lm->bc.scal     = &lm->scal;
 	lm->bc.ts       = &lm->ts;
@@ -689,8 +696,14 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// restart if fixed time step is larger than CFLMAX
 		if(restart) continue;
 
-		// advect free surface
-		PetscCall(FreeSurfAdvect(&lm->surf));
+		// STANDARD MODEL
+		if(lm->surf.SurfMode == 1) PetscCall(FreeSurfAdvect(&lm->surf));
+
+#ifdef WITH_FASTSCAPE
+
+		// FASTSCAPE
+		if(lm->surf.SurfMode == 2) PetscCall(FastScapeCopyVelocity(&lm->FSLib));
+#endif
 
 		// advect markers
 		PetscCall(ADVAdvect(&lm->actx));
@@ -706,17 +719,39 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		if(track_stages) { PetscCall(PetscLogStagePop()); }
 
-		// apply erosion to the free surface
-		PetscCall(FreeSurfAppErosion(&lm->surf));
+		// STANDARD MODEL
+		if(lm->surf.SurfMode == 1)
+		{
+			// apply erosion to the free surface
+			PetscCall(FreeSurfAppErosion(&lm->surf));
 
-		// apply slope-dependent erosion to the free surface
-		PetscCall(FreeSurfAppSlopeErosion(&lm->surf));
+			// apply slope-dependent erosion to the free surface
+			PetscCall(FreeSurfAppSlopeErosion(&lm->surf));
 
-		// apply sedimentation to the free surface
-		PetscCall(FreeSurfAppSedimentation(&lm->surf));
+			// apply sedimentation to the free surface
+			PetscCall(FreeSurfAppSedimentation(&lm->surf));
 
-		// apply topographic diffusion to the free surface
-		PetscCall(FreeSurfAppTopoDiffusion(&lm->surf));
+			// apply topographic diffusion to the free surface
+			PetscCall(FreeSurfAppTopoDiffusion(&lm->surf));
+		}
+
+#ifdef WITH_FASTSCAPE
+
+		// FASTSCAPE
+		if(lm->surf.SurfMode == 2)
+		{
+
+			PetscPrintf(PETSC_COMM_WORLD, "Begin FastScape \n");
+			PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+			PetscCall(FastScapeRun(&lm->FSLib));
+
+			// smooth topography spikes
+			PetscCall(FreeSurfSmoothMaxAngle(&lm->surf));
+
+			// compute & store average topography
+			PetscCall(FreeSurfGetAvgTopo(&lm->surf));
+		}
+#endif
 
 		// remap markers onto (stretched) grid
 		PetscCall(ADVRemap(&lm->actx));

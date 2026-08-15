@@ -28,6 +28,7 @@
 #include "Tensor.h"
 #include "tools.h"
 #include "phase_transition.h"
+
 //---------------------------------------------------------------------------
 PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 {
@@ -540,7 +541,14 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 		// check whether air marker is below the free surface
 		if(P->phase == AirPhase && zp < topo)
 		{
-			if(surf->SedimentModel > 0)
+			// FASTSCAPE
+			if(surf->SurfMode == 2)
+			{
+				// sedimentation (FastScape) -> air turns into a prescribed rock
+				P->phase = surf->phase;
+			}
+			// STANDARD MODEL
+			else if(surf->SedimentModel > 0)
 			{
 				// sedimentation (physical) -> air turns into a prescribed rock
 				P->phase = surf->phase;

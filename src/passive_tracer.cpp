@@ -881,7 +881,14 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 			// check whether air marker is below the free surface
 			if(phaseptr[jj] == ((PetscScalar) AirPhase) && zp < topo)
 			{
-				if(surf->SedimentModel > 0)
+				// FASTSCAPE
+				if(surf->SurfMode == 2)
+				{
+					// sedimentation (FastScape) -> air turns into a prescribed rock
+					phaseptr[jj]= (PetscScalar) surf->phase;
+				}
+				// STANDARD MODEL
+				else if(surf->SedimentModel > 0)
 				{
 					// sedimentation (physical) -> air turns into a prescribed rock
 					phaseptr[jj]= (PetscScalar) surf->phase;

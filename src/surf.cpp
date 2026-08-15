@@ -21,6 +21,8 @@
 #include "JacRes.h"
 #include "interpolate.h"
 #include "tools.h"
+#include "fastscape.h"
+
 //---------------------------------------------------------------------------
 PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 {
@@ -33,6 +35,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	// initialize
 	surf->phaseCorr   =  1;
 	surf->AirPhase    = -1;
+	surf->SurfMode    =  1;
 
 	// check whether free surface is activated
 	PetscCall(getIntParam(fb, _OPTIONAL_, "surf_use", &surf->UseFreeSurf, 1,  1));
@@ -49,76 +52,93 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	PetscCall(getScalarParam(fb, _REQUIRED_, "surf_level",         &surf->InitLevel,     1,  scal->length));
 	PetscCall(getIntParam   (fb, _REQUIRED_, "surf_air_phase",     &surf->AirPhase,      1,  maxPhaseID));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "surf_max_angle",     &surf->MaxAngle,      1,  scal->angle));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "surf_mode",          &surf->SurfMode,      1,  2));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "erosion_model",      &surf->ErosionModel,  1,  3));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "sediment_model",     &surf->SedimentModel, 1,  3));
 
-	if(surf->ErosionModel == 2)
-	{
-		// erosion model parameters
-		PetscCall(getIntParam   (fb, _REQUIRED_, "er_num_phases",  &surf->numErPhs,  1,                 _max_er_phases_));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "er_time_delims",  surf->timeDelimsEr, surf->numErPhs-1, scal->time));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "er_rates",        surf->erRates,   surf->numErPhs,   scal->velocity));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "er_levels",       surf->erLevels,  surf->numErPhs,   scal->length));
-	}
-	if(surf->ErosionModel == 3)
-	{
-		// spatially-limited erosion model parameters
-		PetscCall(getIntParam   (fb, _REQUIRED_, "er_num_phases",  &surf->numErPhs,  1,                 _max_er_phases_));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "er_time_delims",  surf->timeDelimsEr, surf->numErPhs-1, scal->time));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "er_rates",        surf->erRates,   surf->numErPhs,   scal->velocity));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "er_levels",       surf->erLevels,  surf->numErPhs,   scal->length));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "er_x_min",        surf->erXMin,    surf->numErPhs,   scal->length));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "er_x_max",        surf->erXMax,    surf->numErPhs,   scal->length));
-	}
-	if(surf->SedimentModel == 1 || surf->SedimentModel == 2 || surf->SedimentModel == 3 )
-	{
-		// sedimentation model parameters
-		PetscCall(getIntParam   (fb, _REQUIRED_, "sed_num_layers",  &surf->numLayers,  1,                 _max_sed_layers_));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "sed_time_delims",  surf->timeDelims, surf->numLayers-1, scal->time));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "sed_rates",        surf->sedRates,   surf->numLayers,   scal->velocity));
-		PetscCall(getIntParam   (fb, _REQUIRED_, "sed_phases",       surf->sedPhases,  surf->numLayers,   maxPhaseID));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "sed_levels",       surf->sedLevels,  surf->numLayers,   scal->length));
-	}
+	//===========================================================
+	// immediate failure if FastScape is requested but not linked
+	//===========================================================
 
-	if(surf->SedimentModel == 2)
+#ifndef WITH_FASTSCAPE
+	if(surf->SurfMode == 2)
 	{
-		// sedimentation model parameters
-		PetscCall(getScalarParam(fb, _REQUIRED_, "marginO",          surf->marginO,    2,                 scal->length));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "marginE",          surf->marginE,    2,                 scal->length));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "marginE",          surf->marginE,    2,                 scal->length));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "hUp",             &surf->hUp,        1,                 scal->length));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "hDown",           &surf->hDown,      1,                 scal->length));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "dTrans",          &surf->dTrans,     1,                 scal->length));
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP,
+		        "surf_mode = 2 (FastScape) requested, but this LaMEM binary was built without FastScape support. "
+		        "Recompile with WITH_FASTSCAPE enabled, or select a different surf_mode.");
 	}
-
-	if (surf->SedimentModel == 3)
-	{
-		PetscCall(getScalarParam(fb, _REQUIRED_, "sed_rates2nd",        surf->sedRates2nd,   surf->numLayers,   scal->velocity));
-	}
+#endif
 
 	// non-dimensional value of 1 [m/yr] (the input unit of prefactor_slope);
 	// in non-dimensional mode (utype == _NONE_) the input is taken as-is
 	unit_m_yr = scal->length_si/scal->time_si;
 	if(scal->utype != _NONE_) unit_m_yr *= 3600.0*24.0*365.25;
 
-	PetscCall(getIntParam(fb, _OPTIONAL_, "slope_dependent_erosion", &surf->slope_dependent_erosion, 1, 1));
-
-	if(surf->slope_dependent_erosion)
+	if(surf->SurfMode == 1)
 	{
-		// defaults: prefactor of 1 [m/yr] and linear slope dependence
-		surf->prefactor_slope = 1.0/unit_m_yr;
-		surf->n_slope         = 1.0;
+		if(surf->ErosionModel == 2)
+		{
+			// erosion model parameters
+			PetscCall(getIntParam   (fb, _REQUIRED_, "er_num_phases",  &surf->numErPhs,  1,                 _max_er_phases_));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "er_time_delims",  surf->timeDelimsEr, surf->numErPhs-1, scal->time));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "er_rates",        surf->erRates,   surf->numErPhs,   scal->velocity));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "er_levels",       surf->erLevels,  surf->numErPhs,   scal->length));
+		}
+		if(surf->ErosionModel == 3)
+		{
+			// spatially-limited erosion model parameters
+			PetscCall(getIntParam   (fb, _REQUIRED_, "er_num_phases",  &surf->numErPhs,  1,                 _max_er_phases_));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "er_time_delims",  surf->timeDelimsEr, surf->numErPhs-1, scal->time));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "er_rates",        surf->erRates,   surf->numErPhs,   scal->velocity));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "er_levels",       surf->erLevels,  surf->numErPhs,   scal->length));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "er_x_min",        surf->erXMin,    surf->numErPhs,   scal->length));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "er_x_max",        surf->erXMax,    surf->numErPhs,   scal->length));
+		}
+		if(surf->SedimentModel == 1 || surf->SedimentModel == 2 || surf->SedimentModel == 3 )
+		{
+			// sedimentation model parameters
+			PetscCall(getIntParam   (fb, _REQUIRED_, "sed_num_layers",  &surf->numLayers,  1,                 _max_sed_layers_));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "sed_time_delims",  surf->timeDelims, surf->numLayers-1, scal->time));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "sed_rates",        surf->sedRates,   surf->numLayers,   scal->velocity));
+			PetscCall(getIntParam   (fb, _REQUIRED_, "sed_phases",       surf->sedPhases,  surf->numLayers,   maxPhaseID));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "sed_levels",       surf->sedLevels,  surf->numLayers,   scal->length));
+		}
 
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "prefactor_slope", &surf->prefactor_slope, 1, unit_m_yr));
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "n_slope",         &surf->n_slope,         1, 1.0));
-	}
+		if(surf->SedimentModel == 2)
+		{
+			// sedimentation model parameters
+			PetscCall(getScalarParam(fb, _REQUIRED_, "marginO",          surf->marginO,    2,                 scal->length));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "marginE",          surf->marginE,    2,                 scal->length));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "marginE",          surf->marginE,    2,                 scal->length));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "hUp",             &surf->hUp,        1,                 scal->length));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "hDown",           &surf->hDown,      1,                 scal->length));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "dTrans",          &surf->dTrans,     1,                 scal->length));
+		}
 
-	PetscCall(getIntParam(fb, _OPTIONAL_, "topo_diff", &surf->topo_diff, 1, 1));
+		if (surf->SedimentModel == 3)
+		{
+			PetscCall(getScalarParam(fb, _REQUIRED_, "sed_rates2nd",        surf->sedRates2nd,   surf->numLayers,   scal->velocity));
+		}
 
-	if(surf->topo_diff)
-	{
-		PetscCall(getScalarParam(fb, _REQUIRED_, "topo_diffusivity", &surf->topo_diffusivity, 1,
-		                         scal->length_si * scal->length_si / scal->time_si));
+		PetscCall(getIntParam(fb, _OPTIONAL_, "slope_dependent_erosion", &surf->slope_dependent_erosion, 1, 1));
+
+		if(surf->slope_dependent_erosion)
+		{
+			// defaults: prefactor of 1 [m/yr] and linear slope dependence
+			surf->prefactor_slope = 1.0/unit_m_yr;
+			surf->n_slope         = 1.0;
+
+			PetscCall(getScalarParam(fb, _OPTIONAL_, "prefactor_slope", &surf->prefactor_slope, 1, unit_m_yr));
+			PetscCall(getScalarParam(fb, _OPTIONAL_, "n_slope",         &surf->n_slope,         1, 1.0));
+		}
+
+		PetscCall(getIntParam(fb, _OPTIONAL_, "topo_diff", &surf->topo_diff, 1, 1));
+
+		if(surf->topo_diff)
+		{
+			PetscCall(getScalarParam(fb, _REQUIRED_, "topo_diffusivity", &surf->topo_diffusivity, 1,
+			                         scal->length_si * scal->length_si / scal->time_si));
+		}
 	}
 
 	// print summary
@@ -127,40 +147,47 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	PetscPrintf(PETSC_COMM_WORLD, "   Sticky air phase ID       : %" PetscInt_FMT " \n",  surf->AirPhase);
 	PetscPrintf(PETSC_COMM_WORLD, "   Initial surface level     : %g %s \n",  surf->InitLevel*scal->length, scal->lbl_length);
 
-	PetscPrintf(PETSC_COMM_WORLD, "   Erosion model             : ");
-	if      (surf->ErosionModel == 0)  PetscPrintf(PETSC_COMM_WORLD, "none\n");
-	else if (surf->ErosionModel == 1)  PetscPrintf(PETSC_COMM_WORLD, "infinitely fast\n");
-	else if (surf->ErosionModel == 2)  PetscPrintf(PETSC_COMM_WORLD, "prescribed rate with given level\n");
-	else if (surf->ErosionModel == 3)
+	if(surf->SurfMode == 1)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "prescribed rate with given level and x-coordinate range\n");
-		for(jj = 0; jj < surf->numErPhs; jj++)
+		PetscPrintf(PETSC_COMM_WORLD, "   Erosion model             : ");
+		if      (surf->ErosionModel == 0)  PetscPrintf(PETSC_COMM_WORLD, "none\n");
+		else if (surf->ErosionModel == 1)  PetscPrintf(PETSC_COMM_WORLD, "infinitely fast\n");
+		else if (surf->ErosionModel == 2)  PetscPrintf(PETSC_COMM_WORLD, "prescribed rate with given level\n");
+		else if (surf->ErosionModel == 3)
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "      Phase %" PetscInt_FMT ": x ∈ [%g, %g] %s\n",
-			            jj, surf->erXMin[jj]*scal->length, surf->erXMax[jj]*scal->length, scal->lbl_length);
+			PetscPrintf(PETSC_COMM_WORLD, "prescribed rate with given level and x-coordinate range\n");
+			for(jj = 0; jj < surf->numErPhs; jj++)
+			{
+				PetscPrintf(PETSC_COMM_WORLD, "      Phase %" PetscInt_FMT ": x ∈ [%g, %g] %s\n",
+				            jj, surf->erXMin[jj]*scal->length, surf->erXMax[jj]*scal->length, scal->lbl_length);
+			}
 		}
+
+		PetscPrintf(PETSC_COMM_WORLD, "   Sedimentation model       : ");
+		if      (surf->SedimentModel == 0) PetscPrintf(PETSC_COMM_WORLD, "none\n");
+		else if (surf->SedimentModel == 1) PetscPrintf(PETSC_COMM_WORLD, "prescribed rate with given level\n");
+		else if (surf->SedimentModel == 2) PetscPrintf(PETSC_COMM_WORLD, "directed sedimentation (continental margin) with prescribed rate\n");
+		else if (surf->SedimentModel == 3) PetscPrintf(PETSC_COMM_WORLD, "prescribed rate\n");
+
+		if(surf->numLayers) PetscPrintf(PETSC_COMM_WORLD, "   Number of sediment layers : %" PetscInt_FMT " \n",  surf->numLayers);
+		if(surf->phaseCorr) PetscPrintf(PETSC_COMM_WORLD, "   Correct marker phases     @ \n");
+		if(surf->MaxAngle)  PetscPrintf(PETSC_COMM_WORLD, "   Maximum surface slope     : %g %s\n",  surf->MaxAngle*scal->angle, scal->lbl_angle);
+
+		PetscPrintf(PETSC_COMM_WORLD, "   Slope-dependent erosion   : ");
+		if(!surf->slope_dependent_erosion) PetscPrintf(PETSC_COMM_WORLD, "none\n");
+		else PetscPrintf(PETSC_COMM_WORLD, "active (E = %g [m/yr] * slope^%g)\n", surf->prefactor_slope*unit_m_yr, surf->n_slope);
+
+		PetscPrintf(PETSC_COMM_WORLD, "   Topographic diffusion     : ");
+		if(!surf->topo_diff) PetscPrintf(PETSC_COMM_WORLD, "none\n");
+		else                 PetscPrintf(PETSC_COMM_WORLD, "active (K = %g [m^2/s])\n",
+			                                 surf->topo_diffusivity * scal->length_si * scal->length_si / scal->time_si);
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD, "   Sedimentation model       : ");
-	if      (surf->SedimentModel == 0) PetscPrintf(PETSC_COMM_WORLD, "none\n");
-	else if (surf->SedimentModel == 1) PetscPrintf(PETSC_COMM_WORLD, "prescribed rate with given level\n");
-	else if (surf->SedimentModel == 2) PetscPrintf(PETSC_COMM_WORLD, "directed sedimentation (continental margin) with prescribed rate\n");
-	else if (surf->SedimentModel == 3) PetscPrintf(PETSC_COMM_WORLD, "prescribed rate\n");
-
-	if(surf->numLayers) PetscPrintf(PETSC_COMM_WORLD, "   Number of sediment layers : %" PetscInt_FMT " \n",  surf->numLayers);
-	if(surf->phaseCorr) PetscPrintf(PETSC_COMM_WORLD, "   Correct marker phases     @ \n");
-	if(surf->MaxAngle)  PetscPrintf(PETSC_COMM_WORLD, "   Maximum surface slope     : %g %s\n",  surf->MaxAngle*scal->angle, scal->lbl_angle);
-
-	PetscPrintf(PETSC_COMM_WORLD, "   Slope-dependent erosion   : ");
-	if(!surf->slope_dependent_erosion) PetscPrintf(PETSC_COMM_WORLD, "none\n");
-	else PetscPrintf(PETSC_COMM_WORLD, "active (E = %g [m/yr] * slope^%g)\n", surf->prefactor_slope*unit_m_yr, surf->n_slope);
-
-	PetscPrintf(PETSC_COMM_WORLD, "   Topographic diffusion     : ");
-	if(!surf->topo_diff) PetscPrintf(PETSC_COMM_WORLD, "none\n");
-	else                 PetscPrintf(PETSC_COMM_WORLD, "active (K = %g [m^2/s])\n",
-		                                 surf->topo_diffusivity * scal->length_si * scal->length_si / scal->time_si);
-
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+
+#ifdef WITH_FASTSCAPE
+	if(surf->SurfMode == 2) PetscCall(FastScapeCreate(surf->FSLib, fb));
+#endif
 
 	// create structures
 	PetscCall(FreeSurfCreateData(surf));
@@ -187,11 +214,17 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 	PetscInt       bc_node;
 	DMBoundaryType BC_TYPE_X;
 	const PetscInt *lx, *ly;
+	FastScapeLib   *FSLib;
 
 	PetscFunctionBeginUser;
 
 	// access context
-	fs = surf->jr->fs;
+	fs    = surf->jr->fs;
+	FSLib = surf->FSLib;
+
+	// set boundary type in x direction
+	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; bc_node = 1; }
+	else             { BC_TYPE_X = DM_BOUNDARY_NONE;     bc_node = 0; }
 
 	// set boundary type in x direction
 	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; bc_node = 1; }
@@ -215,6 +248,13 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 	PetscCall(DMCreateLocalVector (surf->DA_SURF, &surf->vz));
 	PetscCall(DMCreateGlobalVector(surf->DA_SURF, &surf->vpatch));
 	PetscCall(DMCreateGlobalVector(surf->DA_SURF, &surf->vmerge));
+
+	//FastScape data
+#ifdef WITH_FASTSCAPE
+	PetscCall(FastScapeCreateData(FSLib));
+#else
+	UNUSED(FSLib);
+#endif
 
 	PetscFunctionReturn(0);
 }
@@ -251,6 +291,11 @@ PetscErrorCode FreeSurfReadRestart(FreeSurf *surf, FILE *fp)
 	// read topography vector
 	PetscCall(VecReadRestart(surf->gtopo, fp));
 
+	// FastScape
+#ifdef WITH_FASTSCAPE
+	if(surf->SurfMode == 2) PetscCall(FastScapeReadRestart(surf->FSLib, fp));
+#endif
+
 	// get ghosted topography vector
 	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
 
@@ -266,6 +311,11 @@ PetscErrorCode FreeSurfWriteRestart(FreeSurf *surf, FILE *fp)
 
 	// store topography vector
 	PetscCall(VecWriteRestart(surf->gtopo, fp));
+
+	// FastScape
+#ifdef WITH_FASTSCAPE
+	if(surf->SurfMode == 2) PetscCall(FastScapeWriteRestart(surf->FSLib, fp));
+#endif
 
 	PetscFunctionReturn(0);
 }
@@ -285,6 +335,10 @@ PetscErrorCode FreeSurfDestroy(FreeSurf *surf)
 	PetscCall(VecDestroy(&surf->vz));
 	PetscCall(VecDestroy(&surf->vpatch));
 	PetscCall(VecDestroy(&surf->vmerge));
+
+#ifdef WITH_FASTSCAPE
+	PetscCall(FastScapeDestroy(surf->FSLib));
+#endif
 
 	PetscFunctionReturn(0);
 }

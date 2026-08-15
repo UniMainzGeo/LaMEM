@@ -42,7 +42,7 @@
     surf_air_phase   = 0
     surf_corr_phase  = 1
     surf_max_angle   = 45.0
-    surf_topo_file   = t37_topo.bin
+    surf_topo_file   = t38_topo.bin
 
     # Slope-dependent erosion: E [m/yr] = prefactor_slope * slope^n_slope
     slope_dependent_erosion = 1
