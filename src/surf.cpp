@@ -124,6 +124,15 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 
 		if(surf->slope_dependent_erosion)
 		{
+			// prefactor_slope is defined in [m/yr]; without a dimensional unit
+			// system the input would be silently reinterpreted as a raw rate
+			if(scal->utype == _NONE_)
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,
+				        "slope_dependent_erosion defines prefactor_slope in [m/yr] and requires a dimensional unit system. "
+				        "Set units = geo or units = si, or deactivate slope_dependent_erosion.");
+			}
+
 			// defaults: prefactor of 1 [m/yr] and linear slope dependence
 			surf->prefactor_slope = 1.0/unit_m_yr;
 			surf->n_slope         = 1.0;
