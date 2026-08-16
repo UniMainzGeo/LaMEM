@@ -1,0 +1,572 @@
+--------------------------------------------------------------------------
+Parsing input file : slope_dependent_erosion.dat 
+Finished parsing input file 
+--------------------------------------------------------------------------
+Parsing PETSc options
+Total number of options added: 0
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-bf_vs_type user # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type bf # (source: code)
+-js_ksp_atol 1e-08 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 40 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 1e-06 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-options_left # (source: code)
+-ParamFile slope_dependent_erosion.dat # (source: code)
+-snes_atol 1e-08 # (source: code)
+-snes_linesearch_max_it 5 # (source: code)
+-snes_linesearch_maxstep 1.0 # (source: code)
+-snes_linesearch_minlambda 0.05 # (source: code)
+-snes_linesearch_type l2 # (source: code)
+-snes_max_funcs unlimited # (source: code)
+-snes_max_it 50 # (source: code)
+-snes_monitor # (source: code)
+-snes_newton_maxit 20 # (source: code)
+-snes_newton_rtol 1.2 # (source: code)
+-snes_picard_minit 5 # (source: code)
+-snes_picard_rtol 0.0001 # (source: code)
+-snes_rtol 0.0001 # (source: code)
+-snes_stol 1e-32 # (source: code)
+-vs_ksp_type preonly # (source: code)
+-vs_pc_factor_mat_solver_type mumps # (source: code)
+-vs_pc_type lu # (source: code)
+#End of PETSc Option Table entries
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Aug 14 2026 - Time: 18:23:55 	    
+     Version : 3.1.0 
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Scaling parameters:
+   Temperature : 1000. [C/K] 
+   Length      : 1000. [m] 
+   Viscosity   : 1e+20 [Pa*s] 
+   Stress      : 1e+09 [Pa] 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 0.02 [Myr] 
+   Maximum number of steps      : 10 
+   Time step                    : 0.002 [Myr] 
+   Minimum time step            : 4e-05 [Myr] 
+   Maximum time step            : 0.002 [Myr] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.8 
+   Output every [n] steps       : 5 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [64, 2, 35]
+   Number of cells                      :  4480
+   Number of faces                      :  15878
+   Maximum cell aspect ratio            :  3.12500
+   Lower coordinate bounds [bx, by, bz] : [-100., -1., -20.]
+   Upper coordinate bounds [ex, ey, ez] : [100., 1., 15.]
+--------------------------------------------------------------------------
+Material parameters: 
+
+   Phase ID : 0     --   Air 
+   (dens)   : rho = 50. [kg/m^3]  
+   (diff)   : eta = 1e+19 [Pa*s]  Bd = 5e-20 [1/Pa/s]  
+
+   Phase ID : 1     --   Crust_1 
+   (dens)   : rho = 2700. [kg/m^3]  
+   (diff)   : eta = 1e+22 [Pa*s]  Bd = 5e-23 [1/Pa/s]  
+
+   Phase ID : 2     --   Crust_2 
+   (dens)   : rho = 2700. [kg/m^3]  
+   (diff)   : eta = 1e+22 [Pa*s]  Bd = 5e-23 [1/Pa/s]  
+
+--------------------------------------------------------------------------
+Free surface parameters: 
+   Sticky air phase ID       : 0 
+   Initial surface level     : 0. [km] 
+   Erosion model             : none
+   Sedimentation model       : none
+   Correct marker phases     @ 
+   Maximum surface slope     : 45. [deg]
+   Slope-dependent erosion   : active (E = 0.05 [m/yr] * slope^2.)
+   Topographic diffusion     : none
+--------------------------------------------------------------------------
+Loading topography redundantly from file(s) <t38_topo.bin> ... done (0.000187924 sec)
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -9.81] [m/s^2] 
+   Surface stabilization (FSSA)            :  1. 
+   Compute initial guess                   @ 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 1e+15 [Pa*s] 
+   Maximum viscosity                       : 1e+25 [Pa*s] 
+   Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
+   Max. melt fraction (viscosity, density) : 1.    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Runge-Kutta 2-nd order
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : subgrid 
+   Markers per cell [nx, ny, nz] : [3, 3, 3] 
+   Marker distribution type      : random noise
+   Background phase ID           : 1 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.0019137 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : output 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+--------------------------------------------------------------------------
+Surface output parameters:
+   Write .pvd file : yes 
+   Velocity        @ 
+   Topography      @ 
+   Amplitude       @ 
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Picard operator type          : assembled
+   Preconditioner type           : block factorization
+   Block factorization type      : upper 
+   Velocity preconditioner       : user-defined
+   Schur preconditioner          : inverse viscosity
+   Penalty parameter (pgamma)    : 1.000000e+03
+--------------------------------------------------------------------------
+============================== INITIAL GUESS =============================
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.340412783839e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.340412783839e+00
+    1 KSP Residual norm 1.333376910283e+00
+    2 KSP Residual norm 1.215281498992e-02
+    3 KSP Residual norm 4.124883459334e-04
+    4 KSP Residual norm 1.256319591344e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 4
+  1 SNES Function norm 1.256319592107e-06
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 0.284382 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.109329935613e-08 
+      |Div|_2   = 1.256319592041e-06 
+   Momentum: 
+      |mRes|_2  = 1.279641928468e-11 
+--------------------------------------------------------------------------
+Saving output ... done (0.00244794 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000000 [Myr] 
+Tentative time step : 0.00200000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.401292084124e+01
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.401292084124e+01
+    1 KSP Residual norm 1.494409742176e-01
+    2 KSP Residual norm 2.842255327850e-02
+    3 KSP Residual norm 2.909333950025e-03
+    4 KSP Residual norm 5.314272224763e-05
+    5 KSP Residual norm 1.198735501220e-05
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 5
+  1 SNES Function norm 1.198735513038e-05
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 0.203152 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.531533745476e-07 
+      |Div|_2   = 3.365170880698e-06 
+   Momentum: 
+      |mRes|_2  = 1.150531650871e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00200 [Myr] 
+--------------------------------------------------------------------------
+Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 209 markers and merged 0 markers in 4.6229e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.00210569 sec)
+--------------------------------------------------------------------------
+================================= STEP 2 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00200000 [Myr] 
+Tentative time step : 0.00200000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 3.526023821110e-02
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.526023821110e-02
+    1 KSP Residual norm 2.682260897028e-02
+    2 KSP Residual norm 1.914032397857e-04
+    3 KSP Residual norm 6.414626276091e-05
+    4 KSP Residual norm 8.439635765790e-07
+    5 KSP Residual norm 5.920873845457e-07
+    6 KSP Residual norm 4.802005704654e-08
+    7 KSP Residual norm 4.202450513190e-08
+    8 KSP Residual norm 2.738808300994e-09
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 8
+  1 SNES Function norm 2.738726548474e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 0.230947 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.968385953775e-11 
+      |Div|_2   = 6.150755585033e-10 
+   Momentum: 
+      |mRes|_2  = 2.668764726357e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.00200 [Myr] 
+--------------------------------------------------------------------------
+Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 196 markers and merged 0 markers in 4.6802e-03 s
+--------------------------------------------------------------------------
+================================= STEP 3 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00400000 [Myr] 
+Tentative time step : 0.00200000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 4.515834978895e-02
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.515834978895e-02
+    1 KSP Residual norm 3.066759650269e-02
+    2 KSP Residual norm 1.846243204900e-05
+    3 KSP Residual norm 1.760367884450e-05
+    4 KSP Residual norm 1.727769103508e-06
+    5 KSP Residual norm 1.697098701737e-06
+    6 KSP Residual norm 1.814499412488e-08
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 6
+  1 SNES Function norm 1.814498889332e-08
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 0.249636 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.461311705106e-08 
+      |Div|_2   = 1.785650266551e-08 
+   Momentum: 
+      |mRes|_2  = 3.222721597550e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.00200 [Myr] 
+--------------------------------------------------------------------------
+Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 189 markers and merged 0 markers in 4.7418e-03 s
+--------------------------------------------------------------------------
+================================= STEP 4 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00600000 [Myr] 
+Tentative time step : 0.00200000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.069125426078e-02
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.069125426078e-02
+    1 KSP Residual norm 7.603919439992e-03
+    2 KSP Residual norm 4.152633059181e-05
+    3 KSP Residual norm 1.810160681198e-05
+    4 KSP Residual norm 2.491763870100e-07
+    5 KSP Residual norm 2.400040835744e-07
+    6 KSP Residual norm 2.434624741933e-08
+    7 KSP Residual norm 8.537529614025e-09
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 7
+  1 SNES Function norm 8.536981019566e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 0.221958 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.142513704087e-09 
+      |Div|_2   = 1.914464771773e-09 
+   Momentum: 
+      |mRes|_2  = 8.319547437576e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.00200 [Myr] 
+--------------------------------------------------------------------------
+Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 204 markers and merged 0 markers in 4.7993e-03 s
+--------------------------------------------------------------------------
+================================= STEP 5 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00800000 [Myr] 
+Tentative time step : 0.00200000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 8.145035688626e-03
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.145035688626e-03
+    1 KSP Residual norm 6.740313693644e-03
+    2 KSP Residual norm 3.509933161252e-06
+    3 KSP Residual norm 3.501328521763e-06
+    4 KSP Residual norm 2.522434156715e-07
+    5 KSP Residual norm 2.472887067980e-07
+    6 KSP Residual norm 3.146339893567e-09
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 6
+  1 SNES Function norm 3.146580844365e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 0.21291 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.602165816900e-09 
+      |Div|_2   = 3.072884262008e-09 
+   Momentum: 
+      |mRes|_2  = 6.770179631544e-10 
+--------------------------------------------------------------------------
+Actual time step : 0.00200 [Myr] 
+--------------------------------------------------------------------------
+Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 207 markers and merged 0 markers in 4.8371e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.00207792 sec)
+--------------------------------------------------------------------------
+================================= STEP 6 =================================
+--------------------------------------------------------------------------
+Current time        : 0.01000000 [Myr] 
+Tentative time step : 0.00200000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.463520037057e-02
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.463520037057e-02
+    1 KSP Residual norm 2.318454326094e-02
+    2 KSP Residual norm 2.132510721830e-05
+    3 KSP Residual norm 2.056614971186e-05
+    4 KSP Residual norm 1.564777348115e-06
+    5 KSP Residual norm 1.497395702433e-06
+    6 KSP Residual norm 1.292409311509e-08
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 6
+  1 SNES Function norm 1.292410793048e-08
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 0.263172 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.941418972176e-09 
+      |Div|_2   = 1.118732223455e-08 
+   Momentum: 
+      |mRes|_2  = 6.471196722319e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.00200 [Myr] 
+--------------------------------------------------------------------------
+Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 220 markers and merged 0 markers in 4.9130e-03 s
+--------------------------------------------------------------------------
+================================= STEP 7 =================================
+--------------------------------------------------------------------------
+Current time        : 0.01200000 [Myr] 
+Tentative time step : 0.00200000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 8.726741812899e-03
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.726741812899e-03
+    1 KSP Residual norm 6.810810057413e-03
+    2 KSP Residual norm 1.491169754894e-05
+    3 KSP Residual norm 1.216011944764e-05
+    4 KSP Residual norm 9.874664818315e-08
+    5 KSP Residual norm 9.708912824700e-08
+    6 KSP Residual norm 7.781859444824e-09
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 6
+  1 SNES Function norm 7.782144499228e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 0.212419 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.092765237580e-09 
+      |Div|_2   = 4.358595605405e-09 
+   Momentum: 
+      |mRes|_2  = 6.447047181106e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.00200 [Myr] 
+--------------------------------------------------------------------------
+Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 206 markers and merged 0 markers in 4.9227e-03 s
+--------------------------------------------------------------------------
+================================= STEP 8 =================================
+--------------------------------------------------------------------------
+Current time        : 0.01400000 [Myr] 
+Tentative time step : 0.00200000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 7.749412838380e-03
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.749412838380e-03
+    1 KSP Residual norm 5.906612873248e-03
+    2 KSP Residual norm 7.731161438531e-06
+    3 KSP Residual norm 7.698385914684e-06
+    4 KSP Residual norm 8.260774955316e-08
+    5 KSP Residual norm 8.233711195285e-08
+    6 KSP Residual norm 3.444971883273e-09
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 6
+  1 SNES Function norm 3.444502439406e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 0.261942 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.561606223288e-09 
+      |Div|_2   = 2.801634133590e-09 
+   Momentum: 
+      |mRes|_2  = 2.003857089858e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.00200 [Myr] 
+--------------------------------------------------------------------------
+Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 181 markers and merged 0 markers in 4.9884e-03 s
+--------------------------------------------------------------------------
+================================= STEP 9 =================================
+--------------------------------------------------------------------------
+Current time        : 0.01600000 [Myr] 
+Tentative time step : 0.00200000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.094096674804e-02
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.094096674804e-02
+    1 KSP Residual norm 8.836518360936e-03
+    2 KSP Residual norm 1.248624474469e-05
+    3 KSP Residual norm 1.209089931422e-05
+    4 KSP Residual norm 1.978643682959e-07
+    5 KSP Residual norm 1.950642106180e-07
+    6 KSP Residual norm 5.624119468320e-09
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 6
+  1 SNES Function norm 5.624278224513e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 0.213409 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.139778666239e-09 
+      |Div|_2   = 4.332908544363e-09 
+   Momentum: 
+      |mRes|_2  = 3.585862391799e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.00200 [Myr] 
+--------------------------------------------------------------------------
+Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 180 markers and merged 0 markers in 5.0069e-03 s
+--------------------------------------------------------------------------
+================================ STEP 10 =================================
+--------------------------------------------------------------------------
+Current time        : 0.01800000 [Myr] 
+Tentative time step : 0.00200000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 7.038728143968e-03
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.038728143968e-03
+    1 KSP Residual norm 6.109992396682e-03
+    2 KSP Residual norm 6.454528292254e-06
+    3 KSP Residual norm 6.429605692498e-06
+    4 KSP Residual norm 2.422382646438e-07
+    5 KSP Residual norm 2.380212547103e-07
+    6 KSP Residual norm 3.451499095499e-09
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 6
+  1 SNES Function norm 3.451615372208e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 0.212505 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.235322002507e-10 
+      |Div|_2   = 1.229538149554e-09 
+   Momentum: 
+      |mRes|_2  = 3.225195283460e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.00200 [Myr] 
+--------------------------------------------------------------------------
+Applying slope-dependent erosion (E = 0.05 [m/yr] * slope^2.) in 1 sub-step(s).
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 180 markers and merged 0 markers in 5.0124e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.00210521 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 3.49907 (sec) 
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-bf_vs_type user # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type bf # (source: code)
+-js_ksp_atol 1e-08 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 40 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 1e-06 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-options_left # (source: code)
+-ParamFile slope_dependent_erosion.dat # (source: code)
+-snes_atol 1e-08 # (source: code)
+-snes_linesearch_max_it 5 # (source: code)
+-snes_linesearch_maxstep 1.0 # (source: code)
+-snes_linesearch_minlambda 0.05 # (source: code)
+-snes_linesearch_type l2 # (source: code)
+-snes_max_funcs unlimited # (source: code)
+-snes_max_it 50 # (source: code)
+-snes_monitor # (source: code)
+-snes_newton_maxit 20 # (source: code)
+-snes_newton_rtol 1.2 # (source: code)
+-snes_picard_minit 5 # (source: code)
+-snes_picard_rtol 0.0001 # (source: code)
+-snes_rtol 0.0001 # (source: code)
+-snes_stol 1e-32 # (source: code)
+-vs_ksp_type preonly # (source: code)
+-vs_pc_factor_mat_solver_type mumps # (source: code)
+-vs_pc_type lu # (source: code)
+#End of PETSc Option Table entries
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+There is one unused database option. It is:
+Option left: name:-ParamFile value: slope_dependent_erosion.dat source: code
