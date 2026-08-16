@@ -145,6 +145,15 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 
 		if(surf->topo_diff)
 		{
+			// topo_diffusivity is defined in [m^2/s]; without a dimensional unit
+			// system the input would be silently reinterpreted as a raw diffusivity
+			if(scal->utype == _NONE_)
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,
+				        "topo_diff defines topo_diffusivity in [m^2/s] and requires a dimensional unit system. "
+				        "Set units = geo or units = si, or deactivate topo_diff.");
+			}
+
 			PetscCall(getScalarParam(fb, _REQUIRED_, "topo_diffusivity", &surf->topo_diffusivity, 1,
 			                         scal->length_si * scal->length_si / scal->time_si));
 		}
