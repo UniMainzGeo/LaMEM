@@ -585,20 +585,29 @@ Adds the runtime environment a LaMEM binary built against the PETSc_jll librarie
   Windows); `JLLWrappers.LIBPATH_env` names that variable for us.
 
 - `LBT_DEFAULT_LIBS`. PETSc_jll >= 3.25 no longer links OpenBLAS directly but libblastrampoline
-  (LBT), and calls BLAS/LAPACK through the ILP64, `_64_`-suffixed interface (`ddot_64_`, ...).
-  LBT ships no BLAS of its own: it forwards to whatever library it is told to load. Inside Julia,
-  LinearAlgebra does that forwarding; a standalone executable gets an empty trampoline and
-  segfaults on its first BLAS call (VecNorm -> BLASdot). `LBT_DEFAULT_LIBS` tells LBT what to
-  forward to at load time. Julia's own OpenBLAS_jll is the ILP64 `_64_` build, i.e. exactly the
-  interface PETSc expects. (OpenBLAS32_jll, which PETSc_jll also depends on, is the LP64 build:
-  forwarding it fills the wrong slots, so the solve returns garbage and diverges instead.)
+  (LBT). LBT ships no BLAS of its own: it forwards to whatever library it is told to load. Inside
+  Julia, LinearAlgebra does that forwarding; a standalone executable gets an empty trampoline and
+  either segfaults on its first BLAS call (VecNorm -> BLASdot) or floods stderr with
+  "no BLAS/LAPACK library loaded for dgemm_()". `LBT_DEFAULT_LIBS` tells LBT what to forward to
+  at load time, as a `;`-separated list.
+
+  BOTH interfaces have to be loaded. The stack mixes them: libpetsc, UMFPACK and CHOLMOD call the
+  ILP64, `_64_`-suffixed symbols (`dgemm_64_`), while SuperLU_DIST and MUMPS call the unsuffixed
+  LP64 ones (`dgemm_`). Loading only the ILP64 half leaves the direct solvers with an empty
+  trampoline - a MUMPS run emits ~78k "no BLAS/LAPACK library loaded" errors and aborts. So
+  forward Julia's stdlib OpenBLAS (ILP64 `libopenblas64_`) *and* OpenBLAS32_jll (LP64), which
+  PETSc_jll depends on for exactly these libraries.
 """
 function add_dylibs(cmd::Cmd, dylibs)
     if isempty(dylibs)
         return cmd
     end
+    # ILP64 (libpetsc, UMFPACK, CHOLMOD) and LP64 (SuperLU_DIST, MUMPS); LBT needs both
+    blas_libs = join([OpenBLAS_jll.libopenblas_path,
+                      PETSc_jll.OpenBLAS32_jll.libopenblas_path], ";")
+
     return addenv(cmd, PETSc_jll.JLLWrappers.LIBPATH_env => dylibs,
-                       "LBT_DEFAULT_LIBS"              => OpenBLAS_jll.libopenblas_path)
+                       "LBT_DEFAULT_LIBS"              => blas_libs)
 end
 
 
