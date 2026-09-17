@@ -40,7 +40,7 @@ jobs:
     - name: 'Install julia'
       uses: julia-actions/setup-julia@v3
       with:
-        version: '1.10'
+        version: '1.12.7'
         
     - run: julia -e 'using InteractiveUtils; versioninfo(verbose=true)'
 

@@ -2,8 +2,8 @@
 
 # Add PETSc with required version
 using Pkg
-Pkg.add(name="PETSc_jll", version="3.22.0")
-Pkg.add(name="MPICH_jll", version="4.2.3")
+Pkg.add(name="PETSc_jll", version="3.25.4")
+Pkg.add(name="MPICH_jll", version="5.0.1")
 Pkg.add(name="Fastscapelib_jll")
 
 # Copy the relevant directories over
