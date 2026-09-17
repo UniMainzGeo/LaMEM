@@ -6,6 +6,7 @@ using LinearAlgebra, Glob
 if use_dynamic_lib
     #using LaMEM.LaMEM_jll.PETSc_jll
     using PETSc_jll
+    using OpenBLAS_jll   # Julia's bundled ILP64 OpenBLAS, forwarded to PETSc via LBT (see add_dylibs)
 end
 
 export run_lamem_local_test, perform_lamem_test, clean_test_directory, run_lamem_save_grid_local, mpiexec
@@ -577,15 +578,27 @@ end
 
 """
     add_dylibs(cmd, dylibs)
-Adds the dynamic library search path to `cmd`, using the loader environment variable that is
-correct for the current platform (`LD_LIBRARY_PATH` on Linux, `DYLD_FALLBACK_LIBRARY_PATH` on
-macOS, `PATH` on Windows). `JLLWrappers.LIBPATH_env` names that variable for us.
+Adds the runtime environment a LaMEM binary built against the PETSc_jll libraries needs:
+
+- The dynamic library search path, via the loader variable that is correct for the current
+  platform (`LD_LIBRARY_PATH` on Linux, `DYLD_FALLBACK_LIBRARY_PATH` on macOS, `PATH` on
+  Windows); `JLLWrappers.LIBPATH_env` names that variable for us.
+
+- `LBT_DEFAULT_LIBS`. PETSc_jll >= 3.25 no longer links OpenBLAS directly but libblastrampoline
+  (LBT), and calls BLAS/LAPACK through the ILP64, `_64_`-suffixed interface (`ddot_64_`, ...).
+  LBT ships no BLAS of its own: it forwards to whatever library it is told to load. Inside Julia,
+  LinearAlgebra does that forwarding; a standalone executable gets an empty trampoline and
+  segfaults on its first BLAS call (VecNorm -> BLASdot). `LBT_DEFAULT_LIBS` tells LBT what to
+  forward to at load time. Julia's own OpenBLAS_jll is the ILP64 `_64_` build, i.e. exactly the
+  interface PETSc expects. (OpenBLAS32_jll, which PETSc_jll also depends on, is the LP64 build:
+  forwarding it fills the wrong slots, so the solve returns garbage and diverges instead.)
 """
 function add_dylibs(cmd::Cmd, dylibs)
     if isempty(dylibs)
         return cmd
     end
-    return addenv(cmd, PETSc_jll.JLLWrappers.LIBPATH_env => dylibs)
+    return addenv(cmd, PETSc_jll.JLLWrappers.LIBPATH_env => dylibs,
+                       "LBT_DEFAULT_LIBS"              => OpenBLAS_jll.libopenblas_path)
 end
 
 
