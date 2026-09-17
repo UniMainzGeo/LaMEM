@@ -79,7 +79,7 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
             perform_run = Cmd(`$(mpiexec) -n $(cores) $(valgrind_cmd) $(exec) -ParamFile $(ParamFile) $args`)
         end
 
-        perform_run = addenv(perform_run, "DYLD_FALLBACK_LIBRARY_PATH"=>dylibs, "MPIWRAP_DEBUG"=>"quiet")
+        perform_run = addenv(add_dylibs(perform_run, dylibs), "MPIWRAP_DEBUG"=>"quiet")
 
         try
             # Open once and share the same IOStream for stdout & stderr, so they interleave into a
@@ -102,7 +102,7 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
             perform_run = Cmd(`$(exec) -ParamFile $(ParamFile) $args`);
             
             # add dynamic libraries to the path (if specified)
-            perform_run = addenv(perform_run,"DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
+            perform_run = add_dylibs(perform_run, dylibs)
 
            ## perform_run = deactivate_multithreading(perform_run)
 
@@ -126,7 +126,7 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
             perform_run = Cmd(`$(mpiexec) -n $(cores) $(exec) -ParamFile $(ParamFile) $args`);
 
             # add dynamic libraries to the path (if specified)
-            perform_run = addenv(perform_run,"DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
+            perform_run = add_dylibs(perform_run, dylibs)
 
        ##     perform_run = deactivate_multithreading(perform_run)
 
@@ -177,7 +177,7 @@ function LaMEM_has_fastscape(; bin_dir="../bin", deb=false)
     dylibs, _ = get_dylibs()
     has_fastscape = false
     try
-        perform_run = addenv(Cmd(`$(exec) -fastscape_info`), "DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
+        perform_run = add_dylibs(Cmd(`$(exec) -fastscape_info`), dylibs)
         out = read(perform_run, String)
         has_fastscape = contains(out, "FASTSCAPE_ENABLED")
     catch
@@ -552,7 +552,9 @@ This retrieves dynamic libraries, required to run LaMEM. It assumes that the glo
 """
 function get_dylibs()
     if use_dynamic_lib
-        dylibs = PETSc_jll.LIBPATH;
+        # NOTE: LIBPATH is a Ref{String}; it must be dereferenced. Passing the Ref itself
+        # stringifies to `Base.RefValue{String}("...")`, which no loader can parse.
+        dylibs = PETSc_jll.LIBPATH[];
 
         mpi_path = if PETSc_jll.MPICH_jll.is_available()
             PETSc_jll.MPICH_jll.PATH_list[1]
@@ -570,6 +572,20 @@ function get_dylibs()
     end
     
     return dylibs, mpi_path
+end
+
+
+"""
+    add_dylibs(cmd, dylibs)
+Adds the dynamic library search path to `cmd`, using the loader environment variable that is
+correct for the current platform (`LD_LIBRARY_PATH` on Linux, `DYLD_FALLBACK_LIBRARY_PATH` on
+macOS, `PATH` on Windows). `JLLWrappers.LIBPATH_env` names that variable for us.
+"""
+function add_dylibs(cmd::Cmd, dylibs)
+    if isempty(dylibs)
+        return cmd
+    end
+    return addenv(cmd, PETSc_jll.JLLWrappers.LIBPATH_env => dylibs)
 end
 
 
