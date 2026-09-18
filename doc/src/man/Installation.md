@@ -52,7 +52,7 @@ $ spack info petsc
 ```
 Install PETSc with the correct packages, and leave out stuff we don't need. The optimized compilation of PETSc is installed with
 ```
-$ spack install petsc@3.22.5 +mumps +suite-sparse +superlu-dist ~hypre ~hdf5 ~shared ~debug
+$ spack install petsc@3.25.4 +mumps +suite-sparse +superlu-dist ~hypre ~hdf5 ~shared ~debug
 ```
 If that works out, you'll have to update your environmental variables and create the `PETSC_OPT` variable
 ```
@@ -96,24 +96,24 @@ $ brew install mpich
 The most important package for LaMEM is PETSc. If you just want to give LaMEM a try, the most basic installation is sufficient. Once you do production runs, it is worthwhile to experiment a bit with more optimized solver options. Installing PETSc with those does not always work, but PETSc has a very responsive user list which is searchable, and where you can post your questions if needed. 
 As PETSc regularly changes its syntax, LaMEM is always only compatible with a particular version of PETSc. This is typically updated once per year. 
 
-The current version of LaMEM is compatible with **PETSc 3.22.5** 
-We have also successfully compiled LaMEM with PETSc 3.23.x so you are also welcome to use that, but our Github actions CI testing environment uses 3.22.5 at the moment. 
+The current version of LaMEM is compatible with **PETSc 3.25.4**, which is what our Github actions CI testing environment uses and therefore the version we recommend.
+LaMEM also still compiles against PETSc 3.22.x - 3.24.x if you already have one of those installed, but new installations should use 3.25.x. 
 
 You can download the PETSc version you need [here](http://www.mcs.anl.gov/petsc/download/index.html). Do that and unzip it with
 ```
-$ tar -xvf petsc-3.22.5.tar.gz
+$ tar -xvf petsc-3.25.4.tar.gz
 ```
 
 Change to the PETSc directory from the command window, for example with:
 ```
-$ cd petsc-3.22.5
+$ cd petsc-3.25.4
 ```
 
 Example of PETSc configuration command is provided below:
 
 ```
 $ ./configure \
---prefix=/Users/user/software/petsc/petsc-3.22.5-opt \
+--prefix=/Users/user/software/petsc/petsc-3.25.4-opt \
 --COPTFLAGS="-O2" \
 --FOPTFLAGS="-O2" \
 --CXXOPTFLAGS="-O2" \
@@ -131,7 +131,7 @@ $ ./configure \
 --download-superlu_dist=1 \
 --with-clean
 ```
-This will install an optimized (fast) version of PETSc on your system in the directory `/Users/user/software/petsc/petsc-3.22.5-opt`. You can change this directory, obviously, but in that case please remember where you put it as we need it later. Both parallel direct solvers MUMPS and SUPERLU_DIST will be configured. LaMEM will also work without these parallel solvers, but we find them particularly useful for 2D simulations and as coarse grid solvers.
+This will install an optimized (fast) version of PETSc on your system in the directory `/Users/user/software/petsc/petsc-3.25.4-opt`. You can change this directory, obviously, but in that case please remember where you put it as we need it later. Both parallel direct solvers MUMPS and SUPERLU_DIST will be configured. LaMEM will also work without these parallel solvers, but we find them particularly useful for 2D simulations and as coarse grid solvers.
 
 After the configuration step has finished successfully (which will take some time), it should look something like
 ![Configure PETSc](../assets/img/PETSc_configure.png)
@@ -142,7 +142,7 @@ If you only run simulations with LaMEM, the optimized version of PETSc described
 
 ```
 $ ./configure \
---prefix=/Users/user/software/petsc/petsc-3.22.5-deb \
+--prefix=/Users/user/software/petsc/petsc-3.25.4-deb \
 --COPTFLAGS="-g -O0" \
 --FOPTFLAGS="-g -O0" \
 --CXXOPTFLAGS="-g -O0" \
@@ -162,7 +162,7 @@ $ ./configure \
 ```
 Compared to before, we have three changes, namely: 
 
-1) That the prefix (or the directory where PETSc will be put) is changed to `--prefix=/Users/user/software/petsc/petsc-3.22.5-deb` 
+1) That the prefix (or the directory where PETSc will be put) is changed to `--prefix=/Users/user/software/petsc/petsc-3.25.4-deb` 
 2) We tell it to compile a debug version of PETSc with  `--with-debugging=1`
 3) We change the optimization flags to `--FOPTFLAGS="-O0 -g" --CXXOPTFLAGS="-O0 -g" --COPTFLAGS="-O0 -g"`
 
@@ -192,8 +192,8 @@ git clone https://github.com/UniMainzGeo/LaMEM.git ./LaMEM
 ```
 Next you need to specify the environmental variables ```PETSC_OPT``` and ```PETSC_DEB```:
 ```
-export PETSC_OPT=/Users/user/software/petsc/petsc-3.22.5-opt
-export PETSC_DEB=/Users/user/software/petsc/petsc-3.22.5-deb
+export PETSC_OPT=/Users/user/software/petsc/petsc-3.25.4-opt
+export PETSC_DEB=/Users/user/software/petsc/petsc-3.25.4-deb
 ```
 Note that this may need to be adapted, depending on the machine you use.
 You may also want to specify this in your ```.bashrc```  or ```.zshrc``` files depending on platform.
