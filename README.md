@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/UniMainzGeo/LaMEM/workflows/CI/badge.svg)](https://github.com/UniMainzGeo/LaMEM/actions)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://unimainzgeo.github.io/LaMEM/dev/man/Home/)
-[![DOI](https://zenodo.org/badge/641438500.svg)](https://zenodo.org/doi/10.5281/zenodo.10211634)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10211634.svg)](https://zenodo.org/doi/10.5281/zenodo.10211634)
 
 > [!NOTE]
 > **Upgrading from LaMEM v2.2.1 to v3.0.0+?**
