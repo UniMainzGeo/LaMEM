@@ -8,7 +8,7 @@ If you are only a user of LaMEM, any text-editor is sufficient to change the *.d
 
 Here it will be assumed that we debug on Mac OS, MPICH is installed via Homebrew, and PETSc and LaMEM are installed in the following folders
 ```
-$ /Users/user/software/petsc/petsc-3.22.5-deb 
+$ /Users/user/software/petsc/petsc-3.25.4-deb 
 $ /Users/user/prog/LaMEM
 ```
 which you obviously have to update for your system. 
@@ -25,7 +25,7 @@ The first thing to do is to add a file called `c_cpp_properties.json` inside the
             "includePath": [
                 "${workspaceFolder}/**",
                 "/opt/homebrew/include",
-                "/Users/user/software/petsc/petsc-3.22.5-deb/include/"
+                "/Users/user/software/petsc/petsc-3.25.4-deb/include/"
             ]
         }
     ],
@@ -52,7 +52,7 @@ Once that is the case, you need to create a file called `launch.json` in the sam
             "args": ["-ParamFile","FallingBlock_IterativeSolver.dat","-nstep_max","2"],
             "stopOnEntry": false,
             "cwd": "/Users/user/prog/LaMEM/examples/BuiltInSetups/",
-            "env": {"PETSC_DEB": "/Users/user/software/petsc/petsc-3.22.5-deb",
+            "env": {"PETSC_DEB": "/Users/user/software/petsc/petsc-3.25.4-deb",
                     "PATH": "/opt/homebrew/bin:${env:PATH}"},
             "preLaunchTask": "C/C++: build LaMEM deb file",
         },   
@@ -74,7 +74,7 @@ For this, you need to create a file `tasks.json` in `/Users/user/prog/LaMEM/.vsc
             ],
             "options": {
                 "cwd": "/Users/user/prog/LaMEM/src",
-                "env": {"PETSC_DEB":  "/Users/user/software/petsc/petsc-3.22.5-deb",
+                "env": {"PETSC_DEB":  "/Users/user/software/petsc/petsc-3.25.4-deb",
                         "PATH": "/opt/homebrew/bin:${env:PATH}"}
             },
             "problemMatcher": [

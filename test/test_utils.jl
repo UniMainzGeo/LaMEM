@@ -6,6 +6,7 @@ using LinearAlgebra, Glob
 if use_dynamic_lib
     #using LaMEM.LaMEM_jll.PETSc_jll
     using PETSc_jll
+    using OpenBLAS_jll   # Julia's bundled ILP64 OpenBLAS, forwarded to PETSc via LBT (see add_dylibs)
 end
 
 export run_lamem_local_test, perform_lamem_test, clean_test_directory, run_lamem_save_grid_local, mpiexec
@@ -79,7 +80,7 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
             perform_run = Cmd(`$(mpiexec) -n $(cores) $(valgrind_cmd) $(exec) -ParamFile $(ParamFile) $args`)
         end
 
-        perform_run = addenv(perform_run, "DYLD_FALLBACK_LIBRARY_PATH"=>dylibs, "MPIWRAP_DEBUG"=>"quiet")
+        perform_run = addenv(add_dylibs(perform_run, dylibs), "MPIWRAP_DEBUG"=>"quiet")
 
         try
             # Open once and share the same IOStream for stdout & stderr, so they interleave into a
@@ -102,7 +103,7 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
             perform_run = Cmd(`$(exec) -ParamFile $(ParamFile) $args`);
             
             # add dynamic libraries to the path (if specified)
-            perform_run = addenv(perform_run,"DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
+            perform_run = add_dylibs(perform_run, dylibs)
 
            ## perform_run = deactivate_multithreading(perform_run)
 
@@ -126,7 +127,7 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
             perform_run = Cmd(`$(mpiexec) -n $(cores) $(exec) -ParamFile $(ParamFile) $args`);
 
             # add dynamic libraries to the path (if specified)
-            perform_run = addenv(perform_run,"DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
+            perform_run = add_dylibs(perform_run, dylibs)
 
        ##     perform_run = deactivate_multithreading(perform_run)
 
@@ -177,7 +178,7 @@ function LaMEM_has_fastscape(; bin_dir="../bin", deb=false)
     dylibs, _ = get_dylibs()
     has_fastscape = false
     try
-        perform_run = addenv(Cmd(`$(exec) -fastscape_info`), "DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
+        perform_run = add_dylibs(Cmd(`$(exec) -fastscape_info`), dylibs)
         out = read(perform_run, String)
         has_fastscape = contains(out, "FASTSCAPE_ENABLED")
     catch
@@ -552,7 +553,9 @@ This retrieves dynamic libraries, required to run LaMEM. It assumes that the glo
 """
 function get_dylibs()
     if use_dynamic_lib
-        dylibs = PETSc_jll.LIBPATH;
+        # NOTE: LIBPATH is a Ref{String}; it must be dereferenced. Passing the Ref itself
+        # stringifies to `Base.RefValue{String}("...")`, which no loader can parse.
+        dylibs = PETSc_jll.LIBPATH[];
 
         mpi_path = if PETSc_jll.MPICH_jll.is_available()
             PETSc_jll.MPICH_jll.PATH_list[1]
@@ -570,6 +573,41 @@ function get_dylibs()
     end
     
     return dylibs, mpi_path
+end
+
+
+"""
+    add_dylibs(cmd, dylibs)
+Adds the runtime environment a LaMEM binary built against the PETSc_jll libraries needs:
+
+- The dynamic library search path, via the loader variable that is correct for the current
+  platform (`LD_LIBRARY_PATH` on Linux, `DYLD_FALLBACK_LIBRARY_PATH` on macOS, `PATH` on
+  Windows); `JLLWrappers.LIBPATH_env` names that variable for us.
+
+- `LBT_DEFAULT_LIBS`. PETSc_jll >= 3.25 no longer links OpenBLAS directly but libblastrampoline
+  (LBT). LBT ships no BLAS of its own: it forwards to whatever library it is told to load. Inside
+  Julia, LinearAlgebra does that forwarding; a standalone executable gets an empty trampoline and
+  either segfaults on its first BLAS call (VecNorm -> BLASdot) or floods stderr with
+  "no BLAS/LAPACK library loaded for dgemm_()". `LBT_DEFAULT_LIBS` tells LBT what to forward to
+  at load time, as a `;`-separated list.
+
+  BOTH interfaces have to be loaded. The stack mixes them: libpetsc, UMFPACK and CHOLMOD call the
+  ILP64, `_64_`-suffixed symbols (`dgemm_64_`), while SuperLU_DIST and MUMPS call the unsuffixed
+  LP64 ones (`dgemm_`). Loading only the ILP64 half leaves the direct solvers with an empty
+  trampoline - a MUMPS run emits ~78k "no BLAS/LAPACK library loaded" errors and aborts. So
+  forward Julia's stdlib OpenBLAS (ILP64 `libopenblas64_`) *and* OpenBLAS32_jll (LP64), which
+  PETSc_jll depends on for exactly these libraries.
+"""
+function add_dylibs(cmd::Cmd, dylibs)
+    if isempty(dylibs)
+        return cmd
+    end
+    # ILP64 (libpetsc, UMFPACK, CHOLMOD) and LP64 (SuperLU_DIST, MUMPS); LBT needs both
+    blas_libs = join([OpenBLAS_jll.libopenblas_path,
+                      PETSc_jll.OpenBLAS32_jll.libopenblas_path], ";")
+
+    return addenv(cmd, PETSc_jll.JLLWrappers.LIBPATH_env => dylibs,
+                       "LBT_DEFAULT_LIBS"              => blas_libs)
 end
 
 

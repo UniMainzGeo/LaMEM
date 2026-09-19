@@ -10,6 +10,10 @@ pkg> test LaMEM
 More details are given [here](https://github.com/JuliaGeodynamics/LaMEM.jl).
 This will work fine on your local machine or server (including in parallel). Yet, if you are planning to use LaMEM on large parallel HPC clusters you (or your system administrator) may still need to compile PETSc.
 
+These binaries are built with [BinaryBuilder](https://binarybuilder.org), which cross-compiles LaMEM and every one of its dependencies for all supported platforms and publishes them as *JLL packages*. `add LaMEM` pulls in `LaMEM_jll`, which in turn brings the matching `PETSc_jll` along with MUMPS, SuperLU_DIST, SuiteSparse, HYPRE, HDF5 and an MPI implementation - all built against each other, so there is no version mismatch to resolve yourself. This is why the precompiled route needs no compiler, no PETSc installation, and no `PETSC_OPT`.
+
+Note that `PETSc_jll` is also useful on its own: if you want to *develop* LaMEM but would rather not build PETSc, you can compile LaMEM from source against the precompiled PETSc. That is described in section 1.2, and is what our Github Actions CI does.
+
 # 1.1 Installation from source
 
 LaMEM is build in top of [PETSc](http://www.mcs.anl.gov/petsc/), which provides great support for parallel solvers and grid infrastructure. Different than other codes used in geodynamics, LaMEM does not require an excessive amount of additional packages, except for the ones that can be downloaded through the PETSc installation system. 
@@ -52,7 +56,7 @@ $ spack info petsc
 ```
 Install PETSc with the correct packages, and leave out stuff we don't need. The optimized compilation of PETSc is installed with
 ```
-$ spack install petsc@3.22.5 +mumps +suite-sparse +superlu-dist ~hypre ~hdf5 ~shared ~debug
+$ spack install petsc@3.25.4 +mumps +suite-sparse +superlu-dist ~hypre ~hdf5 ~shared ~debug
 ```
 If that works out, you'll have to update your environmental variables and create the `PETSC_OPT` variable
 ```
@@ -96,24 +100,24 @@ $ brew install mpich
 The most important package for LaMEM is PETSc. If you just want to give LaMEM a try, the most basic installation is sufficient. Once you do production runs, it is worthwhile to experiment a bit with more optimized solver options. Installing PETSc with those does not always work, but PETSc has a very responsive user list which is searchable, and where you can post your questions if needed. 
 As PETSc regularly changes its syntax, LaMEM is always only compatible with a particular version of PETSc. This is typically updated once per year. 
 
-The current version of LaMEM is compatible with **PETSc 3.22.5** 
-We have also successfully compiled LaMEM with PETSc 3.23.x so you are also welcome to use that, but our Github actions CI testing environment uses 3.22.5 at the moment. 
+The current version of LaMEM is compatible with **PETSc 3.25.4**, which is what our Github actions CI testing environment uses and therefore the version we recommend.
+LaMEM also still compiles against PETSc 3.22.x - 3.24.x if you already have one of those installed, but new installations should use 3.25.x. 
 
 You can download the PETSc version you need [here](http://www.mcs.anl.gov/petsc/download/index.html). Do that and unzip it with
 ```
-$ tar -xvf petsc-3.22.5.tar.gz
+$ tar -xvf petsc-3.25.4.tar.gz
 ```
 
 Change to the PETSc directory from the command window, for example with:
 ```
-$ cd petsc-3.22.5
+$ cd petsc-3.25.4
 ```
 
 Example of PETSc configuration command is provided below:
 
 ```
 $ ./configure \
---prefix=/Users/user/software/petsc/petsc-3.22.5-opt \
+--prefix=/Users/user/software/petsc/petsc-3.25.4-opt \
 --COPTFLAGS="-O2" \
 --FOPTFLAGS="-O2" \
 --CXXOPTFLAGS="-O2" \
@@ -131,7 +135,7 @@ $ ./configure \
 --download-superlu_dist=1 \
 --with-clean
 ```
-This will install an optimized (fast) version of PETSc on your system in the directory `/Users/user/software/petsc/petsc-3.22.5-opt`. You can change this directory, obviously, but in that case please remember where you put it as we need it later. Both parallel direct solvers MUMPS and SUPERLU_DIST will be configured. LaMEM will also work without these parallel solvers, but we find them particularly useful for 2D simulations and as coarse grid solvers.
+This will install an optimized (fast) version of PETSc on your system in the directory `/Users/user/software/petsc/petsc-3.25.4-opt`. You can change this directory, obviously, but in that case please remember where you put it as we need it later. Both parallel direct solvers MUMPS and SUPERLU_DIST will be configured. LaMEM will also work without these parallel solvers, but we find them particularly useful for 2D simulations and as coarse grid solvers.
 
 After the configuration step has finished successfully (which will take some time), it should look something like
 ![Configure PETSc](../assets/img/PETSc_configure.png)
@@ -142,7 +146,7 @@ If you only run simulations with LaMEM, the optimized version of PETSc described
 
 ```
 $ ./configure \
---prefix=/Users/user/software/petsc/petsc-3.22.5-deb \
+--prefix=/Users/user/software/petsc/petsc-3.25.4-deb \
 --COPTFLAGS="-g -O0" \
 --FOPTFLAGS="-g -O0" \
 --CXXOPTFLAGS="-g -O0" \
@@ -162,7 +166,7 @@ $ ./configure \
 ```
 Compared to before, we have three changes, namely: 
 
-1) That the prefix (or the directory where PETSc will be put) is changed to `--prefix=/Users/user/software/petsc/petsc-3.22.5-deb` 
+1) That the prefix (or the directory where PETSc will be put) is changed to `--prefix=/Users/user/software/petsc/petsc-3.25.4-deb` 
 2) We tell it to compile a debug version of PETSc with  `--with-debugging=1`
 3) We change the optimization flags to `--FOPTFLAGS="-O0 -g" --CXXOPTFLAGS="-O0 -g" --COPTFLAGS="-O0 -g"`
 
@@ -192,8 +196,8 @@ git clone https://github.com/UniMainzGeo/LaMEM.git ./LaMEM
 ```
 Next you need to specify the environmental variables ```PETSC_OPT``` and ```PETSC_DEB```:
 ```
-export PETSC_OPT=/Users/user/software/petsc/petsc-3.22.5-opt
-export PETSC_DEB=/Users/user/software/petsc/petsc-3.22.5-deb
+export PETSC_OPT=/Users/user/software/petsc/petsc-3.25.4-opt
+export PETSC_DEB=/Users/user/software/petsc/petsc-3.25.4-deb
 ```
 Note that this may need to be adapted, depending on the machine you use.
 You may also want to specify this in your ```.bashrc```  or ```.zshrc``` files depending on platform.
@@ -236,7 +240,102 @@ which should looke like:
 ![Installation_FirstRun](../assets/img/Installation_FirstRun.png)
 
 
-# 1.2. Visualization
+# 1.2 Compiling LaMEM against the precompiled PETSc
+
+Building PETSc yourself (section 1.1) gives you the most control, and on an HPC cluster it is
+usually unavoidable, because PETSc has to be linked against that machine's own MPI. On a laptop or
+a normal workstation, though, you can skip it: the same BinaryBuilder-built PETSc that ships with
+the precompiled binaries is available as `PETSc_jll`, and you can compile LaMEM from source
+against it. This is exactly what our Github Actions CI does (see `test/setup_packages.jl` and
+`test/compile_lamem.jl`), so it is a well-tested path.
+
+[JLLPrefixes.jl](https://github.com/JuliaPackaging/JLLPrefixes.jl) does the work of gathering a
+JLL and all of its dependencies into a single, ordinary directory tree that non-Julia build
+systems can use.
+
+**PETSc_jll must be deployed to `/workspace/destdir`.** This is not a free choice: BinaryBuilder
+compiles inside that sandbox prefix, and the resulting `lib/petsc/*/lib/petsc/conf/petscvariables`
+records absolute paths from it (`include /workspace/destdir/.../petscvariables`, `-L/workspace/destdir/lib`, ...).
+LaMEM's Makefile includes those PETSc configuration files, so if the prefix lives anywhere else the
+build stops with
+
+```
+.../conf/variables:112: /workspace/destdir/lib/petsc/double_real_Int32/lib/petsc/conf/petscvariables: No such file or directory
+```
+
+Create the directory once (it needs `sudo`, since it sits at the filesystem root):
+
+```
+$ sudo mkdir -p /workspace/destdir
+$ sudo chown $(whoami) /workspace/destdir
+```
+
+Then deploy PETSc into it from julia. Pick the MPI implementation explicitly: `PETSc_jll` is built
+for several, and the deployed `libmpi.dylib`/`libmpi.so` has to be the same one your `mpicc`/`mpicxx`
+wrappers use, or the build fails with *"PETSc was configured with Open MPI but now appears to be
+compiling using a non-Open MPI mpi.h"*.
+
+```julia
+julia> ]
+pkg> add JLLPrefixes
+julia> using JLLPrefixes, Base.BinaryPlatforms
+julia> plat = HostPlatform()
+julia> plat["mpi"] = "mpich"          # or "openmpi", matching your mpicc/mpicxx
+julia> paths = collect_artifact_paths(["PETSc_jll"]; platform=plat)
+julia> deploy_artifact_paths("/workspace/destdir", paths)
+```
+
+`/workspace/destdir/lib/petsc/` now holds the available PETSc configurations. LaMEM uses the
+double-precision real ones:
+
+| directory                | integers | debugging |
+|:-------------------------|:---------|:----------|
+| `double_real_Int32`      | 32 bit   | no        |
+| `double_real_Int64`      | 64 bit   | no        |
+| `double_real_Int64_deb`  | 64 bit   | yes       |
+
+Point `PETSC_OPT` (and `PETSC_DEB`, if you want the debug build) at one of them and compile as
+usual:
+
+```
+$ export PETSC_OPT=/workspace/destdir/lib/petsc/double_real_Int32
+$ cd LaMEM/src
+$ make mode=opt all
+```
+
+Note that there is no 32-bit *debug* build; if you want `mode=deb`, use the `double_real_Int64_deb`
+configuration (and then `double_real_Int64` for `mode=opt`, so that both halves use the same
+integer size).
+
+### Running the resulting binary
+
+From PETSc 3.25 on, `PETSc_jll` no longer links OpenBLAS directly but goes through
+[libblastrampoline](https://github.com/JuliaLinearAlgebra/libblastrampoline) (LBT), which forwards
+BLAS/LAPACK calls to whichever library it is told to load. Julia fills that in automatically for
+its own processes, but a LaMEM binary started from a terminal gets an empty trampoline and dies on
+its first BLAS call. Tell LBT what to forward to with `LBT_DEFAULT_LIBS`, which takes a
+`;`-separated list. Both interfaces are needed: `libpetsc`, UMFPACK and CHOLMOD call the 64-bit
+integer (ILP64, `dgemm_64_`) symbols, whereas SuperLU_DIST and MUMPS call the 32-bit integer (LP64,
+`dgemm_`) ones.
+
+```julia
+julia> using OpenBLAS_jll, PETSc_jll     # ILP64 and LP64 OpenBLAS respectively
+julia> join([OpenBLAS_jll.libopenblas_path, PETSc_jll.OpenBLAS32_jll.libopenblas_path], ";")
+```
+
+Export the result as `LBT_DEFAULT_LIBS` before running LaMEM. You also need the shared libraries on
+the loader path (`LD_LIBRARY_PATH` on linux, `DYLD_FALLBACK_LIBRARY_PATH` on mac). LaMEM's own test
+harness does all of this in `add_dylibs` in `test/test_utils.jl`, which is a useful reference.
+
+!!! note
+    On macOS this route currently stops at the final link step with `ld: library 'emutls_w' not
+    found`: the macOS `PETSc_jll` link line refers to a GCC runtime library from the BinaryBuilder
+    cross-compilation toolchain that is not part of the JLL and not present on a normal mac. The
+    linux builds do not reference it, which is why our CI (ubuntu) uses this route successfully. On
+    macOS, build PETSc yourself as described in section 1.1, or simply use the precompiled LaMEM
+    from section 1.0.
+
+# 1.3. Visualization
 The output of LaMEM is in VTK format, which can be read and visualized with any software that can handle this filetype. For us, the our choice of code is [Paraview](http://paraview.org/), which is very well maintained package that runs on all systems, and even allows you to do parallel rendering. We usually simply download the binaries from the webpage. If you want to render on a large-scale cluster instead, we recommend that you buy your system administrator a beer.
 
 After opening, paraview looks like this:
