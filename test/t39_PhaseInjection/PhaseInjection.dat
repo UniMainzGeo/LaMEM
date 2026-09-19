@@ -1,0 +1,187 @@
+#===============================================================================
+# Mid-run phase injection through the t_inject parameter of built-in geometries
+#
+# Domain: 100 x 100 x 100 km box (geo units), free slip on all sides.
+#
+# Initial geometry (t = 0, no t_inject specified):
+#   phase 0 : background matrix
+#   phase 1 : dense block in the centre of the domain
+#
+# Injected geometries (t_inject > 0, applied during the time step loop):
+#   phase 2 : sphere in the upper-left  corner, repeatedly injected at
+#             t = 1, 2 and 3 Myr (tests a multi-valued t_inject)
+#   phase 3 : sphere in the lower-right corner, injected at t = 4.75 Myr
+#
+# With dt = dt_max = 0.5 Myr the simulation time at the beginning of step k is
+# (k-1)*0.5 Myr, so the injections fire at the beginning of steps 3, 5, 7 and 11.
+#
+# nstep_rdb = 3 writes a restart database after steps 3, 6 and 9. Restarting from
+# the step 9 database (t = 4.5 Myr) therefore re-runs steps 10 and 11 and checks
+# that (a) the already applied injections do not fire again and (b) the still
+# pending injection at t = 4.75 Myr survives the restart.
+#===============================================================================
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units            = geo
+
+	unit_temperature = 1000   # K
+	unit_length      = 1e3    # m    (lengths are given in km)
+	unit_viscosity   = 1e20   # Pa*s
+	unit_stress      = 1e9    # Pa
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 10.0   # simulation end time [Myr] (nstep_max is the binding limit)
+	dt        = 0.5    # initial time step    [Myr]
+	dt_min    = 1e-3   # minimum time step    [Myr]
+	dt_max    = 0.5    # maximum time step    [Myr]
+	inc_dt    = 0.1    # time step increment per time step (fraction of unit)
+	CFL       = 0.5    # CFL criterion
+	CFLMAX    = 0.5    # CFL criterion for elasticity
+	nstep_max = 11     # maximum allowed number of steps
+	nstep_out = 1      # save output every n steps
+	nstep_rdb = 3      # save restart database every n steps
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+	nel_x = 16
+	nel_y = 16
+	nel_z = 16
+
+	coord_x = 0.0 100.0   # [km]
+	coord_y = 0.0 100.0   # [km]
+	coord_z = 0.0 100.0   # [km]
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+# Default (free slip on all sides)
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.0 0.0 -9.81   # gravity vector [m/s^2]
+	FSSA           = 1.0             # free surface stabilization parameter [0 - 1]
+	init_guess     = 0               # initial guess flag
+	eta_min        = 1e21            # viscosity lower bound [Pa*s]
+	eta_max        = 1e24            # viscosity upper bound [Pa*s]
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = geom   # setup type
+	nmark_x        = 3      # markers per cell in x-direction
+	nmark_y        = 3      # ...                 y-direction
+	nmark_z        = 3      # ...                 z-direction
+	bg_phase       = 0      # background phase ID
+
+	advect         = basic  # advection scheme
+	interp         = stag   # velocity interpolation scheme
+	mark_ctrl      = basic  # marker control type
+	nmark_lim      = 8 100  # min/max number of markers per cell
+
+# Initial geometry: dense block in the centre of the domain.
+# No t_inject is given, so it is applied during initialization (t_inject = 0).
+
+	<BoxStart>
+		phase  = 1
+		bounds = 25.0 75.0  25.0 75.0  25.0 75.0   # [km] left right front back bottom top
+	<BoxEnd>
+
+# Injected geometry 1: light sphere in the upper-left corner, repeatedly
+# injected at 1, 2 and 3 Myr. Re-stamping the sphere resets the phase of the
+# markers that have drifted into it since the previous injection.
+
+	<SphereStart>
+		phase       = 2
+		center      = 20.0 50.0 80.0   # [km]
+		radius      = 15.0             # [km]
+		t_inject    = 1.0 2.0 3.0      # [Myr] injection times
+		Temperature = constant
+		cstTemp     = 800              # [C]
+	<SphereEnd>
+
+# Injected geometry 2: light sphere in the lower-right corner, injected once at
+# 4.75 Myr, i.e. at the beginning of step 11 and therefore only after a restart
+# from the step 9 database.
+
+	<SphereStart>
+		phase       = 3
+		center      = 80.0 50.0 20.0   # [km]
+		radius      = 15.0             # [km]
+		t_inject    = 4.75             # [Myr] injection time
+		Temperature = constant
+		cstTemp     = 500              # [C]
+	<SphereEnd>
+
+#===============================================================================
+# Output
+#===============================================================================
+
+	out_file_name       = PhaseInjection
+	out_pvd             = 1
+	out_phase           = 1
+	out_density         = 1
+	out_temperature     = 1
+
+	out_avd             = 1
+	out_avd_pvd         = 1
+	out_avd_ref         = 3
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# background matrix
+	<MaterialStart>
+		ID  = 0
+		rho = 3000   # [kg/m^3]
+		eta = 1e22   # [Pa*s]
+	<MaterialEnd>
+
+	# dense central block (present from t = 0)
+	<MaterialStart>
+		ID  = 1
+		rho = 3200   # [kg/m^3]
+		eta = 5e22   # [Pa*s]
+	<MaterialEnd>
+
+	# first injected phase
+	<MaterialStart>
+		ID  = 2
+		rho = 2800   # [kg/m^3]
+		eta = 2e22   # [Pa*s]
+	<MaterialEnd>
+
+	# second injected phase
+	<MaterialStart>
+		ID  = 3
+		rho = 2800   # [kg/m^3]
+		eta = 2e22   # [Pa*s]
+	<MaterialEnd>
+
+#===============================================================================
+# Solver options
+#===============================================================================
+
+<SolverOptionsStart>
+
+	set_linear_problem = 1
+	monitor_solvers    = 1
+	linear_tolerances  = 1e-7 1e-10 25   # rtol, atol, maxit
+	stokes_solver      = coupled_direct
+	direct_solver_type = mumps
+
+<SolverOptionsEnd>
+
+#===============================================================================

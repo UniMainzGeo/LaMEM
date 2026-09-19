@@ -22,6 +22,8 @@
 /src/.project
 /test/*/ProcessorPartitioning*.*
 /test/t33_Initial_APS/Timestep_*
+/test/t39_PhaseInjection/Timestep_*
+/test/t39_PhaseInjection/restart/
 Manifest.toml
 doc/build/
 # leftovers of the pre-v3.0.0 documentation (the sources now live in doc/)

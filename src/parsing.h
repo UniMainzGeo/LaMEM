@@ -122,6 +122,17 @@ PetscErrorCode getScalarParam(
     PetscInt     num,
     PetscScalar  scal);
 
+// variable-length variant of getScalarParam: reads up to maxnum values and
+// returns the number of values actually found in nval (0 if the key is absent)
+PetscErrorCode getScalarParamCount(
+    FB          *fb,
+    ParamType    ptype,
+    const char  *key,
+    PetscScalar *val,
+    PetscInt    *nval,
+    PetscInt     maxnum,
+    PetscScalar  scal);
+
 // string is initialized with default value, if available, otherwise set to zero
 PetscErrorCode getStringParam(
     FB          *fb,

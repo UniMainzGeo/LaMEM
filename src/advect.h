@@ -20,6 +20,7 @@ struct JacRes;
 struct FreeSurf;
 struct DBMat;
 struct P_Tr;
+struct GeomPrim;
 
 //---------------------------------------------------------------------------
 //............   Material marker (history variables advection)   ............
@@ -135,6 +136,9 @@ struct AdvCtx
 	PetscInt      randNoiseGP;         // random noise flag, subsequently applied to geometric primitives
 	PetscInt      bgPhase;             // background phase ID
 	PetscInt      periodic;            // periodic advection flag
+
+	PetscInt      numInjGeom;          // number of geometric primitives injected during the simulation
+	GeomPrim     *injGeom;             // geometric primitives injected during the simulation (t_inject)
 
 	PetscInt      saveMark;            // flag for saving markers
 	char          saveFile[_str_len_]; // marker output file name

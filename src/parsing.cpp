@@ -624,6 +624,68 @@ PetscErrorCode getScalarParam(
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
+PetscErrorCode getScalarParamCount(
+    FB          *fb,
+    ParamType    ptype,
+    const char  *key,
+    PetscScalar *val,
+    PetscInt    *nval,
+    PetscInt     maxnum,
+    PetscScalar  scal)
+{
+	// same as getScalarParam, but the number of values is not known beforehand:
+	// up to maxnum values are read, and the number actually found is returned in nval
+
+	PetscInt  i, n;
+	PetscBool found;
+	char     *dbkey;
+
+	PetscFunctionBeginUser;
+
+	(*nval) = 0;
+
+	if(maxnum < 1) PetscFunctionReturn(0);
+
+	found = PETSC_FALSE;
+
+	if(!fb->nblocks)
+	{
+		asprintf(&dbkey, "-%s", key);
+	}
+	else
+	{
+		asprintf(&dbkey, "-%s[%" PetscInt_FMT "]", key, fb->ID);
+	}
+
+	n = maxnum;
+
+	PetscCall(PetscOptionsGetScalarArray(NULL, NULL, dbkey, val, &n, &found));
+
+	free(dbkey);
+
+	if(found != PETSC_TRUE && fb)
+	{
+		PetscCall(FBGetScalarArray(fb, key, &n, val, maxnum, &found));
+	}
+
+	// check data item exists
+	if(found != PETSC_TRUE)
+	{
+		if     (ptype == _REQUIRED_) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define parameter \"[-]%s\"\n", key);
+		else if(ptype == _OPTIONAL_) PetscFunctionReturn(0);
+	}
+
+	// check at least one entry was specified
+	if(n < 1) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"[-]%s\" \n", key);
+
+	// nondimensionalize
+	for(i = 0; i < n; i++) val[i] /= scal;
+
+	(*nval) = n;
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
 PetscErrorCode getStringParam(
     FB          *fb,
     ParamType    ptype,

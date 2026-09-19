@@ -1,0 +1,151 @@
+--------------------------------------------------------------------------
+Parsing input file : PhaseInjection.dat 
+Finished parsing input file 
+--------------------------------------------------------------------------
+Parsing PETSc options
+Total number of options added: 0
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-jp_pc_factor_mat_solver_type mumps # (source: code)
+-jp_pc_type lu # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type user # (source: code)
+-js_ksp_atol 1e-10 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 25 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 1e-07 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-mode restart # (source: code)
+-options_left # (source: code)
+-ParamFile PhaseInjection.dat # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+#End of PETSc Option Table entries
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Sep  1 2026 - Time: 17:14:54 	    
+     Version : 3.1.0 
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Loading restart database ... Material parameters: 
+
+   Phase ID : 0   
+   (dens)   : rho = 3000. [kg/m^3]  
+   (diff)   : eta = 1e+22 [Pa*s]  Bd = 5e-23 [1/Pa/s]  
+   (FK)     : TRef_fk = 0.27315 [C]  
+
+   Phase ID : 1   
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : eta = 5e+22 [Pa*s]  Bd = 1e-23 [1/Pa/s]  
+   (FK)     : TRef_fk = 0.27315 [C]  
+
+   Phase ID : 2   
+   (dens)   : rho = 2800. [kg/m^3]  
+   (diff)   : eta = 2e+22 [Pa*s]  Bd = 2.5e-23 [1/Pa/s]  
+   (FK)     : TRef_fk = 0.27315 [C]  
+
+   Phase ID : 3   
+   (dens)   : rho = 2800. [kg/m^3]  
+   (diff)   : eta = 2e+22 [Pa*s]  Bd = 2.5e-23 [1/Pa/s]  
+   (FK)     : TRef_fk = 0.27315 [C]  
+
+--------------------------------------------------------------------------
+done (0.0262434 sec)
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Picard operator type          : assembled
+   Preconditioner type           : user-defined
+   Penalty parameter (pgamma)    : 1.000000e+03
+--------------------------------------------------------------------------
+Saving output ... done (0.0803078 sec)
+--------------------------------------------------------------------------
+================================ STEP 10 =================================
+--------------------------------------------------------------------------
+Current time        : 4.50000000 [Myr] 
+Tentative time step : 0.50000000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 3.667412474952e-03
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.667412474952e-03
+    1 KSP Residual norm 6.126693381791e-08
+    2 KSP Residual norm 2.157654722591e-11
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 2.157654738910e-11
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 1.29483 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.477102822586e-12 
+      |Div|_2   = 2.157654722016e-11 
+   Momentum: 
+      |mRes|_2  = 2.700058191794e-15 
+--------------------------------------------------------------------------
+Actual time step : 0.50000 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+--------------------------------------------------------------------------
+Saving output ... done (0.0782288 sec)
+--------------------------------------------------------------------------
+================================ STEP 11 =================================
+--------------------------------------------------------------------------
+Current time        : 5.00000000 [Myr] 
+Tentative time step : 0.50000000 [Myr] 
+--------------------------------------------------------------------------
+   Phase injection: Sphere, phase 3, t_inject = 4.75 [Myr] 
+  0 SNES Function norm 1.655484953117e-02
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.655484953117e-02
+    1 KSP Residual norm 7.361494318189e-07
+    2 KSP Residual norm 2.470332359802e-10
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 2.470332359904e-10
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 1.09833 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.131035501875e-11 
+      |Div|_2   = 2.470332359752e-10 
+   Momentum: 
+      |mRes|_2  = 2.739818785689e-15 
+--------------------------------------------------------------------------
+Actual time step : 0.50000 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+--------------------------------------------------------------------------
+Saving output ... done (0.0788135 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 2.77818 (sec) 
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-jp_pc_factor_mat_solver_type mumps # (source: code)
+-jp_pc_type lu # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type user # (source: code)
+-js_ksp_atol 1e-10 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 25 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 1e-07 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-mode restart # (source: code)
+-options_left # (source: code)
+-ParamFile PhaseInjection.dat # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+#End of PETSc Option Table entries
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+There is one unused database option. It is:
+Option left: name:-ParamFile value: PhaseInjection.dat source: code

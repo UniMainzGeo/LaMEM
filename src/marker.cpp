@@ -25,6 +25,7 @@
 #include "surf.h"
 #include "interpolate.h"
 #include "phase_transition.h"
+#include "tssolve.h"
 //---------------------------------------------------------------------------
 PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 {
@@ -63,6 +64,10 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	if     (actx->msetup == _GEOM_)       { PetscCall(ADVMarkInitGeom    (actx, fb)); }
 	else if(actx->msetup == _FILES_)      { PetscCall(ADVMarkInitFiles   (actx, fb)); }
 	else if(actx->msetup == _POLYGONS_)   { PetscCall(ADVMarkInitPolygons(actx, fb)); }
+
+	// read geometric primitives that are injected during the simulation (t_inject).
+	// For msetup = geom this is already handled by ADVMarkInitGeom.
+	if(actx->msetup != _GEOM_)            { PetscCall(ADVMarkInitInjectGeom(actx, fb)); }
 
 	// set temperature (optional methods)
 
@@ -817,14 +822,127 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
+void GeomPrimSetType(GeomPrim *geom, PetscInt type)
 {
-	Marker         *P;
-	PetscLogDouble  t;
+	// set primitive type together with the matching setPhase function pointer.
+	// The type is stored explicitly because function pointers are not valid
+	// across runs and have to be restored after reading a restart database.
+
+	geom->type = type;
+
+	if     (type == _GEOM_SPHERE_)    geom->setPhase = setPhaseSphere;
+	else if(type == _GEOM_ELLIPSOID_) geom->setPhase = setPhaseEllipsoid;
+	else if(type == _GEOM_BOX_)       geom->setPhase = setPhaseBox;
+	else if(type == _GEOM_RIDGE_)     geom->setPhase = setPhaseRidge;
+	else if(type == _GEOM_LAYER_)     geom->setPhase = setPhaseLayer;
+	else if(type == _GEOM_HEX_)       geom->setPhase = setPhaseHex;
+	else if(type == _GEOM_CYLINDER_)  geom->setPhase = setPhaseCylinder;
+	else                              geom->setPhase = NULL;
+}
+//---------------------------------------------------------------------------
+const char * GeomPrimGetName(PetscInt type)
+{
+	if     (type == _GEOM_SPHERE_)    return "Sphere";
+	else if(type == _GEOM_ELLIPSOID_) return "Ellipsoid";
+	else if(type == _GEOM_BOX_)       return "Box";
+	else if(type == _GEOM_RIDGE_)     return "RidgeSeg";
+	else if(type == _GEOM_LAYER_)     return "Layer";
+	else if(type == _GEOM_HEX_)       return "Hex";
+	else if(type == _GEOM_CYLINDER_)  return "Cylinder";
+
+	return "Unknown";
+}
+//---------------------------------------------------------------------------
+PetscInt GeomPrimAtInit(GeomPrim *geom)
+{
+	// primitive has to be applied during initialization if it lists time zero
+
+	PetscInt jj;
+
+	for(jj = 0; jj < geom->numInject; jj++)
+	{
+		if(geom->t_inject[jj] == 0.0) return 1;
+	}
+
+	return 0;
+}
+//---------------------------------------------------------------------------
+PetscInt GeomPrimDeferred(GeomPrim *geom)
+{
+	// primitive has to be injected during the simulation if it lists a positive time
+
+	PetscInt jj;
+
+	for(jj = 0; jj < geom->numInject; jj++)
+	{
+		if(geom->t_inject[jj] > 0.0) return 1;
+	}
+
+	return 0;
+}
+//---------------------------------------------------------------------------
+static PetscErrorCode ADVMarkReadInjectTimes(AdvCtx *actx, FB *fb, GeomPrim *geom)
+{
+	// read the optional t_inject parameter of a geometric primitive.
+	//
+	// t_inject lists the simulation times at which the primitive is applied to the
+	// markers. The default is a single entry equal to zero, which means that the
+	// primitive is applied during the initialization of the model (legacy behavior).
+	// Positive entries defer the application to the corresponding simulation times.
+
+	PetscScalar buff[_max_inj_times_ + 1];
+	PetscInt    jj, nval;
+
+	PetscFunctionBeginUser;
+
+	// default: apply the primitive during initialization
+	geom->numInject   = 1;
+	geom->t_inject[0] = 0.0;
+	geom->done[0]     = 0;
+
+	// read one extra value to be able to detect an overflow
+	PetscCall(getScalarParamCount(fb, _OPTIONAL_, "t_inject", buff, &nval, _max_inj_times_ + 1, actx->jr->scal->time));
+
+	if(!nval) PetscFunctionReturn(0);
+
+	if(nval > _max_inj_times_)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,
+		        "Too many t_inject values specified for a geometric primitive! Max allowed: %" PetscInt_FMT "", _max_inj_times_);
+	}
+
+	for(jj = 0; jj < nval; jj++)
+	{
+		if(buff[jj] < 0.0)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Negative t_inject value specified for a geometric primitive\n");
+		}
+
+		if(jj && buff[jj] <= buff[jj-1])
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "t_inject values must be specified in strictly increasing order\n");
+		}
+
+		geom->t_inject[jj] = buff[jj];
+		geom->done[jj]     = 0;
+	}
+
+	geom->numInject = nval;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode ADVMarkReadGeom(AdvCtx *actx, FB *fb, GeomPrim *geom, GeomPrim **pgeom, PetscInt *ngeom_)
+{
+	// read all geometric primitive blocks from the input file.
+	// The primitives are returned in the order of appearance in the file;
+	// applying them to the markers is left to the caller, since primitives
+	// carrying a positive t_inject are only applied later during the simulation.
+
 	PetscScalar     chLen, chTime;
 	char            TemperatureStructure[_str_len_];
-	PetscInt        jj, ngeom, imark, maxPhaseID;
-	GeomPrim        geom[_max_geom_], *pgeom[_max_geom_], *sphere, *ellipsoid, *box, *ridge, *hex, *layer, *cylinder;
+	PetscInt        jj, ngeom, maxPhaseID;
+	GeomPrim       *sphere, *ellipsoid, *box, *ridge, *hex, *layer, *cylinder;
 
 	// map container to sort primitives in the order of appearance
 	map<PetscInt, GeomPrim*> cgeom;
@@ -833,6 +951,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	PetscFunctionBeginUser;
 
 	ngeom      = 0;
+	(*ngeom_)  = 0;
 	maxPhaseID = actx->dbm->numPhases - 1;
 	chLen      = actx->jr->scal->length;
 	chTime     = actx->jr->scal->time;
@@ -840,8 +959,6 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	// clear storage
 	PetscCall(PetscMemzero(geom,  sizeof(GeomPrim) *(size_t)_max_geom_));
 	PetscCall(PetscMemzero(pgeom, sizeof(GeomPrim*)*(size_t)_max_geom_));
-
-	PrintStart(&t, "Reading geometric primitives", NULL);
 
 	//=======
 	// LAYERS
@@ -902,7 +1019,10 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 			layer->kappa    = 1e-6/( (actx->jr->scal->length_si)*(actx->jr->scal->length_si)/(actx->jr->scal->time_si)); // thermal diffusivity in m2/s
 		}
 
-		layer->setPhase = setPhaseLayer;
+		// optional: defer application of this primitive to given simulation time(s)
+		PetscCall(ADVMarkReadInjectTimes(actx, fb, layer));
+
+		GeomPrimSetType(layer, _GEOM_LAYER_);
 
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], layer));
 	}
@@ -939,7 +1059,10 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 			sphere->cstTemp = (sphere->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
 		}
 
-		sphere->setPhase = setPhaseSphere;
+		// optional: defer application of this primitive to given simulation time(s)
+		PetscCall(ADVMarkReadInjectTimes(actx, fb, sphere));
+
+		GeomPrimSetType(sphere, _GEOM_SPHERE_);
 
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], sphere));
 	}
@@ -974,7 +1097,10 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 			ellipsoid->cstTemp = (ellipsoid->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
 		}
 
-		ellipsoid->setPhase = setPhaseEllipsoid;
+		// optional: defer application of this primitive to given simulation time(s)
+		PetscCall(ADVMarkReadInjectTimes(actx, fb, ellipsoid));
+
+		GeomPrimSetType(ellipsoid, _GEOM_ELLIPSOID_);
 
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], ellipsoid));
 	}
@@ -1031,7 +1157,10 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 			box->kappa      = 1e-6/( (actx->jr->scal->length_si)*(actx->jr->scal->length_si)/(actx->jr->scal->time_si)); // thermal diffusivity in m2/s
 		}
 
-		box->setPhase = setPhaseBox;
+		// optional: defer application of this primitive to given simulation time(s)
+		PetscCall(ADVMarkReadInjectTimes(actx, fb, box));
+
+		GeomPrimSetType(box, _GEOM_BOX_);
 
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], box));
 	}
@@ -1092,7 +1221,10 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 		}
 
-		ridge->setPhase = setPhaseRidge;
+		// optional: defer application of this primitive to given simulation time(s)
+		PetscCall(ADVMarkReadInjectTimes(actx, fb, ridge));
+
+		GeomPrimSetType(ridge, _GEOM_RIDGE_);
 
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], ridge));
 
@@ -1118,7 +1250,10 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		// compute bounding box
 		HexGetBoundingBox(hex->coord, hex->bounds);
 
-		hex->setPhase = setPhaseHex;
+		// optional: defer application of this primitive to given simulation time(s)
+		PetscCall(ADVMarkReadInjectTimes(actx, fb, hex));
+
+		GeomPrimSetType(hex, _GEOM_HEX_);
 
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], hex));
 	}
@@ -1155,7 +1290,10 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 			cylinder->cstTemp = (cylinder->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
 		}
 
-		cylinder->setPhase = setPhaseCylinder;
+		// optional: defer application of this primitive to given simulation time(s)
+		PetscCall(ADVMarkReadInjectTimes(actx, fb, cylinder));
+
+		GeomPrimSetType(cylinder, _GEOM_CYLINDER_);
 
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], cylinder));
 	}
@@ -1167,6 +1305,89 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	{
 		pgeom[ngeom++] = it->second;
 	}
+
+	(*ngeom_) = ngeom;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode ADVMarkStoreInjectGeom(AdvCtx *actx, GeomPrim **pgeom, PetscInt ngeom)
+{
+	// store the primitives that carry a positive t_inject entry in the advection
+	// context, so that they can be applied later during the time step loop
+
+	GeomPrim    *geom;
+	Scaling     *scal;
+	PetscInt     jj, kk, ninj;
+
+	PetscFunctionBeginUser;
+
+	scal = actx->jr->scal;
+
+	actx->numInjGeom = 0;
+	actx->injGeom    = NULL;
+
+	// count deferred primitives
+	for(jj = 0, ninj = 0; jj < ngeom; jj++)
+	{
+		if(GeomPrimDeferred(pgeom[jj])) ninj++;
+	}
+
+	if(!ninj) PetscFunctionReturn(0);
+
+	// allocate & copy in the order of appearance in the file
+	PetscCall(PetscMalloc((size_t)ninj*sizeof(GeomPrim), &actx->injGeom));
+	PetscCall(PetscMemzero(actx->injGeom, (size_t)ninj*sizeof(GeomPrim)));
+
+	for(jj = 0, ninj = 0; jj < ngeom; jj++)
+	{
+		if(GeomPrimDeferred(pgeom[jj])) actx->injGeom[ninj++] = *pgeom[jj];
+	}
+
+	actx->numInjGeom = ninj;
+
+	// print summary
+	PetscPrintf(PETSC_COMM_WORLD, "Phase injection (t_inject): \n");
+	PetscPrintf(PETSC_COMM_WORLD, "   Injected primitives           : %" PetscInt_FMT " \n", actx->numInjGeom);
+
+	for(jj = 0; jj < actx->numInjGeom; jj++)
+	{
+		geom = actx->injGeom + jj;
+
+		PetscPrintf(PETSC_COMM_WORLD, "   %s: phase %" PetscInt_FMT ", injection time(s) %s :",
+		            GeomPrimGetName(geom->type), geom->phase, scal->lbl_time);
+
+		for(kk = 0; kk < geom->numInject; kk++)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, " %g", geom->t_inject[kk]*scal->time);
+		}
+
+		if(geom->setTemp == 1)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, ", cstTemp = %g", geom->cstTemp*scal->temperature - scal->Tshift);
+		}
+
+		PetscPrintf(PETSC_COMM_WORLD, "\n");
+	}
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
+{
+	Marker         *P;
+	PetscLogDouble  t;
+	PetscInt        jj, kk, ngeom, imark;
+	GeomPrim        geom[_max_geom_], *pgeom[_max_geom_];
+
+	PetscFunctionBeginUser;
+
+	PrintStart(&t, "Reading geometric primitives", NULL);
+
+	// read all primitives
+	PetscCall(ADVMarkReadGeom(actx, fb, geom, pgeom, &ngeom));
 
 	//==============
 	// ASSIGN PHASES
@@ -1180,14 +1401,128 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		//set default
 		P->phase = actx->bgPhase;
 
-		// override from geometric primitives
+		// override from geometric primitives (only those that apply at t = 0)
 		for(jj = 0; jj < ngeom; jj++)
 		{
-			pgeom[jj]->setPhase(pgeom[jj], P);
+			if(GeomPrimAtInit(pgeom[jj])) pgeom[jj]->setPhase(pgeom[jj], P);
+		}
+	}
+
+	// mark the zero injection times as applied
+	for(jj = 0; jj < ngeom; jj++)
+	{
+		for(kk = 0; kk < pgeom[jj]->numInject; kk++)
+		{
+			if(pgeom[jj]->t_inject[kk] == 0.0) pgeom[jj]->done[kk] = 1;
 		}
 	}
 
 	PrintDone(t);
+
+	// store the primitives that are injected later during the simulation
+	PetscCall(ADVMarkStoreInjectGeom(actx, pgeom, ngeom));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode ADVMarkInitInjectGeom(AdvCtx *actx, FB *fb)
+{
+	// Read geometric primitives for setups in which the initial geometry is not
+	// defined by them (msetup = files, e.g. GeophysicalModelGenerator input, or
+	// msetup = polygons). Only the primitives carrying a positive t_inject are
+	// retained: they are injected later during the time step loop. Primitives that
+	// would apply at t = 0 are ignored, as they have always been for these setups.
+
+	PetscInt  jj, ngeom, nskip;
+	GeomPrim  geom[_max_geom_], *pgeom[_max_geom_];
+
+	PetscFunctionBeginUser;
+
+	// read all primitives
+	PetscCall(ADVMarkReadGeom(actx, fb, geom, pgeom, &ngeom));
+
+	if(!ngeom) PetscFunctionReturn(0);
+
+	// mark the zero injection times as applied, they are not used in this setup
+	for(jj = 0, nskip = 0; jj < ngeom; jj++)
+	{
+		if(GeomPrimAtInit(pgeom[jj]))
+		{
+			for(PetscInt kk = 0; kk < pgeom[jj]->numInject; kk++)
+			{
+				if(pgeom[jj]->t_inject[kk] == 0.0) pgeom[jj]->done[kk] = 1;
+			}
+
+			nskip++;
+		}
+	}
+
+	if(nskip)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,
+		            "Warning: %" PetscInt_FMT " geometric primitive(s) apply at t = 0 and are ignored, "
+		            "since the initial geometry is not defined by geometric primitives (msetup) \n", nskip);
+	}
+
+	// store the primitives that are injected later during the simulation
+	PetscCall(ADVMarkStoreInjectGeom(actx, pgeom, ngeom));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode ADVMarkInjectGeom(AdvCtx *actx)
+{
+	// Apply the geometric primitives whose injection time has been reached.
+	// Called at the beginning of every time step, before the solve.
+
+	GeomPrim    *geom;
+	Marker      *P;
+	Scaling     *scal;
+	PetscScalar  time;
+	PetscInt     ii, jj, imark, fired, anyfired;
+
+	PetscFunctionBeginUser;
+
+	if(!actx->numInjGeom) PetscFunctionReturn(0);
+
+	scal     = actx->jr->scal;
+	time     = actx->jr->ts->time;
+	anyfired = 0;
+
+	for(ii = 0; ii < actx->numInjGeom; ii++)
+	{
+		geom  = actx->injGeom + ii;
+		fired = 0;
+
+		// check whether any injection time has been reached
+		for(jj = 0; jj < geom->numInject; jj++)
+		{
+			if(!geom->done[jj] && time >= geom->t_inject[jj])
+			{
+				geom->done[jj] = 1;
+				fired          = 1;
+
+				PetscPrintf(PETSC_COMM_WORLD,
+				            "   Phase injection: %s, phase %" PetscInt_FMT ", t_inject = %g %s \n",
+				            GeomPrimGetName(geom->type), geom->phase, geom->t_inject[jj]*scal->time, scal->lbl_time);
+			}
+		}
+
+		if(!fired) continue;
+
+		anyfired = 1;
+
+		// overwrite phase (and temperature) of all markers inside the primitive
+		for(imark = 0; imark < actx->nummark; imark++)
+		{
+			P = &actx->markers[imark];
+
+			geom->setPhase(geom, P);
+		}
+	}
+
+	// transfer the updated marker properties to the grid before the solve
+	if(anyfired) PetscCall(ADVProjHistMarkToGrid(actx));
 
 	PetscFunctionReturn(0);
 }

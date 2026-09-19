@@ -497,12 +497,27 @@
 
 # Geometric primitives:
 
+# Every geometric primitive accepts the optional parameter t_inject, which lists the
+# simulation times at which the primitive is stamped onto the markers. The default is
+# a single entry equal to zero, meaning that the primitive is applied while the model
+# is initialized (this is the legacy behaviour, so existing input files are unaffected).
+# Positive entries defer the primitive to the corresponding simulation times: at the
+# beginning of the first time step that reaches such a time, the phase (and, if given,
+# the temperature) of every marker inside the primitive is overwritten. Up to 50 times
+# may be listed, in strictly increasing order, and zero may be mixed with positive
+# entries (t_inject = 0 3.0 6.0 applies the body at t = 0 and re-injects it at 3 and 6).
+# Deferred primitives are honoured for every msetup: with msetup = files (for instance
+# a setup built with the GeophysicalModelGenerator) the marker file defines the initial
+# geometry, and geometric primitives are read only for their deferred injections.
+# Injection times that have already fired are stored in the restart database.
+
     <SphereStart>
         phase       = 1
         radius      = 1.5
         center      = 1.0 2.0 3.0
         Temperature = constant # optional: Temperature of the sphere. possibilities: [constant]
         cstTemp     = 1000     # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+        t_inject    = 0        # optional: simulation time(s) at which the sphere is applied [default: 0 = at initialization]
     <SphereEnd>
 
     <EllipsoidStart>
@@ -521,6 +536,7 @@
         topTemp     = 0       # required in case of [linear,halfspace]: temperature @ top [in Celcius in case of GEO units]
         botTemp     = 1300    # required in case of [linear,halfspace]: temperature @ bottom [in Celcius in case of GEO units]
         thermalAge  = 70      # required in case of [halfspace]: thermal age of lithosphere [in Myrs if GEO units are used]
+        t_inject    = 2.0 4.0 # optional: inject this box at 2 and 4 Myr instead of at initialization
     <BoxEnd>
 
     <RidgeSegStart>

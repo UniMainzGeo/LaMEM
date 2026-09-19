@@ -46,6 +46,22 @@ typedef struct
 
 // geometric primitives
 
+// geometric primitive type.
+// Stored in GeomPrim.type so that the setPhase function pointer can be restored
+// after a binary restart (function addresses are not valid across runs).
+enum GeomPrimType
+{
+	_GEOM_NONE_ = 0,
+	_GEOM_SPHERE_,
+	_GEOM_ELLIPSOID_,
+	_GEOM_BOX_,
+	_GEOM_RIDGE_,
+	_GEOM_LAYER_,
+	_GEOM_HEX_,
+	_GEOM_CYLINDER_
+
+};
+
 typedef struct GeomPrim GeomPrim;
 
 struct GeomPrim
@@ -87,8 +103,26 @@ struct GeomPrim
 	PetscScalar thermalAge;
 	PetscScalar kappa;
 
+	// mid-run injection (optional, controlled by the t_inject parameter)
+	PetscInt    type;                      // GeomPrimType, used to restore setPhase after restart
+	PetscInt    numInject;                 // number of entries in t_inject (default 1, t_inject[0] = 0)
+	PetscScalar t_inject[_max_inj_times_]; // injection times (non-dimensional); 0 = apply at initialization
+	PetscInt    done[_max_inj_times_];     // 1 once the corresponding t_inject entry has been applied
+
 	void (*setPhase)(GeomPrim*, Marker*);
 };
+
+// set primitive type together with the matching setPhase function pointer
+void GeomPrimSetType(GeomPrim *geom, PetscInt type);
+
+// does the primitive have to be applied during initialization (t_inject == 0)?
+PetscInt GeomPrimAtInit(GeomPrim *geom);
+
+// does the primitive have to be injected during the simulation (t_inject > 0)?
+PetscInt GeomPrimDeferred(GeomPrim *geom);
+
+// name of the primitive type (for diagnostic output)
+const char * GeomPrimGetName(PetscInt type);
 
 void setPhaseSphere(GeomPrim *sphere, Marker *P);
 
@@ -167,6 +201,23 @@ PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, Pet
 PetscErrorCode ADVMarkInitGeom    (AdvCtx *actx, FB *fb);
 PetscErrorCode ADVMarkInitFiles   (AdvCtx *actx, FB *fb);
 PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb);
+
+//---------------------------------------------------------------------------
+
+// Mid-run injection of geometric primitives (t_inject)
+
+// read all geometric primitive blocks from the input file
+PetscErrorCode ADVMarkReadGeom(AdvCtx *actx, FB *fb, GeomPrim *geom, GeomPrim **pgeom, PetscInt *ngeom_);
+
+// store the primitives that carry a t_inject > 0 entry in the advection context
+PetscErrorCode ADVMarkStoreInjectGeom(AdvCtx *actx, GeomPrim **pgeom, PetscInt ngeom);
+
+// read deferred primitives for setups that do not use geometric primitives for the
+// initial geometry (msetup = files, e.g. GeophysicalModelGenerator, or msetup = polygons)
+PetscErrorCode ADVMarkInitInjectGeom(AdvCtx *actx, FB *fb);
+
+// apply due injections; called every time step from LaMEMLibSolve
+PetscErrorCode ADVMarkInjectGeom(AdvCtx *actx);
 
 //---------------------------------------------------------------------------
 

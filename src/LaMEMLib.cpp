@@ -633,6 +633,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// apply phase transitions on particles
 		PetscCall(Phase_Transition(&lm->actx));
 
+		// inject geometric primitives whose injection time has been reached
+		PetscCall(ADVMarkInjectGeom(&lm->actx));
+
 		// initialize boundary constraint vectors
 		PetscCall(BCApply(&lm->bc));
 
