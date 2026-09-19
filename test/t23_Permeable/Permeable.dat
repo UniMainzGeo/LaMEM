@@ -264,7 +264,7 @@
 	picard_to_newton     =  1e-4  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1
 	stokes_solver        = coupled_direct
-	direct_solver_type   = mumps           # was superlu_dist; diverges under PETSc 3.25 in Int64 (see PR #84)
+	direct_solver_type   = superlu_dist
 
 <SolverOptionsEnd>
 

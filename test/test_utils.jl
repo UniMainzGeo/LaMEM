@@ -597,17 +597,42 @@ Adds the runtime environment a LaMEM binary built against the PETSc_jll librarie
   trampoline - a MUMPS run emits ~78k "no BLAS/LAPACK library loaded" errors and aborts. So
   forward Julia's stdlib OpenBLAS (ILP64 `libopenblas64_`) *and* OpenBLAS32_jll (LP64), which
   PETSc_jll depends on for exactly these libraries.
+
+- Single-threaded BLAS and OpenMP. SuperLU_DIST is built with OpenMP and calls the LP64 BLAS
+  from inside its parallel regions. With threading left at its default, those calls
+  intermittently reach OpenBLAS with a corrupted argument and the run prints
+
+      ** On entry to DGEMM  parameter number  8 had an illegal value
+
+  dozens of times, after which the solve produces garbage and the nonlinear solver either
+  stalls or reports a severe divergence. It is nondeterministic: the same binary on the same
+  input fails roughly two runs in three, which is why it can pass in one CI run and fail in the
+  next on an identical tree.
+
+  `OMP_NUM_THREADS` is the variable that matters - pinning `OPENBLAS_NUM_THREADS` alone does not
+  help, since the threads in question are SuperLU_DIST's, not OpenBLAS's. `OPENBLAS_NUM_THREADS`
+  and `VECLIB_MAXIMUM_THREADS` are set alongside it to keep the BLAS itself single-threaded, the
+  same set LaMEM.jl pins in `deactivate_multithreading`. The test suite compares residuals
+  against stored reference values, so it wants reproducible arithmetic rather than threaded
+  speed anyway.
 """
 function add_dylibs(cmd::Cmd, dylibs)
+    # Thread pinning applies to every run, including a locally built PETSc (no dylibs to add):
+    # the OpenMP race below is a property of SuperLU_DIST, not of the PETSc_jll packaging.
+    cmd = addenv(cmd, "OMP_NUM_THREADS"        => "1",
+                      "OPENBLAS_NUM_THREADS"   => "1",
+                      "VECLIB_MAXIMUM_THREADS" => "1")
+
     if isempty(dylibs)
         return cmd
     end
+
     # ILP64 (libpetsc, UMFPACK, CHOLMOD) and LP64 (SuperLU_DIST, MUMPS); LBT needs both
     blas_libs = join([OpenBLAS_jll.libopenblas_path,
                       PETSc_jll.OpenBLAS32_jll.libopenblas_path], ";")
 
     return addenv(cmd, PETSc_jll.JLLWrappers.LIBPATH_env => dylibs,
-                       "LBT_DEFAULT_LIBS"              => blas_libs)
+                       "LBT_DEFAULT_LIBS"               => blas_libs)
 end
 
 
