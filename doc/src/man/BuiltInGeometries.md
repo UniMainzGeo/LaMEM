@@ -106,16 +106,18 @@ Allows you to insert a cylinder-like object:
 ```
 
 
-## Mid-run injection with `t_inject`
+## Mid-run injection with `n_inject` and `t_inject`
 
-Every primitive listed above accepts the optional parameter `t_inject`, which lists the
-simulation times at which the primitive is stamped onto the markers:
+Every primitive listed above accepts two optional parameters: `n_inject`, the number of
+simulation times at which the primitive is stamped onto the markers, and `t_inject`, the
+times themselves:
 
 ```
 <SphereStart>
     phase       = 2
     center      = 20.0 50.0 80.0
     radius      = 15.0
+    n_inject    = 2              # number of injection times
     t_inject    = 2.0 4.0        # [Myr in GEO units] inject at 2 and 4 Myr
 
     Temperature = constant       # optional, as for any other primitive
@@ -123,31 +125,33 @@ simulation times at which the primitive is stamped onto the markers:
 <SphereEnd>
 ```
 
-The default is a single entry equal to zero, which means that the primitive is applied
-while the model is initialized. Omitting `t_inject` therefore reproduces the behaviour
-described in the sections above, and existing input files are unaffected.
+Without `n_inject` (the default) the primitive defines the initial geometry exactly as
+described in the sections above, so existing input files are unaffected.
 
-A positive entry defers the primitive: at the beginning of the first time step whose
-simulation time reaches that value, the phase of every marker inside the primitive is
-overwritten, together with the temperature if a `Temperature` option is given. Each
-listed time fires exactly once, so a body can be injected repeatedly. Up to 50 times may
-be given, in strictly increasing order, and zero may be combined with positive values:
+With `n_inject > 0` the primitive is *not* applied at initialization. At the beginning of
+the first time step whose simulation time reaches each listed value, the phase of every
+marker inside the primitive is overwritten, together with the temperature if a
+`Temperature` option is given. Each listed time fires exactly once, so a body can be
+injected repeatedly. Up to 10 times may be given, in strictly increasing order. To have
+the same body both at `t = 0` and injected later, write two blocks.
 
-```
-    t_inject = 0 3.0 6.0     # present from the start, re-injected at 3 and 6 Myr
-```
+Three further points are worth noting:
 
-Two further points are worth noting:
+* **Deformation history is reset.** Injected material is treated as newly emplaced, so the
+  accumulated plastic strain, the accumulated total strain and the deviatoric stress of the
+  affected markers are set to zero. Their pressure and displacement are left untouched.
+* **Overlapping primitives are applied in the order of appearance in the input file.** If
+  two primitives are injected at the same time and overlap in space, the one written last
+  wins. This is the same rule that applies to primitives at initialization.
+* **Restarts are handled.** The injection times that have already fired are stored in the
+  restart database, so a restarted run neither repeats an injection that has already
+  happened nor loses one that is still pending.
 
-* Deferred primitives are read for every marker setup type, not only for `msetup = geom`.
-  A model whose initial geometry comes from a marker file, for example one built with the
-  [GeophysicalModelGenerator package](https://juliageodynamics.github.io/GeophysicalModelGenerator.jl/dev/),
-  can therefore still use built-in primitives for the bodies it injects later. In that case
-  the marker file defines the initial geometry and primitives that would apply at `t = 0`
-  are ignored, with a warning.
-* The injection times that have already fired are stored in the restart database, so a
-  restarted run neither repeats an injection that has already happened nor loses one that
-  is still pending.
+Injected primitives are read for every marker setup type, not only for `msetup = geom`. A
+model whose initial geometry comes from a marker file, for example one built with the
+[GeophysicalModelGenerator package](https://juliageodynamics.github.io/GeophysicalModelGenerator.jl/dev/),
+can therefore still use built-in primitives for the bodies it injects later. For those
+setups every primitive in the input file must specify `n_inject`.
 
 Injection replaces the marker phase inside the primitive regardless of what was there
 before, including the air phase above a free surface. Placing an injected body across the

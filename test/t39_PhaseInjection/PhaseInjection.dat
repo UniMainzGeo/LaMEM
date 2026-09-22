@@ -1,13 +1,13 @@
 #===============================================================================
-# Mid-run phase injection through the t_inject parameter of built-in geometries
+# Mid-run phase injection through the n_inject / t_inject parameters of built-in geometries
 #
 # Domain: 100 x 100 x 100 km box (geo units), free slip on all sides.
 #
-# Initial geometry (t = 0, no t_inject specified):
+# Initial geometry (no n_inject specified):
 #   phase 0 : background matrix
 #   phase 1 : dense block in the centre of the domain
 #
-# Injected geometries (t_inject > 0, applied during the time step loop):
+# Injected geometries (n_inject > 0, applied during the time step loop):
 #   phase 2 : sphere in the upper-left  corner, repeatedly injected at
 #             t = 1, 2 and 3 Myr (tests a multi-valued t_inject)
 #   phase 3 : sphere in the lower-right corner, injected at t = 4.75 Myr
@@ -91,7 +91,7 @@
 	nmark_lim      = 8 100  # min/max number of markers per cell
 
 # Initial geometry: dense block in the centre of the domain.
-# No t_inject is given, so it is applied during initialization (t_inject = 0).
+# No n_inject is given, so it is applied during initialization.
 
 	<BoxStart>
 		phase  = 1
@@ -106,6 +106,7 @@
 		phase       = 2
 		center      = 20.0 50.0 80.0   # [km]
 		radius      = 15.0             # [km]
+		n_inject    = 3                # number of injection times
 		t_inject    = 1.0 2.0 3.0      # [Myr] injection times
 		Temperature = constant
 		cstTemp     = 800              # [C]
@@ -119,6 +120,7 @@
 		phase       = 3
 		center      = 80.0 50.0 20.0   # [km]
 		radius      = 15.0             # [km]
+		n_inject    = 1                # number of injection times
 		t_inject    = 4.75             # [Myr] injection time
 		Temperature = constant
 		cstTemp     = 500              # [C]

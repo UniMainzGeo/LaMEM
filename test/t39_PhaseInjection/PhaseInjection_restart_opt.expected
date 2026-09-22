@@ -24,7 +24,7 @@ Total number of options added: 0
 #End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Sep  1 2026 - Time: 17:14:54 	    
+     Compiled: Date: Sep 21 2026 - Time: 18:46:23 	    
      Version : 3.1.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -52,14 +52,14 @@ Loading restart database ... Material parameters:
    (FK)     : TRef_fk = 0.27315 [C]  
 
 --------------------------------------------------------------------------
-done (0.0262434 sec)
+done (0.0267829 sec)
 --------------------------------------------------------------------------
 Preconditioner parameters: 
    Picard operator type          : assembled
    Preconditioner type           : user-defined
    Penalty parameter (pgamma)    : 1.000000e+03
 --------------------------------------------------------------------------
-Saving output ... done (0.0803078 sec)
+Saving output ... done (0.0811553 sec)
 --------------------------------------------------------------------------
 ================================ STEP 10 =================================
 --------------------------------------------------------------------------
@@ -77,7 +77,7 @@ Tentative time step : 0.50000000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 1.29483 (sec)
+SNES solution time      : 1.29739 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -90,7 +90,7 @@ Actual time step : 0.50000 [Myr]
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
 --------------------------------------------------------------------------
-Saving output ... done (0.0782288 sec)
+Saving output ... done (0.0784431 sec)
 --------------------------------------------------------------------------
 ================================ STEP 11 =================================
 --------------------------------------------------------------------------
@@ -109,7 +109,7 @@ Tentative time step : 0.50000000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 1.09833 (sec)
+SNES solution time      : 1.10137 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -122,11 +122,11 @@ Actual time step : 0.50000 [Myr]
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
 --------------------------------------------------------------------------
-Saving output ... done (0.0788135 sec)
+Saving output ... done (0.0789108 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 2.77818 (sec) 
+Total solution time : 2.78577 (sec) 
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
 -jp_pc_factor_mat_solver_type mumps # (source: code)

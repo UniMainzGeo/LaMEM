@@ -71,9 +71,8 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 
 	PetscFunctionBeginUser;
 
-	// initialize injected geometric primitive storage (filled by ADVMarkInit)
+	// injected geometric primitives are filled by ADVMarkInit
 	actx->numInjGeom = 0;
-	actx->injGeom    = NULL;
 
 	// set advection type
 	PetscCall(ADVSetType(actx, fb));
@@ -333,23 +332,11 @@ PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
 	// read markers from disk
 	fread(actx->markers, (size_t)actx->nummark*sizeof(Marker), 1, fp);
 
-	// restore geometric primitives injected during the simulation.
-	// numInjGeom is part of the LaMEMLib blob that has already been read
-	if(actx->numInjGeom)
+	// injected geometric primitives are part of the LaMEMLib blob that has already
+	// been read, only the function pointers have to be restored from the stored type
+	for(PetscInt ii = 0; ii < actx->numInjGeom; ii++)
 	{
-		PetscCall(PetscMalloc((size_t)actx->numInjGeom*sizeof(GeomPrim), &actx->injGeom));
-
-		fread(actx->injGeom, (size_t)actx->numInjGeom*sizeof(GeomPrim), 1, fp);
-
-		// function pointers are not valid across runs, restore them from the stored type
-		for(PetscInt ii = 0; ii < actx->numInjGeom; ii++)
-		{
-			GeomPrimSetType(actx->injGeom + ii, actx->injGeom[ii].type);
-		}
-	}
-	else
-	{
-		actx->injGeom = NULL;
+		GeomPrimSetType(actx->injGeom + ii, actx->injGeom[ii].type);
 	}
 
 	// create communicator and separator
@@ -373,13 +360,6 @@ PetscErrorCode ADVWriteRestart(AdvCtx *actx, FILE *fp)
 
 	// store local markers to disk
 	fwrite(actx->markers, (size_t)actx->nummark*sizeof(Marker), 1, fp);
-
-	// store geometric primitives injected during the simulation, including the
-	// flags marking the injection times that have already been applied
-	if(actx->numInjGeom)
-	{
-		fwrite(actx->injGeom, (size_t)actx->numInjGeom*sizeof(GeomPrim), 1, fp);
-	}
 
 	PetscFunctionReturn(0);
 }
@@ -421,7 +401,6 @@ PetscErrorCode ADVDestroy(AdvCtx *actx)
 	PetscCall(PetscFree(actx->cellnum));
 	PetscCall(PetscFree(actx->markind));
 	PetscCall(PetscFree(actx->markstart));
-	PetscCall(PetscFree(actx->injGeom));
 	PetscCall(PetscFree(actx->sendbuf));
 	PetscCall(PetscFree(actx->recvbuf));
 	PetscCall(PetscFree(actx->idel));
