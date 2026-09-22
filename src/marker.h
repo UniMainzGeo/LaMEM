@@ -59,7 +59,6 @@ enum GeomPrimType
 	_GEOM_LAYER_,
 	_GEOM_HEX_,
 	_GEOM_CYLINDER_
-
 };
 
 typedef struct GeomPrim GeomPrim;
@@ -199,10 +198,6 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb);
 //---------------------------------------------------------------------------
 
 // Mid-run injection of geometric primitives (n_inject & t_inject)
-
-// read all geometric primitive blocks from the input file. Primitives without
-// injection times are returned in pgeom, the rest is stored in the advection context
-PetscErrorCode ADVMarkReadGeom(AdvCtx *actx, FB *fb, GeomPrim *geom, GeomPrim **pgeom, PetscInt *ngeom_);
 
 // read injected primitives for setups that do not use geometric primitives for the
 // initial geometry (msetup = files, e.g. GeophysicalModelGenerator, or msetup = polygons)

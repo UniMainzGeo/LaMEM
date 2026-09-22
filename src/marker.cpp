@@ -926,7 +926,7 @@ static PetscErrorCode ADVMarkPrintInjectGeom(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode ADVMarkReadGeom(AdvCtx *actx, FB *fb, GeomPrim *geom, GeomPrim **pgeom, PetscInt *ngeom_)
+static PetscErrorCode ADVMarkReadGeom(AdvCtx *actx, FB *fb, GeomPrim *geom, GeomPrim **pgeom, PetscInt *ngeom_)
 {
 	// read all geometric primitive blocks from the input file.
 	// The primitives are returned in the order of appearance in the file;

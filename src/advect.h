@@ -141,8 +141,8 @@ struct AdvCtx
 	PetscInt      bgPhase;             // background phase ID
 	PetscInt      periodic;            // periodic advection flag
 
-	PetscInt      numInjGeom;              // number of geometric primitives injected during the simulation
-	GeomPrim      injGeom[_max_geom_];     // geometric primitives injected during the simulation (t_inject)
+	PetscInt      numInjGeom;          // number of primitives injected during the simulation
+	GeomPrim      injGeom[_max_geom_]; // primitives injected during the simulation (n_inject)
 
 	PetscInt      saveMark;            // flag for saving markers
 	char          saveFile[_str_len_]; // marker output file name
