@@ -71,6 +71,9 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 
 	PetscFunctionBeginUser;
 
+	// injected geometric primitives are filled by ADVMarkInit
+	actx->numInjGeom = 0;
+
 	// set advection type
 	PetscCall(ADVSetType(actx, fb));
 
@@ -328,6 +331,13 @@ PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
 
 	// read markers from disk
 	fread(actx->markers, (size_t)actx->nummark*sizeof(Marker), 1, fp);
+
+	// injected geometric primitives are part of the LaMEMLib blob that has already
+	// been read, only the function pointers have to be restored from the stored type
+	for(PetscInt ii = 0; ii < actx->numInjGeom; ii++)
+	{
+		GeomPrimSetType(actx->injGeom + ii, actx->injGeom[ii].type);
+	}
 
 	// create communicator and separator
 	PetscCall(ADVCreateData(actx));

@@ -106,6 +106,59 @@ Allows you to insert a cylinder-like object:
 ```
 
 
+## Mid-run injection with `n_inject` and `t_inject`
+
+Every primitive listed above accepts two optional parameters: `n_inject`, the number of
+simulation times at which the primitive is stamped onto the markers, and `t_inject`, the
+times themselves:
+
+```
+<SphereStart>
+    phase       = 2
+    center      = 20.0 50.0 80.0
+    radius      = 15.0
+    n_inject    = 2              # number of injection times
+    t_inject    = 2.0 4.0        # [Myr in GEO units] inject at 2 and 4 Myr
+
+    Temperature = constant       # optional, as for any other primitive
+    cstTemp     = 800
+<SphereEnd>
+```
+
+Without `n_inject` (the default) the primitive defines the initial geometry exactly as
+described in the sections above, so existing input files are unaffected.
+
+With `n_inject > 0` the primitive is *not* applied at initialization. At the beginning of
+the first time step whose simulation time reaches each listed value, the phase of every
+marker inside the primitive is overwritten, together with the temperature if a
+`Temperature` option is given. Each listed time fires exactly once, so a body can be
+injected repeatedly. Up to 10 times may be given, in strictly increasing order. To have
+the same body both at `t = 0` and injected later, write two blocks.
+
+Three further points are worth noting:
+
+* **Deformation history is reset.** Injected material is treated as newly emplaced, so the
+  accumulated plastic strain, the accumulated total strain and the deviatoric stress of the
+  affected markers are set to zero. Their pressure and displacement are left untouched.
+* **Overlapping primitives are applied in the order of appearance in the input file.** If
+  two primitives are injected at the same time and overlap in space, the one written last
+  wins. This is the same rule that applies to primitives at initialization.
+* **Restarts are handled.** The injection times that have already fired are stored in the
+  restart database, so a restarted run neither repeats an injection that has already
+  happened nor loses one that is still pending.
+
+Injected primitives are read for every marker setup type, not only for `msetup = geom`. A
+model whose initial geometry comes from a marker file, for example one built with the
+[GeophysicalModelGenerator package](https://juliageodynamics.github.io/GeophysicalModelGenerator.jl/dev/),
+can therefore still use built-in primitives for the bodies it injects later. For those
+setups a primitive without `n_inject` is ignored, with a warning, since the initial
+geometry comes from the marker file.
+
+Injection replaces the marker phase inside the primitive regardless of what was there
+before, including the air phase above a free surface. Placing an injected body across the
+free surface is therefore the responsibility of the user, exactly as it is for a primitive
+applied at `t = 0`.
+
 ## Pro and contra of using this to create input geometries
 One of the advantages of this way of creating a LaMEM input file is that it sets the input geometry in the same file as all other options. An additional advantage is that you don't have to recreate the input geometry of the model if you change the resolution or the number of particles/cell.  
 
