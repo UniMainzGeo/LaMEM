@@ -151,7 +151,8 @@ Injected primitives are read for every marker setup type, not only for `msetup =
 model whose initial geometry comes from a marker file, for example one built with the
 [GeophysicalModelGenerator package](https://juliageodynamics.github.io/GeophysicalModelGenerator.jl/dev/),
 can therefore still use built-in primitives for the bodies it injects later. For those
-setups every primitive in the input file must specify `n_inject`.
+setups a primitive without `n_inject` is ignored, with a warning, since the initial
+geometry comes from the marker file.
 
 Injection replaces the marker phase inside the primitive regardless of what was there
 before, including the air phase above a free surface. Placing an injected body across the

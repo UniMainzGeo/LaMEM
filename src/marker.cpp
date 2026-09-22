@@ -65,7 +65,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	else if(actx->msetup == _FILES_)      { PetscCall(ADVMarkInitFiles   (actx, fb)); }
 	else if(actx->msetup == _POLYGONS_)   { PetscCall(ADVMarkInitPolygons(actx, fb)); }
 
-	// read geometric primitives that are injected during the simulation (t_inject).
+	// read geometric primitives that are injected during the simulation (n_inject).
 	// For msetup = geom this is already handled by ADVMarkInitGeom.
 	if(actx->msetup != _GEOM_)            { PetscCall(ADVMarkInitInjectGeom(actx, fb)); }
 
@@ -1353,7 +1353,8 @@ PetscErrorCode ADVMarkInitInjectGeom(AdvCtx *actx, FB *fb)
 	// Read geometric primitives for setups in which the initial geometry is not
 	// defined by them (msetup = files, e.g. GeophysicalModelGenerator input, or
 	// msetup = polygons). Only primitives that specify injection times make sense
-	// here, they are applied later during the time step loop.
+	// here, they are applied later during the time step loop. Primitives without
+	// injection times are ignored, as they have always been for these setups.
 
 	PetscInt  ngeom;
 	GeomPrim  geom[_max_geom_], *pgeom[_max_geom_];
@@ -1364,8 +1365,9 @@ PetscErrorCode ADVMarkInitInjectGeom(AdvCtx *actx, FB *fb)
 
 	if(ngeom)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,
-		        "Geometric primitives without injection times (n_inject) require msetup = geom\n");
+		PetscPrintf(PETSC_COMM_WORLD,
+		            "Warning: %" PetscInt_FMT " geometric primitive(s) without n_inject are ignored, "
+		            "the initial geometry is not defined by primitives for this msetup \n", ngeom);
 	}
 
 	PetscCall(ADVMarkPrintInjectGeom(actx));
