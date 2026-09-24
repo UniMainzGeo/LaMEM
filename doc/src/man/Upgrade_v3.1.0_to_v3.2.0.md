@@ -456,10 +456,15 @@ t37 (`t37_Collision_FastScape`) and t38 (`t38_slope_dependent_erosion`) were add
 the number t37 but was renumbered to t38 at merge. **The next free number is t39.**
 
 For this guide the complete v3.2.0 suite was run locally (`make test`, PETSc 3.22.5, 32-bit
-indices, aarch64 Linux): **103 passed, 0 failed**, in 23 min 49 s. The only non-passing entries
-were t37's two `@test_skip`s: the binary in `bin/` turned out to be a default build (see
-[§6.3](@ref "6.3 FASTSCAPE_LIB switches the test build")), so t37 is covered here only by CI's
-`surf=scape` build.
+indices, aarch64 Linux) on both builds:
+
+| Build | Result |
+|---|---|
+| default (no FastScape) | 103 passed, 0 failed; t37's two runs `@test_skip`ped as intended |
+| clean `surf=scape` (Fastscapelib 2.8.4) | **105 passed, 0 failed** (25 min), including t37 in opt and deb mode |
+
+The first attempt at the FastScape run silently reused a default build, which is how the pitfall in
+[§6.3](@ref "6.3 FASTSCAPE_LIB switches the test build") was found.
 
 ---
 
