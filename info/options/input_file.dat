@@ -188,7 +188,7 @@
                                         # must be set consistently with the LaMEM grid
         fs2D                 = 0        # dimensionality flag [0-3D LaMEM model (default), 1-2D model]
                                         # in 2D the 1D LaMEM surface is extended in the 2nd horizontal direction
-        extendedRange        = 100      # length of the FastScape domain in the extended direction [km]
+        extendedRange        = 100      # length of the FastScape domain in the extended direction [length units, e.g. km]
                                         # (required if fs2D = 1)
         extendedNodes        = 193      # number of FastScape nodes in the extended direction, must be > 2
                                         # (required if fs2D = 1 and non_uniform_grid = 0)
@@ -203,7 +203,8 @@
                                         # 0-reflective/no-flux, 1-fixed height/open (sediment may leave)
                                         # two opposing reflective boundaries may be treated as cyclic
         vel_boundary         = 0000     # surface velocity BC, 4 digits (required): per boundary
-                                        # 0-zero velocity, 1-keep velocity transferred from LaMEM
+                                        # 1-zero velocity, 0-keep velocity transferred from LaMEM
+                                        # digit order: bottom (y-min), right (x-max), top (y-max), left (x-min)
         random_noise         = 1        # add random perturbation to the initial topography (required)
         surf_out_nstep       = 1        # write FastScape output every n coupled time steps (default 1)
         vec_times            = 1        # vertical (z) exaggeration factor applied to the output (default 1)
@@ -646,7 +647,7 @@
 
 # FastScape surface output options (surf_mode = 2 only; written to <out_file_name>_fs.pvd)
 
-    out_surf_fs            = 1 # activate FastScape surface output
+    out_surf_fs            = 1 # activate FastScape surface output (all FastScape output flags default to 1)
     out_fs_pvd             = 1 # activate writing FastScape .pvd file
     out_surf_topofs        = 1 # FastScape topography
     out_surf_silt_fraction = 1 # silt fraction (marine transport, set_marine = 1)
