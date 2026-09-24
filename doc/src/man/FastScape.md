@@ -7,7 +7,7 @@ During each time step, LaMEM passes the surface velocities to FastScape, FastSca
 Both 2D and 3D LaMEM models are supported, on uniform and non-uniform grids.
 
 !!! warning
-    The FastScape surface grid is created once at startup and is never regenerated, so that drainage networks are not reset during the simulation. Setups in which the LaMEM grid stretches or contracts dynamically (i.e. models with a background strain rate) are therefore **currently not** supported.
+    The FastScape surface grid is created once at startup and is never regenerated, so that drainage networks are not reset during the simulation. Setups in which the LaMEM grid stretches or contracts dynamically (i.e. models with a background strain rate) are therefore **currently not** supported. LaMEM does not detect such setups, so the run will not stop with an error.
 
 !!! note
     FastScape runs serially on the first MPI rank, while LaMEM itself runs in parallel. This is usually cheap compared to the Stokes solve, but very large surface grids or large refinement factors may become a bottleneck.
@@ -56,7 +56,11 @@ FastScape is activated by setting `surf_mode = 2` in the free-surface section. T
     surf_mode      = 2     # 1-built-in erosion/sedimentation (default), 2-FastScape
 ```
 
-Note that `surf_mode = 2` replaces the built-in surface processes: the `erosion_model` and `sediment_model` options are only used for `surf_mode = 1`.
+Only `1` and `2` are valid. `surf_mode = 0` is accepted by the parser, but then neither the built-in surface processes nor FastScape run and the free surface is not advected, i.e. it silently stays at its initial position.
+
+Note that `surf_mode = 2` replaces the built-in surface processes: `erosion_model`, `sediment_model`, `slope_dependent_erosion` and `topo_diff`, together with all of their parameters, are only used for `surf_mode = 1`. With `surf_mode = 2` they are ignored **without a warning**, so remove them when switching a model to FastScape.
+
+FastScape also requires a dimensional unit system (`units = geo` or `units = si`), and the `<FastScapeStart>`/`<FastScapeEnd>` block described below is mandatory. Otherwise LaMEM stops at startup with `Incorrect unit type for FastScape` or `<FastScapeStart> - <FastScapeEnd> blocks must be defined`, respectively.
 
 All FastScape settings are then given in a separate block, usually placed near the end of the input file:
 ```
@@ -65,7 +69,7 @@ All FastScape settings are then given in a separate block, usually placed near t
         non_uniform_grid     = 0        # 0-uniform LaMEM grid, 1-non-uniform
         fs2D                 = 0        # 0-3D LaMEM model, 1-2D model
         fs_refine            = 2        # surface-grid refinement factor
-        max_fs_dt            = 0.001    # maximum FastScape substep [Myr]
+        max_fs_dt            = 0.001    # maximum FastScape substep [LaMEM time unit, Myr for units = geo]
         sed_phases           = 3        # phase ID assigned to deposited sediment
 
         # --- Boundary conditions, initialization & output ---
@@ -97,16 +101,16 @@ A small working example is the test setup in [`test/t37_Collision_FastScape`](ht
 
 A few parameters deserve particular attention:
 
-- `max_fs_dt` sets the maximum length of a FastScape substep. If the LaMEM time step is larger, it is subdivided into several FastScape substeps. Values that are too large under-resolve the landscape evolution values that are too small are simply expensive.
+- `max_fs_dt` sets the maximum length of a FastScape substep. If the LaMEM time step is larger, it is subdivided into several FastScape substeps. Values that are too large under-resolve the landscape evolution; values that are too small are simply expensive. The value is given in LaMEM time units (Myr for `units = geo`, s for `units = si`).
 - `fs_refine = n` inserts `n-1` equally spaced points between adjacent surface nodes in each horizontal direction. Together with the LaMEM resolution, this controls whether the surface grid can resolve the expected valley spacing.
-- `topo_boundary` and `vel_boundary` are four-digit codes, one digit per boundary. For the topography, `0` is a reflective (no-flux) boundary and `1` a fixed-height (open) boundary through which sediment leaves the domain. For the velocities, `0` sets the boundary velocity to zero and `1` keeps the velocity transferred from LaMEM.
+- `topo_boundary` and `vel_boundary` are four-digit codes, one digit per boundary of the map-view surface grid, in the order bottom (y-min), right (x-max), top (y-max), left (x-min). For the topography, `0` is a reflective (no-flux) boundary and `1` a fixed-height (open) boundary through which sediment leaves the domain. For the velocities, `1` sets the boundary velocity to zero and `0` keeps the velocity transferred from LaMEM.
 - `sed_phases` is the LaMEM phase ID given to newly deposited sediment. The corresponding material properties have to be defined in the input file.
 
-For a 2D LaMEM model (`fs2D = 1`), the 1D surface profile is extended in the second horizontal direction to build the 2D grid that FastScape requires. In that case `extendedRange` (and `extendedNodes`, for a uniform grid) must be given as well.
+For a 2D LaMEM model (`fs2D = 1`), the 1D surface profile is extended in the second horizontal direction to build the 2D grid that FastScape requires. In that case `extendedRange` (in LaMEM length units, i.e. km for `units = geo`) and, for a uniform grid, `extendedNodes` (> 2) must be given as well.
 
 ## Output
 
-With `out_surf_fs = 1`, a coupled run writes an additional ParaView collection file next to the usual LaMEM output:
+A coupled run writes an additional ParaView collection file next to the usual LaMEM output:
 
 | File | Contents |
 | :--- | :--- |
@@ -114,11 +118,13 @@ With `out_surf_fs = 1`, a coupled run writes an additional ParaView collection f
 | `<out_file_name>_surf.pvd` | LaMEM free-surface output |
 | `<out_file_name>_fs.pvd` | FastScape landscape output |
 
-Which fields end up in the FastScape output is controlled by the `out_surf_*` flags, for example `out_surf_topofs`, `out_surf_erosion_rate`, `out_surf_drainage_area`, `out_surf_catchment` or `out_surf_lake_depth`. The write frequency is set with `surf_out_nstep`.
+This output is **on by default**: `out_surf_fs`, `out_fs_pvd` and all FastScape field flags default to `1`. Which fields end up in the FastScape output is controlled by the `out_surf_*` flags, for example `out_surf_topofs`, `out_surf_erosion_rate`, `out_surf_drainage_area`, `out_surf_catchment` or `out_surf_lake_depth`; set a flag to `0` to drop that field, or `out_surf_fs = 0` to switch the FastScape output off. The write frequency is set with `surf_out_nstep`.
+
+The FastScape state is saved to and restored from LaMEM restart files, so coupled runs can be restarted like any other LaMEM run.
 
 ## Practical recommendations
 
-- **Test the surface resolution.** The organisation of river networks can be sensitive to the FastScape grid resolution, which is a well-known limitation of most lanscape evolution models. Perform a resolution test before interpreting individual channels, drainage divides or small-scale landforms.
+- **Test the surface resolution.** The organisation of river networks can be sensitive to the FastScape grid resolution, which is a well-known limitation of most landscape evolution models. Perform a resolution test before interpreting individual channels, drainage divides or small-scale landforms.
 - **Test the coupling time step.** Vary `max_fs_dt` to check that the result is converged for your setup.
 - **Use reproducible initial noise.** Drainage development depends on the initial topographic perturbation, so use the same `random_noise` setting when comparing runs with different physical parameters.
 - **Choose boundary conditions deliberately.** Open (fixed-height) boundaries let sediment leave the domain, so mass is not conserved within the modelled surface; reflective boundaries retain sediment but are not appropriate everywhere.
