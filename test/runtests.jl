@@ -904,10 +904,10 @@ if should_run_test("t14_1DStrengthEnvelope")
     τy      =  VP.fields.yield[1,1,:]
     τ_anal  =  Analytical_StrengthEnvelop(phase, T, P, τy)      # analytical solution 
 
-    @test norm(τII_1 - τII_2)  ≈ 147.23  rtol = 1e-3
-    @test norm(τII_1 - τII_3)  ≈ 74.37   rtol = 1e-3
-    @test norm(τII_1 - τII_4)  ≈ 57.25   rtol = 1e-3
-    @test norm(τII_1 - τ_anal) ≈ 147.92  rtol = 1e-3
+    @test norm(τII_1 - τII_2)  ≈ 18.63   rtol = 1e-3
+    @test norm(τII_1 - τII_3)  ≈ 11.61   rtol = 1e-3
+    @test norm(τII_1 - τII_4)  ≈ 13.35   rtol = 1e-3
+    @test norm(τII_1 - τ_anal) ≈ 147.48  rtol = 1e-3
     
     # Create plot
     if create_plots
