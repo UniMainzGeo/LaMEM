@@ -1429,9 +1429,15 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	vby = (by - Ryy)*Eyy;   vey = (ey - Ryy)*Eyy;
 	vbz = (bz - Rzz)*Ezz;   vez = (ez - Rzz)*Ezz;
 
+	// an open top only frees the top boundary: the bottom keeps its background (pure-shear) velocity,
+	// otherwise the mesh deforms with Ezz while the material at the bottom is held fixed
 	if(top_open)
 	{
 		vez = 0.0;
+	}
+	// an open (permeable) bottom only frees the bottom boundary
+	if(bc->bot_open)
+	{
 		vbz = 0.0;
 	}
 
