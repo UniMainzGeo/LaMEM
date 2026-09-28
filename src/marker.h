@@ -46,6 +46,21 @@ typedef struct
 
 // geometric primitives
 
+// geometric primitive type.
+// Stored in GeomPrim.type so that the setPhase function pointer can be restored
+// after a binary restart (function addresses are not valid across runs).
+enum GeomPrimType
+{
+	_GEOM_NONE_ = 0,
+	_GEOM_SPHERE_,
+	_GEOM_ELLIPSOID_,
+	_GEOM_BOX_,
+	_GEOM_RIDGE_,
+	_GEOM_LAYER_,
+	_GEOM_HEX_,
+	_GEOM_CYLINDER_
+};
+
 typedef struct GeomPrim GeomPrim;
 
 struct GeomPrim
@@ -87,8 +102,20 @@ struct GeomPrim
 	PetscScalar thermalAge;
 	PetscScalar kappa;
 
+	// mid-run injection (optional, controlled by n_inject & t_inject)
+	GeomPrimType type;                      // primitive type, used to restore setPhase after restart
+	PetscInt     numInject;                 // number of injection times (0 = apply at initialization)
+	PetscInt     nextInject;                // index of the next injection time to be applied
+	PetscScalar  t_inject[_max_inj_times_]; // injection times (non-dimensional), strictly increasing
+
 	void (*setPhase)(GeomPrim*, Marker*);
 };
+
+// set primitive type together with the matching setPhase function pointer
+void GeomPrimSetType(GeomPrim *geom, GeomPrimType type);
+
+// name of the primitive type (for diagnostic output)
+const char * GeomPrimGetName(GeomPrimType type);
 
 void setPhaseSphere(GeomPrim *sphere, Marker *P);
 
@@ -167,6 +194,17 @@ PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, Pet
 PetscErrorCode ADVMarkInitGeom    (AdvCtx *actx, FB *fb);
 PetscErrorCode ADVMarkInitFiles   (AdvCtx *actx, FB *fb);
 PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb);
+
+//---------------------------------------------------------------------------
+
+// Mid-run injection of geometric primitives (n_inject & t_inject)
+
+// read injected primitives for setups that do not use geometric primitives for the
+// initial geometry (msetup = files, e.g. GeophysicalModelGenerator, or msetup = polygons)
+PetscErrorCode ADVMarkInitInjectGeom(AdvCtx *actx, FB *fb);
+
+// apply due injections; called every time step from LaMEMLibSolve
+PetscErrorCode ADVMarkInjectGeom(AdvCtx *actx);
 
 //---------------------------------------------------------------------------
 

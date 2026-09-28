@@ -497,6 +497,22 @@
 
 # Geometric primitives:
 
+# Every geometric primitive accepts the optional parameters n_inject & t_inject, which
+# give the number of simulation times at which the primitive is stamped onto the markers,
+# and the times themselves. Without n_inject (the default) the primitive defines the
+# initial geometry, as it always has, so existing input files are unaffected.
+# With n_inject > 0 the primitive is not applied at initialization: at the beginning of
+# the first time step that reaches each listed time, the phase (and, if given, the
+# temperature) of every marker inside the primitive is overwritten, and the deformation
+# history (APS, ATS, deviatoric stress) of those markers is reset. Up to 10 times may be
+# listed, in strictly increasing order. To have the same body both at t = 0 and injected
+# later, specify two blocks. Primitives that overlap are applied in the order in which
+# they appear in this file, so the last one wins.
+# Injected primitives are read for every msetup: with msetup = files (for instance a
+# setup built with the GeophysicalModelGenerator) the marker file defines the initial
+# geometry, and geometric primitives are read only for their injections.
+# Injection times that have already fired are stored in the restart database.
+
     <SphereStart>
         phase       = 1
         radius      = 1.5
@@ -521,6 +537,8 @@
         topTemp     = 0       # required in case of [linear,halfspace]: temperature @ top [in Celcius in case of GEO units]
         botTemp     = 1300    # required in case of [linear,halfspace]: temperature @ bottom [in Celcius in case of GEO units]
         thermalAge  = 70      # required in case of [halfspace]: thermal age of lithosphere [in Myrs if GEO units are used]
+        n_inject    = 2       # optional: number of injection times [default: 0 = apply at initialization]
+        t_inject    = 2.0 4.0 # required if n_inject > 0: inject this box at 2 and 4 Myr
     <BoxEnd>
 
     <RidgeSegStart>

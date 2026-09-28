@@ -1588,6 +1588,46 @@ if should_run_test("t38_slope_dependent_erosion")
 end
 end
 #---------------------------------------------------------------------------
+if should_run_test("t39_PhaseInjection")
+@testset "t39_PhaseInjection" begin
+    # Mid-run phase injection through the t_inject parameter of the built-in
+    # geometric primitives. A dense block is present from t = 0, a light sphere is
+    # repeatedly injected at t = 1, 2 and 3 Myr, and a second light sphere is
+    # injected once at t = 4.75 Myr (beginning of step 11).
+    #
+    # The keyword is the initial SNES function norm of each step, which is the
+    # residual evaluated on the current density field and therefore responds
+    # directly to an injected body. The converged residuals are not used: the
+    # problem is linear and solved directly, so they are at machine precision.
+    cd(test_dir)
+    dir = "t39_PhaseInjection"
+
+    ParamFile = "PhaseInjection.dat"
+
+    keywords   = ("0 SNES Function norm", "Actual time step")
+    split_sign = ("", ":")
+    acc        = ((rtol=1e-5, atol=1e-9), (rtol=1e-6, atol=1e-9))
+
+    # full run; nstep_rdb = 3 leaves a restart database written after step 9.
+    # clean_dir must stay false here: the cleanup deletes the restart directory
+    # that the second run below needs.
+    @test perform_lamem_test(dir, ParamFile, "PhaseInjection_opt";
+        keywords = keywords, accuracy = acc, split_sign = split_sign,
+        cores    = 1,
+        mpiexec  = mpiexec,
+        create_expected_file=update_expected, clean_dir=false)
+
+    # restart from step 9 (t = 4.5 Myr) and re-run steps 10 and 11. Checks that the
+    # injections that already fired are not repeated and that the still pending
+    # injection at t = 4.75 Myr survives the restart.
+    @test perform_lamem_test(dir, ParamFile, "PhaseInjection_restart_opt";
+        keywords = keywords, accuracy = acc, split_sign = split_sign,
+        cores    = 1, args = "-mode restart",
+        mpiexec  = mpiexec,
+        create_expected_file=update_expected, clean_dir=clean_files)
+end
+end
+#---------------------------------------------------------------------------
 end
 #---------------------------------------------------------------------------
 

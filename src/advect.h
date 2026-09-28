@@ -14,6 +14,11 @@
 #define __advect_h__
 //---------------------------------------------------------------------------
 
+// GeomPrim is stored by value in the advection context (injected primitives)
+#include "marker.h"
+
+//---------------------------------------------------------------------------
+
 struct FB;
 struct FDSTAG;
 struct JacRes;
@@ -135,6 +140,9 @@ struct AdvCtx
 	PetscInt      randNoiseGP;         // random noise flag, subsequently applied to geometric primitives
 	PetscInt      bgPhase;             // background phase ID
 	PetscInt      periodic;            // periodic advection flag
+
+	PetscInt      numInjGeom;          // number of primitives injected during the simulation
+	GeomPrim      injGeom[_max_geom_]; // primitives injected during the simulation (n_inject)
 
 	PetscInt      saveMark;            // flag for saving markers
 	char          saveFile[_str_len_]; // marker output file name
