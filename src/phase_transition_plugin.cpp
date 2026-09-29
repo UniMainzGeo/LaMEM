@@ -47,6 +47,50 @@ typedef void (*JlInitWithImageHandleFn)(void *handle);
 typedef void (*JlAtexitHookFn)(int status);
 
 //---------------------------------------------------------------------------
+// libblastrampoline's public C ABI (struct layout copied verbatim from its
+// public header, e.g. <libblastrampoline_jll>/include/libblastrampoline.h or
+// the libblastrampoline artifact's include/libblastrampoline.h - NOT
+// guessed: field order/types were read directly from that header before
+// writing this). LaMEM does not link libblastrampoline; these are only used
+// to interpret the pointer lbt_get_config() returns, itself resolved at
+// runtime via PetscDLSym.
+struct LbtLibraryInfo
+{
+	char       *libname;
+	void       *dlhandle;
+	const char *suffix;
+	uint8_t    *active_forwards;
+	int32_t     interface;
+	int32_t     complex_retstyle;
+	int32_t     f2c;
+	int32_t     cblas;
+};
+
+struct LbtConfig
+{
+	LbtLibraryInfo **loaded_libs;
+	uint32_t          build_flags;
+	const char      **exported_symbols;
+	uint32_t          num_exported_symbols;
+};
+
+typedef const LbtConfig* (*LbtGetConfigFn)(void);
+typedef int32_t          (*LbtForwardFn)(const char*, int32_t, int32_t, const char*);
+typedef int32_t          (*LbtGetNumThreadsFn)(void);
+typedef void              (*LbtSetNumThreadsFn)(int32_t);
+
+// A snapshot of one libblastrampoline-forwarded library, taken BEFORE Julia
+// init (Julia's own LinearAlgebra.__init__ calls lbt_forward(..., clear=1),
+// which both overwrites the forwarding table AND frees the strings behind
+// the previous lbt_get_config() snapshot - so the libname/suffix must be
+// copied out, not just pointer-saved, before jl_init_with_image_handle runs).
+struct LbtSnapshot
+{
+	char *libname; // PetscStrallocpy'd copy
+	char *suffix;  // PetscStrallocpy'd copy, or NULL
+};
+
+//---------------------------------------------------------------------------
 // module-local state (Phase 1: single global plugin instance, one per
 // process. See the header comment on why this is process-wide, not
 // per-LaMEMLibSolve-call, state.)
@@ -57,6 +101,7 @@ namespace
 	PetscDLHandle handle     = NULL;         // handle of the plugin library
 	PhTrPluginFn  fn         = NULL;         // lamem_phase_transition
 	JlAtexitHookFn atexitFn  = NULL;         // jl_atexit_hook (optional)
+	char          loadedPath[_str_len_] = ""; // path passed to the first successful PhTrPluginLoad
 
 	// SoA scratch buffers, reused & grown across time steps
 	PetscInt      bufcap = 0;
@@ -74,6 +119,13 @@ namespace
 	// per-time-step cell-centred J2 invariant buffers (indexed like jr->svCell[])
 	PetscInt      cellcap = 0;
 	PetscScalar  *cellJ2Stress = NULL, *cellJ2StrainRate = NULL;
+
+	// snapshot of PETSc's libblastrampoline forwarding table, taken just
+	// before jl_init_with_image_handle, used to restore it afterwards (see
+	// PhTrPluginLoad); freed once restored
+	enum { LBT_MAX_SNAPSHOT = 16 };
+	LbtSnapshot lbtSnap[LBT_MAX_SNAPSHOT];
+	int         lbtSnapCount = 0;
 }
 //---------------------------------------------------------------------------
 PetscBool PhTrPluginIsActive(void)
@@ -83,10 +135,14 @@ PetscBool PhTrPluginIsActive(void)
 //---------------------------------------------------------------------------
 // PetscRegisterFinalize callback: releases plugin resources exactly once per
 // process, at PetscFinalize() time (i.e. after the last LaMEMLibSolve() call,
-// however many times it ran). Julia cannot be re-initialised once torn down,
-// and dlclose()-ing a library holding an initialised Julia runtime is not
-// supported, so this must never run more than once and must never run from
-// LaMEMLibSolve() itself.
+// however many times it ran). Julia cannot be re-initialised once torn down.
+//
+// IMPORTANT: this deliberately does NOT call PetscDLClose(&handle). Once
+// jl_init_with_image_handle has run, dlclose()-ing the library that holds
+// the initialised Julia runtime is not supported by Julia (it does not
+// expect its own image to be unloaded independently of process exit), so
+// the handle is intentionally leaked for the life of the process; only
+// jl_atexit_hook (best-effort) is called, once.
 static PetscErrorCode PhTrPluginFinalize(void)
 {
 	PetscFunctionBeginUser;
@@ -98,12 +154,6 @@ static PetscErrorCode PhTrPluginFinalize(void)
 		atexitFn(0);
 	}
 
-	if(handle)
-	{
-		PetscCall(PetscDLClose(&handle));
-	}
-
-	handle   = NULL;
 	fn       = NULL;
 	atexitFn = NULL;
 	active   = PETSC_FALSE;
@@ -124,27 +174,232 @@ static PetscErrorCode PhTrPluginFinalize(void)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+// Snapshot PETSc's current libblastrampoline forwarding table (the
+// libraries it points at, per-library suffix), BEFORE Julia touches
+// anything. Must be called before jl_init_with_image_handle: Julia's
+// LinearAlgebra.__init__ calls lbt_forward(..., clear=1), which both
+// overwrites the table AND frees the very strings lbt_get_config() would
+// otherwise still be pointing at, so the strings are copied out here.
+static PetscErrorCode PhTrPluginSnapshotLbt(void)
+{
+	void *sym = NULL;
+
+	PetscFunctionBeginUser;
+
+	lbtSnapCount = 0;
+
+	// lbt_get_config is exported by libblastrampoline (confirmed with `nm`
+	// on the actual libblastrampoline.5.dylib in this deployment); resolved
+	// process-wide via PetscDLSym(NULL, ...) rather than through the plugin
+	// handle, for the same reason lbt_forward is (see PhTrPluginRestoreLbt).
+	PetscCall(PetscDLSym(NULL, "lbt_get_config", &sym));
+
+	if(!sym) PetscFunctionReturn(0); // no libblastrampoline visible - nothing to snapshot
+
+	{
+		const LbtConfig *cfg = ((LbtGetConfigFn)sym)();
+		int              i;
+
+		if(!cfg || !cfg->loaded_libs) PetscFunctionReturn(0);
+
+		for(i = 0; cfg->loaded_libs[i] != NULL && i < LBT_MAX_SNAPSHOT; i++)
+		{
+			PetscCall(PetscStrallocpy(cfg->loaded_libs[i]->libname, &lbtSnap[i].libname));
+			PetscCall(PetscStrallocpy(cfg->loaded_libs[i]->suffix,  &lbtSnap[i].suffix));
+		}
+
+		lbtSnapCount = i;
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// Restore PETSc's BLAS/LAPACK forwarding (and thread count) after Julia's
+// own LinearAlgebra.__init__ has clobbered it during jl_init_with_image_handle.
+//
+// Root cause (confirmed): Julia's base runtime includes LinearAlgebra and
+// OpenBLAS_jll regardless of whether the plugin code itself uses linear
+// algebra. Its __init__ calls libblastrampoline's lbt_forward(libopenblas,
+// clear=1, ...), which (a) clears every existing forward and installs its
+// own, and (b) resets the BLAS thread count via its own default (typically
+// CPU threads / 2, unless OPENBLAS_NUM_THREADS/OMP_NUM_THREADS pin it).
+// Because LaMEM and the plugin's bundled libblastrampoline end up being the
+// SAME process-wide instance -- confirmed with DYLD_PRINT_LIBRARIES: only
+// one libblastrampoline.5.dylib is ever loaded -- this is dyld's ordinary
+// install-name de-duplication (both the LaMEM process and the plugin
+// bundle reference the library by the same two-level-namespace install
+// name, "@rpath/libblastrampoline.5.dylib", so dyld resolves the plugin's
+// copy to the identical already-loaded image; this is NOT some special
+// property of two-level namespace symbol *resolution*, just ordinary image
+// de-duplication by install name), the clobbering is real and was observed
+// to break the very next PETSc linear solve ("no BLAS/LAPACK library
+// loaded for idamax_()" / "dgemm_()"). It was also observed to silently
+// change PETSc's BLAS thread count (LinearAlgebra.__init__ sets it to
+	// something based on CPU_THREADS unless OPENBLAS_NUM_THREADS/OMP_NUM_THREADS
+	// is set in the environment) -- since the plugin's OpenBLAS IS PETSc's
+	// OpenBLAS (same de-duplicated image), this would silently multithread
+	// PETSc's own BLAS calls under MPI, competing with MPI ranks for cores.
+	//
+	// Fix: restore both, from a snapshot taken BEFORE jl_init_with_image_handle
+	// (see PhTrPluginSnapshotLbt): re-forward each previously-registered
+	// library with clear=0 (additive: does not remove Julia's own
+	// registrations, only re-points the specific symbols PETSc needs back
+	// to PETSc's chosen library) and check the return value (>0 symbols
+	// forwarded); restore the thread count captured before init.
+	//
+	// -phase_transition_lbt_ilp64/-phase_transition_lbt_lp64 remain as an
+	// explicit override for the rare case lbt_get_config is not available
+	// (falls back to parsing LBT_DEFAULT_LIBS on ';', matching what PETSc's
+	// own libblastrampoline consulted at its own load time) or the
+	// snapshot found nothing.
+static PetscErrorCode PhTrPluginRestoreLbt(int32_t nthreadsBefore)
+{
+	void *fwdSym = NULL;
+
+	PetscFunctionBeginUser;
+
+	PetscCall(PetscDLSym(NULL, "lbt_forward", &fwdSym));
+
+	if(!fwdSym)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "Phase transition plugin  : WARNING: lbt_forward not found; "
+			"cannot verify/restore PETSc's BLAS/LAPACK forwarding after Julia init.\n");
+		PetscFunctionReturn(0);
+	}
+
+	if(lbtSnapCount > 0)
+	{
+		int i;
+
+		for(i = 0; i < lbtSnapCount; i++)
+		{
+			int32_t rc = ((LbtForwardFn)fwdSym)(lbtSnap[i].libname, 0, 0, lbtSnap[i].suffix);
+
+			if(rc <= 0)
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB,
+					"phase_transition_lib: failed to re-forward BLAS/LAPACK library '%s' "
+					"(suffix '%s') via libblastrampoline after Julia init (lbt_forward "
+					"returned %d symbols forwarded); PETSc's linear solves would silently "
+					"break from here on.", lbtSnap[i].libname, lbtSnap[i].suffix ? lbtSnap[i].suffix : "(none)", (int)rc);
+			}
+
+			PetscCall(PetscFree(lbtSnap[i].libname));
+			PetscCall(PetscFree(lbtSnap[i].suffix));
+		}
+
+		lbtSnapCount = 0;
+
+		PetscPrintf(PETSC_COMM_WORLD, "Phase transition plugin  : re-forwarded %d BLAS/LAPACK "
+			"librar%s via libblastrampoline after Julia init\n", (int)i, i == 1 ? "y" : "ies");
+	}
+	else
+	{
+		// fallback: no snapshot (lbt_get_config unavailable, or nothing was
+		// registered yet when we looked) - try the explicit override
+		// options, then LBT_DEFAULT_LIBS itself, parsed on ';'
+		char      ilp64lib[_str_len_], lp64lib[_str_len_];
+		PetscBool foundIlp64, foundLp64;
+		int       nForwarded = 0;
+
+		PetscCall(PetscOptionsGetString(NULL, NULL, "-phase_transition_lbt_ilp64", ilp64lib, _str_len_, &foundIlp64));
+		PetscCall(PetscOptionsGetString(NULL, NULL, "-phase_transition_lbt_lp64",  lp64lib,  _str_len_, &foundLp64));
+
+		if(foundIlp64) { if(((LbtForwardFn)fwdSym)(ilp64lib, 0, 0, NULL) > 0) nForwarded++; }
+		if(foundLp64)  { if(((LbtForwardFn)fwdSym)(lp64lib,  0, 0, NULL) > 0) nForwarded++; }
+
+		if(!foundIlp64 && !foundLp64)
+		{
+			const char *envLibs = getenv("LBT_DEFAULT_LIBS");
+
+			if(envLibs)
+			{
+				char buf[2*_str_len_], *tok, *saveptr;
+
+				PetscCall(PetscStrncpy(buf, envLibs, sizeof(buf)));
+				for(tok = strtok_r(buf, ";", &saveptr); tok; tok = strtok_r(NULL, ";", &saveptr))
+				{
+					if(((LbtForwardFn)fwdSym)(tok, 0, 0, NULL) > 0) nForwarded++;
+				}
+			}
+		}
+
+		if(nForwarded == 0)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "Phase transition plugin  : WARNING: could not snapshot PETSc's "
+				"BLAS/LAPACK libraries before Julia init, and no fallback (-phase_transition_lbt_ilp64/"
+				"-phase_transition_lbt_lp64/LBT_DEFAULT_LIBS) restored any. PETSc's linear solves may "
+				"break from here on.\n");
+		}
+		else
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "Phase transition plugin  : re-forwarded %d BLAS/LAPACK "
+				"librar%s via the fallback path (snapshot was unavailable)\n", nForwarded, nForwarded == 1 ? "y" : "ies");
+		}
+	}
+
+	// restore the BLAS thread count LinearAlgebra.__init__ silently changed
+	{
+		void *getSym = NULL, *setSym = NULL;
+
+		PetscCall(PetscDLSym(NULL, "lbt_get_num_threads", &getSym));
+		PetscCall(PetscDLSym(NULL, "lbt_set_num_threads", &setSym));
+
+		if(getSym && setSym && nthreadsBefore > 0)
+		{
+			((LbtSetNumThreadsFn)setSym)(nthreadsBefore);
+		}
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 PetscErrorCode PhTrPluginLoad(AdvCtx *actx)
 {
 	char      lib[_str_len_];
 	PetscBool found;
 	void     *sym;
+	int32_t   nthreadsBefore = -1;
 
 	PetscFunctionBeginUser;
 
 	(void)actx;
 
-	// Julia cannot be initialised twice in one process (adjoint/inversion
-	// drivers call LaMEMLibSolve() repeatedly - see src/adjoint.cpp). Only
-	// attempt loading once per process; later calls reuse whatever the first
-	// call established (loaded plugin, or none).
-	if(initTried) PetscFunctionReturn(0);
+	PetscCall(PetscOptionsGetString(NULL, NULL, "-phase_transition_lib", lib, _str_len_, &found));
+
+	if(!found)
+	{
+		// nothing requested on this call -> built-in transitions only.
+		// NOTE: this intentionally does NOT set initTried, so that a LATER
+		// call in the same process (e.g. a second LaMEMLibSolve() under an
+		// inversion driver) that DOES pass -phase_transition_lib is still
+		// honoured, consistent with "only once per process, and only once
+		// a plugin is actually requested" rather than "only the first call
+		// counts no matter what".
+		PetscFunctionReturn(0);
+	}
+
+	if(initTried)
+	{
+		// A plugin was already loaded (or a load was already attempted) in
+		// this process. Julia cannot be re-initialised, so a second,
+		// different plugin cannot be swapped in - fail loudly rather than
+		// silently keep using whatever was loaded first.
+		if(active && strcmp(lib, loadedPath) != 0)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP,
+				"phase_transition_lib: a different plugin ('%s') was already loaded earlier in this "
+				"process ('%s'); Julia cannot be re-initialised with a different plugin. This can "
+				"happen under adjoint/inversion drivers that call LaMEMLibSolve() repeatedly.",
+				lib, loadedPath);
+		}
+
+		PetscFunctionReturn(0); // same path (or a prior attempt failed to load anything) -> no-op
+	}
 
 	initTried = PETSC_TRUE;
 
-	PetscCall(PetscOptionsGetString(NULL, NULL, "-phase_transition_lib", lib, _str_len_, &found));
-
-	if(!found) PetscFunctionReturn(0); // nothing requested -> built-in transitions only
+	PetscCall(PetscStrncpy(loadedPath, lib, _str_len_));
 
 	// Register the (single, process-wide) teardown callback before doing
 	// anything else, so a failure partway through loading still gets cleaned
@@ -179,32 +434,53 @@ PetscErrorCode PhTrPluginLoad(AdvCtx *actx)
 			"with libjulia as a resolvable dependency.", lib);
 	}
 
-	// Tell Julia's runtime, BEFORE jl_init_with_image_handle, not to install
-	// its own signal handlers for SIGSEGV/SIGBUS/SIGFPE etc. This is the
-	// ABI-stable, documented way to do this (jl_parse_opts is an exported
-	// Julia C entry point that predates and postdates the specific layout of
-	// the jl_options struct, so this does not depend on that struct's
-	// layout). A prior version of this file instead called
-	// PetscPushSignalHandler(PetscSignalHandlerDefault, NULL) AFTER Julia
-	// init, believing that would reclaim PETSc's handlers; this was verified
-	// to be a no-op (PETSc's signal.c only calls signal() when its internal
-	// SignalSet flag is false, and it has been true since PetscInitialize;
-	// the push just duplicates a stack entry without changing what handler
-	// is actually installed) and, on macOS, ineffective for a second reason:
-	// Julia additionally installs Mach exception ports for SIGSEGV/SIGBUS
-	// that a POSIX signal()/sigaction() call cannot displace. Passing
-	// --handle-signals=no via jl_parse_opts prevents Julia from installing
-	// either mechanism in the first place, so PETSc's handlers (installed
-	// earlier, at PetscInitialize) remain the only ones in effect. See
-	// doc/phase_transition_plugin_PHASE1_REPORT.md for the verification.
+	// Tell Julia's runtime, BEFORE jl_init_with_image_handle:
+	//   --handle-signals=no : do not install Julia's own signal handlers /
+	//     Mach exception ports for SIGSEGV/SIGBUS/SIGFPE etc. This is the
+	//     ABI-stable, documented way to do this (jl_parse_opts is an
+	//     exported Julia C entry point that predates and postdates the
+	//     specific layout of the jl_options struct, so this does not
+	//     depend on that struct's layout). A prior version of this file
+	//     instead called PetscPushSignalHandler(PetscSignalHandlerDefault,
+	//     NULL) AFTER Julia init, believing that would reclaim PETSc's
+	//     handlers; this was verified to be a no-op (PETSc's signal.c only
+	//     calls signal() when its internal SignalSet flag is false, and it
+	//     has been true since PetscInitialize; the push just duplicates a
+	//     stack entry without changing what handler is actually installed)
+	//     and, on macOS, ineffective for a second reason: Julia
+	//     additionally installs Mach exception ports for SIGSEGV/SIGBUS
+	//     that a POSIX signal()/sigaction() call cannot displace. See
+	//     doc/phase_transition_plugin_PHASE1_REPORT.md for the live
+	//     verification (a real SIGSEGV correctly reaches the HOST's
+	//     handler, not Julia's, with this fix in place).
+	//   --threads=1 --gcthreads=1 : pin the embedded runtime to a single
+	//     thread. JULIA_NUM_THREADS/JULIA_NUM_GC_THREADS in the calling
+	//     user's environment would otherwise start additional Julia
+	//     threads whose GC safepoint mechanism relies on the very signal
+	//     handling that --handle-signals=no just disabled - see the ABI
+	//     header for the consequences (deep recursion becomes a hard
+	//     SEGV rather than a catchable StackOverflowError; no Julia SIGINT
+	//     handling; jl_parse_opts itself calls exit() on an unparseable
+	//     option, so a typo here would kill the whole LaMEM process).
 	{
 		static char argv0[] = "lamem";
 		static char argv1[] = "--handle-signals=no";
-		static char *jlargv[2] = { argv0, argv1 };
+		static char argv2[] = "--threads=1";
+		static char argv3[] = "--gcthreads=1";
+		static char *jlargv[4] = { argv0, argv1, argv2, argv3 };
 		char **jlargvp = jlargv;
-		int    jlargc  = 2;
+		int    jlargc  = 4;
 
 		((JlParseOptsFn)sym)(&jlargc, &jlargvp);
+	}
+
+	// Snapshot PETSc's libblastrampoline forwarding table BEFORE Julia's
+	// own init has a chance to clobber it (see PhTrPluginSnapshotLbt).
+	PetscCall(PhTrPluginSnapshotLbt());
+	{
+		void *getSym = NULL;
+		PetscCall(PetscDLSym(NULL, "lbt_get_num_threads", &getSym));
+		if(getSym) nthreadsBefore = ((LbtGetNumThreadsFn)getSym)();
 	}
 
 	// now locate and call jl_init_with_image_handle itself
@@ -219,64 +495,10 @@ PetscErrorCode PhTrPluginLoad(AdvCtx *actx)
 
 	((JlInitWithImageHandleFn)sym)((void*)handle);
 
-	// Julia's runtime (specifically its bundled LinearAlgebra/OpenBLAS_jll,
-	// which is part of the Julia base image and gets initialised regardless
-	// of whether the plugin itself uses linear algebra) calls libblastrampoline's
-	// lbt_forward() during jl_init_with_image_handle to register ITS OWN
-	// bundled OpenBLAS as the default BLAS/LAPACK target. Because LaMEM and
-	// the plugin share the SAME process-wide libblastrampoline instance
-	// (confirmed: only one libblastrampoline.5.dylib is ever loaded, by
-	// design - it has one install name and dyld/macOS's two-level namespace
-	// resolves the plugin's dependency to the same already-loaded image),
-	// this OVERWRITES the forwarding table entries that PETSc's own startup
-	// (via the LBT_DEFAULT_LIBS environment variable, consulted once by
-	// libblastrampoline at its own load time) had set up - even though
-	// LBT_DEFAULT_LIBS is still set in the environment, Julia's init does
-	// not re-read it and unconditionally registers its own default. Confirmed
-	// by observing "Error: no BLAS/LAPACK library loaded for idamax_()" etc.
-	// on the very next PETSc linear solve after loading the plugin.
-	//
-	// Mitigation: call lbt_forward() ourselves, immediately after Julia
-	// init, to re-register PETSc's own BLAS libraries (clear=0, i.e.
-	// additive: this does not remove Julia's own registrations, it just
-	// re-points the specific symbols PETSc needs back to PETSc's chosen
-	// library). lbt_forward is resolved via PetscDLSym(NULL, ...), which
-	// PETSc's dlimpl.c implements as a dlsym(RTLD_DEFAULT, ...)-equivalent
-	// process-wide lookup (a NULL handle is NOT the plugin's own handle:
-	// looking it up through the plugin handle specifically did not resolve
-	// it in testing, only the process-wide lookup did - both were tried and
-	// the outcome recorded in the Phase 1 report).
-	{
-		typedef int32_t (*LbtForwardFn)(const char*, int32_t, int32_t, const char*);
-		void *lbtSym = NULL;
-
-		PetscCall(PetscDLSym(NULL, "lbt_forward", &lbtSym));
-
-		if(lbtSym)
-		{
-			char      ilp64lib[_str_len_], lp64lib[_str_len_];
-			PetscBool foundIlp64, foundLp64;
-
-			PetscCall(PetscOptionsGetString(NULL, NULL, "-phase_transition_lbt_ilp64", ilp64lib, _str_len_, &foundIlp64));
-			PetscCall(PetscOptionsGetString(NULL, NULL, "-phase_transition_lbt_lp64",  lp64lib,  _str_len_, &foundLp64));
-
-			if(foundIlp64) ((LbtForwardFn)lbtSym)(ilp64lib, 0, 0, NULL);
-			if(foundLp64)  ((LbtForwardFn)lbtSym)(lp64lib,  0, 0, NULL);
-
-			if(foundIlp64 || foundLp64)
-			{
-				PetscPrintf(PETSC_COMM_WORLD, "Phase transition plugin  : re-forwarded PETSc's BLAS/LAPACK "
-					"via libblastrampoline after Julia init\n");
-			}
-			else
-			{
-				PetscPrintf(PETSC_COMM_WORLD, "Phase transition plugin  : WARNING: Julia's runtime may have "
-					"overridden PETSc's BLAS/LAPACK forwarding (libblastrampoline). Pass "
-					"-phase_transition_lbt_ilp64 <path> -phase_transition_lbt_lp64 <path> "
-					"(the same two libraries as LBT_DEFAULT_LIBS) to restore it.\n");
-			}
-		}
-	}
+	// Restore PETSc's BLAS/LAPACK forwarding and thread count, both
+	// silently clobbered by Julia's own LinearAlgebra.__init__ during the
+	// call above (see PhTrPluginRestoreLbt for the full explanation).
+	PetscCall(PhTrPluginRestoreLbt(nthreadsBefore));
 
 	// look up the actual phase-transition entry point
 	PetscCall(PetscDLSym(handle, "lamem_phase_transition", &sym));
@@ -527,6 +749,9 @@ PetscErrorCode PhTrPluginApply(AdvCtx *actx)
 	PetscInt     numPhases;
 	PetscScalar  time_dim, pShift;
 	int          rc;
+	PetscInt     errFlagLoc, errFlagGlob;
+	PetscInt     badIdx = -1;
+	int32_t      badPhase = 0;
 
 	PetscFunctionBeginUser;
 
@@ -549,7 +774,12 @@ PetscErrorCode PhTrPluginApply(AdvCtx *actx)
 	// "Pressure" Constant transition (see Check_Constant_Phase_Transition)
 	pShift = (jr->ctrl.pShift != 0.0) ? jr->ctrl.pShift : 0.0;
 
-	// build SoA input arrays (dimensional) from the local markers
+	// build SoA input arrays (dimensional) from the local markers. n==0 is
+	// handled the same way as n>0 below: every rank still calls fn() and
+	// takes part in every collective (MPI_Allreduce for the error flag and
+	// for the changed-marker count), it just does so with n=0 - a rank
+	// with zero local markers must never skip these collectives, or ranks
+	// that DO have markers would deadlock waiting for it.
 	for(i = 0; i < n; i++)
 	{
 		P  = &actx->markers[i];
@@ -578,38 +808,78 @@ PetscErrorCode PhTrPluginApply(AdvCtx *actx)
 		bphase_out[i] = (int32_t)P->phase;
 	}
 
-	// call the plugin once for all local markers on this rank. A negative
-	// return value is a plugin-signalled failure (e.g. an exception caught
-	// on the Julia side) - see phase_transition_plugin.h.
+	// call the plugin once for all local markers on this rank (even if
+	// n==0). A negative return value is a plugin-signalled failure (e.g.
+	// an exception caught on the Julia side) - see phase_transition_plugin.h.
 	rc = fn((size_t)n,
 		bx, by, bz, bT, bp, (double)time_dim,
 		bsxx, bsyy, bszz, bsxy, bsxz, bsyz,
 		bj2s, bj2e, beta, baps,
 		bphase_in, bphase_out);
 
+	// --- Pass 1: VALIDATE ALL returned phases before writing anything back ---
+	// A plugin can fail (rc<0) or return an out-of-range phase on just SOME
+	// ranks. Calling SETERRQ directly from inside a per-rank check would
+	// make only the failing rank(s) abort while the others carry on into
+	// the collectives below (MPI_Allreduce, PetscPrintf) - a classic
+	// collective-mismatch hang. Instead: compute a local error flag first,
+	// MPI_Allreduce it (MAX) across all ranks, and only THEN have every
+	// rank call SETERRQ together if any rank detected a problem - keeping
+	// the error path collective, exactly like the success path.
+	errFlagLoc = 0;
+
 	if(rc < 0)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB,
-			"phase_transition_lib: plugin reported failure (lamem_phase_transition returned %d)", rc);
+		errFlagLoc = 1;
+	}
+	else
+	{
+		for(i = 0; i < n; i++)
+		{
+			if(bphase_out[i] != bphase_in[i] && (bphase_out[i] < 0 || bphase_out[i] >= numPhases))
+			{
+				errFlagLoc = 1;
+				badIdx     = i;
+				badPhase   = bphase_out[i];
+				break;
+			}
+		}
 	}
 
-	// write back only markers whose phase actually changed, validating each
-	// new phase against the material database bounds (an out-of-range phase
-	// from the plugin would otherwise corrupt svCell->phRat[] in
-	// ADVInterpMarkToCell via an out-of-bounds array write)
+	PetscCallMPI(MPI_Allreduce(&errFlagLoc, &errFlagGlob, 1, MPIU_INT, MPI_MAX, PETSC_COMM_WORLD));
+
+	if(errFlagGlob)
+	{
+		if(rc < 0)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB,
+				"phase_transition_lib: plugin reported failure on at least one rank "
+				"(this rank's lamem_phase_transition returned %d)", rc);
+		}
+		else if(badIdx >= 0)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,
+				"phase_transition_lib: plugin returned out-of-range phase on at least one rank "
+				"(this rank: phase %d for local marker %" PetscInt_FMT ", valid range: 0..%" PetscInt_FMT ")",
+				badPhase, badIdx, numPhases-1);
+		}
+		else
+		{
+			// this rank saw no problem itself, but another rank did -
+			// still abort collectively rather than silently continuing
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB,
+				"phase_transition_lib: another MPI rank reported a plugin failure "
+				"(bad return value or out-of-range phase); aborting collectively.");
+		}
+	}
+
+	// --- Pass 2: only now write back, once every rank is known-good ---
 	changed_loc = 0;
 
 	for(i = 0; i < n; i++)
 	{
 		if(bphase_out[i] != bphase_in[i])
 		{
-			if(bphase_out[i] < 0 || bphase_out[i] >= numPhases)
-			{
-				SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER,
-					"phase_transition_lib: plugin returned out-of-range phase %d for local marker %" PetscInt_FMT
-					" (valid range: 0..%" PetscInt_FMT ")", bphase_out[i], i, numPhases-1);
-			}
-
 			P = &actx->markers[i];
 			P->phase = (PetscInt)bphase_out[i];
 			changed_loc++;

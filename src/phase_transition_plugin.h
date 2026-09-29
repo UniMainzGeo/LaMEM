@@ -76,31 +76,42 @@
 // copy of Julia's base runtime, which includes LinearAlgebra/OpenBLAS_jll
 // even if the plugin code itself never uses linear algebra. During
 // jl_init_with_image_handle, Julia's LinearAlgebra.__init__ calls
-// libblastrampoline's lbt_forward() to register its OWN bundled OpenBLAS as
-// the default BLAS/LAPACK target. Because LaMEM and the plugin share the
-// SAME process-wide libblastrampoline instance (only one copy is ever
-// dlopen'd, since it is referenced by the same install name), this
-// OVERWRITES the forwarding table entries PETSc's own startup had set up
-// via the LBT_DEFAULT_LIBS environment variable -- even though
-// LBT_DEFAULT_LIBS is still set, Julia's init does not consult it and
-// unconditionally registers its own default, breaking every subsequent
-// PETSc BLAS/LAPACK call ("no BLAS/LAPACK library loaded for idamax_()"
-// etc.) unless this is corrected. PhTrPluginLoad() re-registers PETSc's own
-// BLAS libraries (additively, via lbt_forward(..., clear=0, ...), which
-// does not remove Julia's registrations, only re-points the specific
-// symbols PETSc needs) immediately after Julia init, using:
+// libblastrampoline's lbt_forward(..., clear=1, ...) to register its OWN
+// bundled OpenBLAS as the default BLAS/LAPACK target (and, incidentally,
+// resets the BLAS thread count to its own default). Because LaMEM and the
+// plugin share the SAME process-wide libblastrampoline instance -- this is
+// ordinary dyld install-name de-duplication: both LaMEM and the plugin
+// bundle reference the library as "@rpath/libblastrampoline.5.dylib", so
+// dyld resolves the plugin's copy to the identical already-loaded image;
+// it has nothing to do with two-level-namespace symbol *resolution*, just
+// the fact that both processes' load commands name the same install name
+// -- this OVERWRITES the forwarding table entries PETSc's own startup had
+// set up via the LBT_DEFAULT_LIBS environment variable, and silently
+// changes PETSc's own BLAS thread count, breaking every subsequent PETSc
+// BLAS/LAPACK call ("no BLAS/LAPACK library loaded for idamax_()" etc.)
+// and/or silently multithreading PETSc's BLAS under MPI, unless corrected.
+//
+// PhTrPluginLoad() fixes both automatically: it snapshots libblastrampoline's
+// forwarding table (which libraries are registered, and their per-library
+// suffix) and the current BLAS thread count BEFORE jl_init_with_image_handle
+// runs (the snapshot strings must be copied out, not just pointer-saved,
+// because Julia's clear=1 call frees them), then re-forwards each
+// snapshotted library (additively, clear=0, which does not remove Julia's
+// own registrations, only re-points the specific symbols PETSc needs) and
+// restores the thread count immediately after Julia init returns. This
+// requires no options and no environment variable beyond whatever PETSc
+// itself already needed (e.g. LBT_DEFAULT_LIBS for PETSc_jll>=3.25 -- see
+// the project's own petsc-jll-325-lbt-default-libs memory note). Two
+// options remain as an explicit override / fallback, only used if
+// libblastrampoline's lbt_get_config() is unavailable or the snapshot
+// found nothing (in which case the fallback additionally tries parsing
+// the LBT_DEFAULT_LIBS environment variable on ';' before giving up):
 //
 //   -phase_transition_lbt_ilp64 <path-to-ILP64-openblas>
 //   -phase_transition_lbt_lp64  <path-to-LP64-openblas>
 //
-// i.e. the SAME two libraries named in LBT_DEFAULT_LIBS (order: ILP64
-// first, then LP64 -- matches PETSc_jll's own convention for PETSc built
-// with 64-bit BLAS indices). If these options are not given, a plugin is
-// still loaded, but PETSc's own linear solves will likely fail on the very
-// next SNES/KSP solve with a libblastrampoline "no BLAS/LAPACK library
-// loaded" error; a warning is printed in that case. See
-// doc/phase_transition_plugin_PHASE1_REPORT.md for how this was diagnosed
-// and verified fixed.
+// See doc/phase_transition_plugin_PHASE1_REPORT.md for how this was
+// diagnosed and verified fixed.
 //
 // IMPORTANT CAVEATS (Phase 1 scope; see doc/phase_transition_plugin_PHASE1_REPORT.md):
 //  - The plugin (and thus the embedded Julia runtime) is loaded and
@@ -109,17 +120,37 @@
 //    can run multiple times in one process (adjoint/inversion drivers call
 //    it repeatedly -- see src/adjoint.cpp). Julia's runtime cannot be
 //    re-initialised after jl_atexit_hook(), and dlclose()-ing a library that
-//    holds an initialised Julia runtime is not supported, so subsequent
-//    PhTrPluginLoad() calls in the same process are no-ops that reuse the
-//    already-loaded plugin, and PhTrPluginDestroy() must be called AT MOST
-//    ONCE per process, from a PetscRegisterFinalize() callback -- not from
-//    LaMEMLibSolve() -- so it fires exactly once at PetscFinalize(), after
-//    the last LaMEMLibSolve() call.
-//  - The Julia side must stay single-threaded (no @spawn/Threads.@threads in
-//    the plugin) and Julia's own stack-overflow guard page is disabled by
-//    --handle-signals=no (see PhTrPluginLoad() for why), so a runaway
-//    recursive plugin function will segfault instead of raising a catchable
-//    StackOverflowError.
+//    holds an initialised Julia runtime is not supported by Julia at all --
+//    the plugin handle is deliberately NEVER closed (leaked for the life of
+//    the process); only jl_atexit_hook is called, at most once, from a
+//    PetscRegisterFinalize() callback (not from LaMEMLibSolve() itself), so
+//    it fires exactly once at PetscFinalize(), after the last
+//    LaMEMLibSolve() call. A second PhTrPluginLoad() call in the same
+//    process that names a DIFFERENT -phase_transition_lib than the one
+//    already loaded is treated as an error (SETERRQ), not silently ignored.
+//  - This design is for the STANDALONE LaMEM executable only. It CANNOT be
+//    used from a Julia host process (e.g. LaMEM.jl / LaMEM_jll calling into
+//    a LaMEM shared library that in turn tries to dlopen this kind of
+//    plugin): on macOS, the plugin bundle's own libjulia would be a SECOND,
+//    distinct libjulia image (a different install name/path than the
+//    host's own already-loaded libjulia), which Julia does not support; on
+//    Linux, jl_init_with_image_handle would be called on an
+//    already-initialised Julia runtime, which is also unsupported. This is
+//    a fundamental limitation of embedding a second Julia runtime inside a
+//    process that is itself already a Julia runtime, not something a
+//    different loading strategy in this file could work around.
+//  - The Julia side must stay single-threaded: jl_parse_opts() is called
+//    with --threads=1 --gcthreads=1 in addition to --handle-signals=no, so
+//    that JULIA_NUM_THREADS/JULIA_NUM_GC_THREADS in the calling user's
+//    environment cannot start additional Julia threads whose GC safepoint
+//    mechanism depends on the very signal handling --handle-signals=no just
+//    disabled. Combined effects of --handle-signals=no to keep in mind:
+//    deep/runaway recursion in the plugin becomes a hard SEGV (reported by
+//    PETSc's own handler) rather than a catchable Julia StackOverflowError;
+//    Julia's own Ctrl-C/SIGINT handling is not installed either; and
+//    jl_parse_opts() itself calls the C library's exit() directly on an
+//    unparseable option, which would terminate the whole LaMEM process, not
+//    just the plugin, so the argv passed to it must stay exactly as tested.
 //  - Cell-level quantities (j2_stress_cell, j2_strainrate_cell, eta_cell,
 //    aps_cell) reflect the PREVIOUS converged nonlinear-solver state (they
 //    are read at the top of the time step, before the current step's
@@ -130,11 +161,11 @@
 //    `continue`, in which case Phase_Transition() and this plugin both run
 //    again for the same nominal step on markers that may already carry the
 //    plugin's previous verdict.
-//  - On Linux, RTLD_GLOBAL (used to load the plugin, see PhTrPluginLoad())
-//    means a BLAS/LAPACK symbol referenced by the Julia side could bind to
-//    PETSc's already-loaded BLAS instead of the plugin's own -- harmless for
-//    a plugin that does no linear algebra (as in Phase 1), but relevant if a
-//    Phase 2 plugin uses LinearAlgebra.
+//  - Julia's BLAS calls go through libblastrampoline's own dlsym-based
+//    dispatch (see the BLAS/LAPACK note above), not through RTLD_GLOBAL
+//    symbol binding directly; there is no separate RTLD_GLOBAL-specific
+//    BLAS-binding concern beyond the libblastrampoline forwarding-table
+//    interaction already described above.
 //---------------------------------------------------------------------------
 #ifndef phase_transition_plugin_h_
 #define phase_transition_plugin_h_
