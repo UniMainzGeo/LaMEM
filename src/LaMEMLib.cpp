@@ -802,8 +802,11 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	// destroy objects
 	PetscCall(NLSolDestroy(&snes));
 
-	// unload user-defined phase transition plugin (no-op unless loaded)
-	PetscCall(PhTrPluginDestroy());
+	// NOTE: the user-defined phase transition plugin (if loaded) is torn
+	// down exactly once per process, at PetscFinalize() time, via a
+	// PetscRegisterFinalize() callback registered in PhTrPluginLoad() - not
+	// here, since LaMEMLibSolve() can run multiple times per process
+	// (adjoint/inversion drivers) and Julia cannot be re-initialised.
 
 	// save marker database
 	PetscCall(ADVMarkSave(&lm->actx));
