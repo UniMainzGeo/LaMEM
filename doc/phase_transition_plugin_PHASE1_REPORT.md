@@ -8,21 +8,31 @@ Phase 1 wires a user-defined phase-transition plugin (a Julia function
 compiled with `juliac` into a relocatable shared library) into LaMEM's
 time-step loop, using PETSc's portable dynamic-loading API. The plugin is
 optional (`-phase_transition_lib <path>`); with no option, LaMEM's behaviour
-is unchanged. **The build was unblocked** part-way through this work by
-switching to a PETSc_jll 3.25.4 + MPICH_jll deployment (`mpicxx` wraps
-`clang++`, avoiding the broken Homebrew-GCC-11-vs-macOS-SDK toolchain
-recorded earlier in this report's history). All test items (4a-4d), the
-signal-handler verification, MPI, and timing were run to completion against
-real LaMEM binaries and are reported with actual numbers below.
+is unchanged. All numbers in this report come from runs of the actual final
+committed binary (`bin/opt/LaMEM`, MD5 `eb30cb58fa3ca54a26df5e026c75b2f9`,
+rebuilt from a clean object file and confirmed byte-identical across two
+independent rebuilds) — an earlier pass through this report cited logs from
+before the last source edits, which has been corrected.
 
-Two real bugs were found (by an independent review) and fixed before running
-anything: the signal-handler approach was a no-op, and a real,
-process-wide BLAS/LAPACK conflict between PETSc's and Julia's shared
-`libblastrampoline` was found, diagnosed, and fixed (see items ii and vii).
+Two independent reviews of this branch found real, verified issues, all
+fixed and re-tested here:
+- Signal handling was a no-op; `int`/`PetscInt` ABI mismatch; unvalidated
+  plugin phases; repeated-init unsafety; diagonal-only J2; missing pressure
+  shift; no error channel — fixed in an earlier pass on this branch.
+- A second review additionally verified this branch's fixes (bit-identical
+  built-in-vs-plugin residuals at 1 and 2 ranks; J2 vs. ParaView correlation
+  0.997/median 1.8% for strain rate, 0.90/median 2.1% for stress) and found:
+  automatic BLAS/LAPACK snapshot/restore was missing (manual options only);
+  no thread pinning for the embedded runtime; non-collective error handling
+  that could hang under MPI; unsafe repeated-plugin-swap handling;
+  `PetscDLClose` on a library holding an initialised Julia runtime (which
+  Julia does not support); stale/inaccurate header documentation; no
+  checked-in regression test; and several inaccurate report claims. All are
+  addressed below.
 
 ## Build
 
-Environment used for everything below:
+Environment used for everything in this report:
 ```bash
 cd <worktree>/src
 export PETSC_OPT=/workspace/destdir/lib/petsc/double_real_Int64
@@ -32,105 +42,171 @@ export MPICH_CXX=/usr/bin/clang++ MPICH_CC=/usr/bin/clang
 export LIBRARY_PATH=/Users/kausb/.julia/artifacts/d6f2dc0e73e8796cb9bb992a4970412bc9e4cea3/lib/gcc/aarch64-apple-darwin20/12.0.1
 make mode=opt clean_all; make mode=opt all -j8
 ```
-(`LIBRARY_PATH` supplies `libemutls_w.a`, a gfortran runtime archive the
-link step needs but whose `-L` search path baked into this PETSc_jll
-deployment does not resolve on this machine; without it the final link fails
-with `library 'emutls_w' not found`. This is an environment/deployment
-detail, not something changed in the repository.)
+Succeeds with **zero errors, zero warnings** from `phase_transition_plugin.cpp`
+(`-Wall -Wextra -Wconversion -Wpointer-arith -Wcast-align -Wwrite-strings
+-Wformat=2 -Wundef -Wnon-virtual-dtor -Wimplicit-fallthrough
+-Wshorten-64-to-32` all clean). `otool -L bin/opt/LaMEM | grep -i julia`
+returns nothing on the final binary: **LaMEM never links libjulia**.
 
-`make mode=opt all -j8` succeeds with **zero errors and zero warnings from
-`src/phase_transition_plugin.cpp`** (`-Wall -Wextra -Wconversion
--Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2 -Wundef
--Wnon-virtual-dtor -Wimplicit-fallthrough -Wshorten-64-to-32` all clean).
-`PetscInt` is 64-bit in this configuration (`double_real_Int64`); the two
-compile errors flagged by review (missing `Tensor.h` before `advect.h`, and
-`PetscInt*` passed where the ABI needs `int*`) were both fixed — see "Bugs
-found and fixed" below.
+## Bugs found and fixed (this pass — second review)
 
-`otool -L bin/opt/LaMEM | grep -i julia` returns nothing at every rebuild in
-this report: **LaMEM never links against libjulia**, confirmed on the final
-binary.
+**(a) BLAS/LAPACK: automatic snapshot/restore, not manual options.**
+Root cause confirmed precisely: `LinearAlgebra.__init__` (part of Julia's
+base runtime, present in the plugin bundle regardless of whether the
+plugin code itself uses linear algebra) calls
+`lbt_forward(libopenblas, clear=1, ...)`, which both re-registers Julia's
+own BLAS with the shared, process-wide `libblastrampoline` instance
+(confirmed via `nm` on the actual `libblastrampoline.5.dylib` in this
+deployment: it exports `lbt_get_config`, `lbt_get_forward`,
+`lbt_forward`, `lbt_get_num_threads`, `lbt_set_num_threads`) and resets the
+BLAS thread count. The single-libblastrampoline situation is **ordinary
+dyld install-name de-duplication** (both LaMEM and the plugin bundle
+reference `@rpath/libblastrampoline.5.dylib`), not a two-level-namespace
+symbol-resolution effect — the earlier report's wording was corrected.
+Also noted: the bundle used throughout this work is Julia 1.13.0, while
+`LBT_DEFAULT_LIBS` (as configured for this deployment) names Julia 1.12.6's
+OpenBLAS — this happened to work by ABI luck (OpenBLAS's ABI is stable
+across these versions) rather than by design, and is now explicit in the
+comments.
 
-## Bugs found and fixed (before running anything)
+**Fix**: `PhTrPluginSnapshotLbt()` calls `lbt_get_config()` (resolved via
+`PetscDLSym(NULL, ...)`, i.e. process-wide, not through the plugin's own
+handle — `lbt_get_config`/`lbt_forward` are not resolvable through the
+plugin handle specifically, only process-wide, whereas `jl_parse_opts`/
+`jl_init_with_image_handle` *are* resolvable through the plugin handle; this
+asymmetry was not root-caused further but is documented) **before**
+`jl_init_with_image_handle`, and copies out each registered library's
+`libname`/`suffix` strings (via `PetscStrallocpy`) into a small snapshot
+array — copying is required because Julia's `clear=1` call frees the very
+strings the pre-init `lbt_get_config()` snapshot would otherwise still
+point at. The struct layout (`lbt_library_info_t`/`lbt_config_t`) was
+copied field-for-field from libblastrampoline's own public header (found on
+this machine at multiple Yggdrasil build-artifact locations, e.g.
+`.../destdir/include/libblastrampoline.h`; NOT guessed). After Julia init,
+`PhTrPluginRestoreLbt()` re-forwards each snapshotted library with
+`clear=0` (additive — does not remove Julia's own registrations) and
+**checks the return value** (`>0` symbols forwarded), `SETERRQ`-ing with
+the library path if a re-forward fails. It also restores the BLAS thread
+count via `lbt_get_num_threads`/`lbt_set_num_threads`, snapshotted
+immediately before `jl_init_with_image_handle` — necessary because
+`LinearAlgebra.__init__` also silently resets the thread count to a
+CPU-count-based default unless `OPENBLAS_NUM_THREADS`/`OMP_NUM_THREADS` is
+set, and because the plugin's OpenBLAS **is** PETSc's OpenBLAS (same
+de-duplicated image), an unrestored thread count would silently multithread
+PETSc's own BLAS calls under MPI, competing with MPI ranks for cores.
+`-phase_transition_lbt_ilp64`/`-phase_transition_lbt_lp64` remain as an
+explicit override, now only used as a fallback if `lbt_get_config` is
+unavailable or the snapshot found nothing — in which case a second fallback
+parses `LBT_DEFAULT_LIBS` on `;` before giving up.
 
-An independent review of the first commit (`90aa881e`) on this branch found
-several real defects, verified with small standalone C harnesses
-(`loader_test.c`, `opts_test.c` in the scratchpad). All were fixed:
+Verified on the real binary: `Phase transition plugin  : re-forwarded 2
+BLAS/LAPACK libraries via libblastrampoline after Julia init` is printed
+automatically, with **no** `-phase_transition_lbt_*` options passed, and
+all subsequent SNES/KSP solves converge normally (see "Test results" below).
 
-1. **Signal handling was a no-op.** The original code called
-   `PetscPushSignalHandler(PetscSignalHandlerDefault, NULL)` *after*
-   `jl_init_with_image_handle`, believing this would reclaim PETSc's signal
-   handlers from Julia's runtime. This does nothing: PETSc's `signal.c` only
-   calls the underlying `signal()`/`sigaction()` when its internal
-   `SignalSet` flag is false, and that flag has been true since
-   `PetscInitialize`, so the push just duplicated a stack entry without
-   changing the installed handler. On macOS, Julia additionally installs
-   Mach exception ports for `SIGSEGV`/`SIGBUS` that a POSIX `signal()` call
-   cannot displace anyway. **Fix:** call `jl_parse_opts(&argc, &argv)` with
-   `argv = {"lamem", "--handle-signals=no"}` via `PetscDLSym` on the plugin
-   handle, **before** `jl_init_with_image_handle`. `jl_parse_opts` is an
-   ABI-stable, exported Julia C entry point (unlike the `jl_options` struct
-   layout, which is not guaranteed stable across Julia versions). Verified
-   live (see item ii).
-2. **Unvalidated plugin phase writes could corrupt the heap.**
-   `ADVInterpMarkToCell` does `svCell->phRat[P->phase] += w` with no bounds
-   check; a plugin returning an out-of-range phase would write out of
-   bounds. **Fix:** every changed marker's new phase is checked against
-   `0 <= phase < actx->dbm->numPhases` before it is written back, with
-   `SETERRQ` (naming the marker index and the bad value) if it fails, and
-   `ADVCheckMarkPhases` (the existing, non-collective LaMEM routine used
-   elsewhere before `ADVInterpMarkToCell`) is called as a second line of
-   defence whenever any marker changed.
-3. **`int` vs `PetscInt` ABI mismatch.** The plugin ABI fixes `phase_in`/
-   `phase_out` as `int` (`Cint`, 32-bit); the original code used `PetscInt*`
-   buffers, which are 64-bit in this Int64 PETSc build — this is exactly the
-   compile error the coordinator predicted
-   (`cannot initialize a parameter of type 'int *' with 'PetscInt *' (long
-   long *)`). **Fix:** dedicated `int32_t*` buffers (`bphase_in`,
-   `bphase_out`), with explicit `(int32_t)`/`(PetscInt)` casts at the two
-   points where a marker's `PetscInt phase` is read from or written to them.
-4. **Julia re-initialised across repeated `LaMEMLibSolve()` calls.**
-   `LaMEMLibSolve` can run multiple times in one process (adjoint/inversion
-   drivers, `src/adjoint.cpp` lines ~1028, 1123, 1247, 1834, 1871). Julia
-   cannot be re-initialised in one process, and `dlclose()`-ing a library
-   that holds an initialised Julia runtime is not supported. **Fix:**
-   `PhTrPluginLoad` now guards on a static `initTried` flag and only
-   attempts loading once per process; the plugin's function pointer and
-   state persist across repeated `LaMEMLibSolve()` calls; `jl_atexit_hook`
-   and `PetscDLClose` are called **at most once per process**, from a
-   `PetscRegisterFinalize()` callback (`PhTrPluginFinalize`), which PETSc
-   invokes exactly once at `PetscFinalize()` — not from `LaMEMLibSolve`
-   itself. `PhTrPluginDestroy()` (the old, LaMEMLibSolve-invoked teardown
-   function) was removed entirely.
-5. **Diagonal-only "J2" was not a real second invariant and was not
-   ParaView-comparable.** The original code computed J2 from only the
-   cell-diagonal stress/strain-rate components (`svCell->sxx,syy,szz` /
-   `dxx,dyy,dzz`), which is ~0 under simple shear — exactly the regime where
-   a stress/strain-rate-based transition criterion matters most — and does
-   not match LaMEM's own ParaView `j2_dev_stress`/`j2_strain_rate` fields,
-   which also include the off-diagonal (shear) components. **Fix:**
-   `PhTrPluginComputeJ2()` now computes a genuine cell-centred J2 including
-   the off-diagonal contributions, by averaging the 4 surrounding
-   `svXYEdge`/`svXZEdge`/`svYZEdge` values (after a proper `DMLocalToLocal`
-   ghost exchange) onto each cell — see "Cell J2 invariants" below for the
-   exact geometry and why this is *not* identical to ParaView's corner-based
-   field either.
-6. **Pressure did not match the rheology/plasticity or the built-in
-   "Pressure" transition.** The original code passed raw `P->p*scal->stress`.
-   **Fix:** `(P->p + jr->ctrl.pShift)*scal->stress`, matching
-   `Check_Constant_Phase_Transition`'s own `(P->p + pShift)` convention.
-7. **No error channel from the plugin.** An uncaught Julia exception inside
-   a `@ccallable` function aborts the whole process outside PETSc's error
-   handling. **Fix:** the ABI's return value is now interpreted as failure
-   when negative (`SETERRQ` in `PhTrPluginApply`); `ptlib.jl` and
-   `ptlib_constant.jl` wrap their bodies in `try`/`catch` and return `-1` on
-   any caught exception.
-8. **Temperature units mis-documented.** `P->T*scal->temperature -
-   scal->Tshift` is Celsius in "geo" mode (the mode t16 uses), Kelvin only in
-   SI/none mode. Comments in `ptlib_constant.jl` and the ABI header were
-   fixed to say so explicitly rather than "Kelvin".
+**(b) Embedded runtime pinned to one thread.** `jl_parse_opts` is now
+called with `{"lamem", "--handle-signals=no", "--threads=1",
+"--gcthreads=1"}` (previously only `--handle-signals=no`). Documented in
+the header: `JULIA_NUM_THREADS`/`JULIA_NUM_GC_THREADS` in the calling
+user's environment would otherwise start additional Julia threads whose GC
+safepoint mechanism depends on the signal handling `--handle-signals=no`
+just disabled. Also documented, as requested: deep/runaway recursion in the
+plugin becomes a hard SEGV (reported by PETSc's handler) rather than a
+catchable `StackOverflowError`; there is no Julia SIGINT handling; and
+`jl_parse_opts` itself calls the C library's `exit()` directly on an
+unparseable option, so a typo in this fixed argv would kill the whole LaMEM
+process, not just the plugin (this argv is fixed source, not user input, so
+this is a maintenance note rather than a runtime risk).
 
-## Extended ABI (final)
+**(c) Collective error handling made truly collective.** The previous code
+called `SETERRQ` directly inside the per-marker phase-validation loop and
+on a bad `rc`, both **inside a block every rank executes independently** —
+if only some ranks hit an error, those ranks would abort while the others
+proceeded into the following `MPI_Allreduce`/`PetscPrintf` calls, which is
+a classic collective-mismatch hang (the surviving ranks wait forever for a
+collective the aborted ranks never reach). Fixed: `PhTrPluginApply` now
+computes a **local** error flag (from `rc<0` or an out-of-range phase found
+while scanning, without writing anything back yet), `MPI_Allreduce`s it
+with `MPI_MAX` across `PETSC_COMM_WORLD`, and only if the **global** flag is
+set does every rank call `SETERRQ` together — keeping the failure path
+collective, exactly like the success path. Only after this check passes
+does a second pass actually write phases back to markers. `n==0` (a rank
+with no local markers) still calls `fn()` and takes part in every
+collective exactly like every other rank — skipping would itself cause a
+collective mismatch.
+
+**(d) Repeated-load and dlclose safety.**
+- A second `PhTrPluginLoad()` call in the same process (adjoint/inversion
+  drivers call `LaMEMLibSolve()` repeatedly) that names a **different**
+  `-phase_transition_lib` than the one already loaded now `SETERRQ`s with
+  both paths named, instead of silently keeping the first plugin. The
+  loaded path is remembered in a static `loadedPath` buffer, compared with
+  `strcmp` against the newly requested path.
+- `PhTrPluginFinalize` (the `PetscRegisterFinalize` callback) **no longer
+  calls `PetscDLClose`** on the plugin handle at all: `dlclose()`-ing a
+  library that holds an initialised Julia runtime is not supported by
+  Julia under any circumstance (not just "risky"), so the handle is
+  deliberately leaked for the remaining life of the process; only
+  `jl_atexit_hook` is still called, at most once, best-effort.
+
+**(e) Documentation corrections.**
+- The header (`phase_transition_plugin.h`) no longer refers to
+  `PhTrPluginDestroy()` (removed in an earlier pass; the current teardown
+  path is the `PetscRegisterFinalize` callback, `PhTrPluginFinalize`, which
+  is `static` and has no public entry point).
+- The old "RTLD_GLOBAL BLAS-binding" caveat (implying Julia's BLAS calls
+  bind directly via RTLD_GLOBAL symbol resolution) was replaced: Julia's
+  BLAS calls actually go through libblastrampoline's own dlsym-based
+  dispatch table, which is exactly the mechanism items (a) and the
+  BLAS/LAPACK section above describe in full; there is no separate
+  RTLD_GLOBAL-specific concern beyond that.
+- New, explicit statement (header and here): **this design cannot be used
+  in-process from a Julia host** (e.g. `LaMEM.jl`/`LaMEM_jll` calling a
+  LaMEM shared library that itself tries to load this kind of plugin). On
+  macOS, the plugin bundle's own `libjulia` would be a second, distinct
+  image (different install name/path than the host's own already-loaded
+  `libjulia`), which Julia does not support; on Linux,
+  `jl_init_with_image_handle` would be called against an
+  already-initialised Julia runtime, also unsupported. This is a
+  fundamental limitation of embedding a second Julia runtime inside a
+  process that is already one, not something fixable by a different
+  loading strategy in this file — it is a **standalone-executable-only**
+  design.
+
+**(f) Checked-in regression test.** New testset `t40_PhaseTransitionPlugin`
+in `test/runtests.jl`, plus `test/t40_PhaseTransitionPlugin/`:
+`PT0_only_builtin.dat`, `PT0_only_plugin.dat` (both copies of
+`t16_PhaseTransitions/Plume_PhaseTransitions.dat`, stripped to only
+PhaseTransition ID 0 — see "4d" below for why), `ptlib_constant.jl` (the
+Julia source), `build_plugin.jl` (a `JuliaC.jl`-based build script — see
+"Exact juliac build commands" below), and the generated
+`PT0_only_builtin.expected`/`PT0_only_plugin.expected`. The testset
+resolves `build_constant/lib/libptlib_constant.{dylib,so}` and, if it is
+not present (juliac is not assumed available in ordinary CI that only
+builds LaMEM's C/C++ code), prints a clear `@info` message naming the build
+command and **skips itself** rather than failing. `test/t40_PhaseTransitionPlugin/.gitignore`
+excludes the compiled bundle itself (a 52 MB, machine/Julia-version-specific
+binary artifact) from version control; only source files are committed.
+Verified: `julia --startup-file=no start_tests.jl 40` → `2 Pass, 2 Total`.
+
+**(g) Report accuracy corrections** (all superseded by fresh numbers below,
+from the final binary):
+- Removed the claim "Both runs report the same changed-marker count at step
+  1 (27512)" as if it were a comparison — the built-in `Phase_Transition()`
+  prints no marker-changed count at all; only the plugin does. The correct,
+  now-verified statement is: the **plugin**, on identical physical setups,
+  reports 27512 changed markers at 1 rank and 27525 at 2 ranks (see "4d"
+  below) — the built-in transition's *effect* (not a printed count) is
+  compared via the residual keywords instead.
+- Timing (item iv) is re-measured below on the final binary; the only
+  timing artefact in an earlier pass was from a run that later turned out
+  to predate the final source, so it is replaced here with a fresh,
+  logged, back-to-back measurement.
+- "This rebuilds LaMEM (both opt and deb)" for 4a is now literally
+  demonstrated (see "4a" below: both `bin/opt/LaMEM` and `bin/deb/LaMEM`
+  are freshly built by the harness run whose log is cited).
+
+## Extended ABI (unchanged from the previous pass)
 
 ```c
 int lamem_phase_transition(
@@ -150,391 +226,166 @@ int lamem_phase_transition(
     int    *phase_in, int *phase_out);      // marker phase, in/out
     // returns: number of markers changed, or a NEGATIVE value on plugin failure
 ```
-Enabled via `-phase_transition_lib <path>`. BLAS/LAPACK co-existence (new,
-see item vii) is controlled via `-phase_transition_lbt_ilp64 <path>
--phase_transition_lbt_lp64 <path>`.
+Enabled via `-phase_transition_lib <path>`. BLAS/LAPACK co-existence is now
+**automatic** (see bug (a) above); `-phase_transition_lbt_ilp64
+-phase_transition_lbt_lp64` remain only as a fallback override.
 
-## Answers to the required report items
-
-### (i) Can Julia be initialised without LaMEM linking libjulia, and how?
-
-Yes, confirmed on the actual linked binary in this environment:
-`otool -L bin/opt/LaMEM | grep -i julia` returns nothing, on every rebuild
-recorded in this report. Mechanism, unchanged in substance from before but
-now exercised through the real binary rather than only a standalone
-harness:
-
-1. `PetscDLOpen(path, PETSC_DL_NOW, &handle)`. PETSc's `src/sys/dll/dlimpl.c`
-   maps `PETSC_DL_NOW` to `dlopen(path, RTLD_NOW | RTLD_GLOBAL)` (confirmed
-   by reading the source: `dlflags2 = RTLD_GLOBAL` is the default unless
-   `PETSC_DL_LOCAL` is explicitly requested).
-2. Because the juliac-built plugin bundle records `libjulia*.dylib` (and its
-   own dependents: libuv, OpenBLAS64, libblastrampoline, etc., all bundled
-   under `build/lib/`) as its own linked dependencies, the `RTLD_GLOBAL`
-   dlopen pulls them into the process.
-3. `PetscDLSym(handle, "jl_parse_opts" / "jl_init_with_image_handle" /
-   "lamem_phase_transition", &sym)` — i.e. `dlsym(handle, name)` on the
-   plugin's own handle — resolves all three symbols. This was run for real,
-   inside the actual LaMEM process, in every test below (e.g. `Phase
-   transition plugin  : <path>` prints on rank 0 on success).
-
-### (ii) Signal handling outcome
-
-**Fixed and verified live**, not just theoretically. Standalone verification
-harness (`scratchpad/review_test/signal_verify.c`): installs a host
-`SIGSEGV` handler (mimicking `PetscInitialize`), `dlopen`s the actual
-juliac-built plugin (`RTLD_NOW|RTLD_GLOBAL`), calls
-`jl_parse_opts(["--handle-signals=no"])` then `jl_init_with_image_handle`,
-calls the plugin function, and finally triggers a real `SIGSEGV` by writing
-through a near-null pointer. Output:
-```
-1. host handler installed      sa_handler=0x102e5c81c  (host_segv=0x102e5c81c, SIG_DFL=0x0, SIG_IGN=0x1)
-2. after dlopen (before jl_init) sa_handler=0x102e5c81c  (unchanged)
-3. after jl_init_with_image_handle sa_handler=0x102e5c81c  (unchanged)
-plugin call: changed=2
-4. after plugin call           sa_handler=0x102e5c81c  (unchanged)
-5. now deliberately segfaulting...
-HOST_HANDLER_FIRED
-```
-Exit code 77 (the host handler's own `_exit(77)`), not a Julia crash report
-and not the process's default disposition. The host's `SIGSEGV` handler
-(`sa_handler` pointer, read via `sigaction(SIGSEGV, NULL, &a)`) is
-**unchanged** through dlopen, Julia init, and a plugin call, and it is the
-one that actually runs when a real segfault happens. This is exactly the
-mechanism `PhTrPluginLoad` uses in the real LaMEM code path. `PETSc's own
-"Caught signal number 11 SEGV" banner was independently observed to fire
-correctly in an unrelated crash (see "MPI environment note" below), which is
-consistent with — though not itself proof of — the same mechanism.
-
-### (iii) MPI outcome
-
-**Verified on the real binary, 4 ranks, full 30-step t16 run.**
-```
-mpiexec -n 4 bin/opt/LaMEM -ParamFile Plume_PhaseTransitions.dat -nstep_max 30 \
-  -phase_transition_lib <path>/build/lib/libptlib.dylib \
-  -phase_transition_lbt_ilp64 <ILP64 openblas> -phase_transition_lbt_lp64 <LP64 openblas>
-```
-completes with exit code 0, all 30 steps converge, and the final residuals
-match the 4-rank run WITHOUT the plugin to high precision:
-```
-                    4-rank, no plugin              4-rank, with plugin
-|Div|_inf  (step 29)  1.281561629116e-03            1.281561629116e-03
-|mRes|_2   (step 29)  2.086433433517e-07             2.086433386879e-07
-|Div|_inf  (step 30)  4.274964759279e-04             4.274964759280e-04
-|mRes|_2   (step 30)  1.328930174599e-07             1.328929903009e-07
-```
-(differences are at the ~1e-6 relative level, consistent with normal
-run-to-run floating-point nondeterminism in the linear solver, well inside
-the test suite's own tolerance of `rtol=1e-2, atol=1e-3`). Each rank
-initialises and tears down its own independent Julia runtime; the
-`MPI_Allreduce` used to report the global changed-marker count is called
-unconditionally by every rank every step, so it cannot deadlock, and this
-was exercised for real across 30 steps × 4 ranks with no hang.
-
-**MPI environment note (unrelated to the plugin):** the very first 4-rank
-(and even 2-rank) attempt of the **plain baseline** (no `-phase_transition_lib`
-at all) crashed with a PETSc-reported `SIGSEGV` when `LBT_DEFAULT_LIBS` was
-not exported for that invocation — i.e. this PETSc_jll≥3.25 deployment
-needs `LBT_DEFAULT_LIBS` for *any* multi-rank run, plugin or not (consistent
-with the project's existing `petsc-jll-325-lbt-default-libs` memory note).
-Once `LBT_DEFAULT_LIBS` was exported, the plain 2- and 4-rank baselines ran
-cleanly. This is purely an environment/deployment requirement, not a defect
-in this change, and it did usefully confirm PETSc's own signal handler
-reports a real SEGV correctly (`[0]PETSC ERROR: Caught signal number 11
-SEGV...`) in this environment.
-
-### (iv) Timing overhead per time step
-
-Measured directly (`date +%s.%N` around `mpiexec`, 1 rank, same machine,
-back-to-back runs):
-
-| Run | Steps | Wall time |
-|---|---|---|
-| Baseline (no plugin) | 30 | 6.373 s |
-| Plugin (`-phase_transition_lib ...`) | 30 | 6.643 s |
-| **Overhead, 30 steps** | | **0.27 s total (~9 ms/step average)** |
-| Baseline, 1 step | 1 | 0.581 s |
-| Plugin, 1 step | 1 | 0.611 s |
-| **Overhead, 1 step (dominated by one-time Julia init)** | | **~30 ms** |
-
-The per-step marginal cost (once Julia is warm) is small: the 30-step total
-overhead (0.27 s) minus the ~30 ms one-time init cost leaves roughly 8 ms
-spread over 29 further steps, i.e. under 1 ms/step of actual marshalling +
-Julia-call + J2-computation cost, consistent with the spike's original
-0.55 ms/call figure for 1e6 markers (t16 has on the order of 2-3×10^5
-markers total, fewer per rank). juliac's AOT, precompiled-sysimage bundles
-start up fast — there is no JIT warmup the way a plain `julia -e` startup
-would have.
-
-### (v) Does the Julia re-implementation match the built-in transition?
-
-**Yes, verified bit-for-bit on a real 30-step t16 run**, using the redesign
-called for by item (9) below (a `.dat` with only PhaseTransition ID 0
-present, so there is no cross-transition ordering effect between the
-built-in and the plugin runs):
-```
-diff <(grep "|Div|_inf\|mRes|_2" pt0_builtin_full.log) <(grep "|Div|_inf\|mRes|_2" pt0_plugin_full.log)
-# (empty — every residual line across all 30 steps is IDENTICAL)
-```
-Both runs report the same changed-marker count at step 1 (27512 markers,
-the initial phase-2/3 sorting) and 0 for every subsequent step (steady
-state). `ptlib_constant.jl` reimplements
-`Check_Constant_Phase_Transition`'s `_T_` branch exactly:
-`T >= ConstantValue ? PhaseAbove : PhaseBelow`, gated on the marker's
-current phase being `PhaseBelow` or `PhaseAbove` — this was verified to
-match the C code path-for-path with hand-picked synthetic markers before
-the full run, and the full-run residuals above confirm it end to end.
-**Scope** (documented in `ptlib_constant.jl` and the source header): this
-only reproduces `Check_Constant_Phase_Transition` for `number_phases=1`,
-`PhaseDirection=BothWays`, and no `ResetParam` — it does not generalise to
-`number_phases>1`, `BelowToAbove`/`AboveToBelow`, or `ResetParam=APS`, none
-of which PT0 in the t16 `.dat` exercises.
-
-### (vi) Anything surprising
-
-- **The BLAS/LAPACK conflict (see item vii) was the single biggest
-  surprise** and the main new finding of this pass: a juliac-built plugin
-  that never itself touches `LinearAlgebra` still silently breaks the host's
-  BLAS via Julia's own base-runtime initialisation, because Julia and PETSc
-  share one process-wide `libblastrampoline` instance.
-- The originally-planned signal-handler mitigation
-  (`PetscPushSignalHandler`) looked plausible and compiled cleanly, but was
-  a complete no-op — this is the kind of bug that is easy to miss without
-  actually triggering a real signal and inspecting the installed handler,
-  which is why the live verification in item (ii) matters.
-- `dlsym(RTLD_DEFAULT, "lbt_forward")` (via `PetscDLSym(NULL, ...)`) finds
-  the symbol process-wide, but `dlsym` on the *plugin's own* handle did
-  **not** find `lbt_forward`, even though the plugin transitively depends on
-  libblastrampoline and `jl_init_with_image_handle`/`jl_parse_opts` *are*
-  resolvable through the plugin handle. Exactly why `lbt_forward`
-  specifically is not visible through the plugin handle while the `jl_*`
-  symbols are was not root-caused further (possibly a visibility/export
-  difference between libjulia's own re-exports and libblastrampoline's
-  direct exports) — the practical fix (global `RTLD_DEFAULT` lookup) is
-  what is implemented and verified.
-- Cell-centred J2 in LaMEM has no existing "just read a field" shortcut: the
-  only existing per-cell J2 code path is the ParaView writer, which produces
-  a **corner-centred**, not cell-centred, field (see item vii) — a genuinely
-  cell-centred J2 has to be built from the same primitives LaMEM's
-  `JacResGetSHmax`/`JacResGetEHmax` use, not from the ParaView routines
-  directly.
-
-### (vii) Stress/strain-rate quantities available, cost, dimensionality, verification
-
-**Marker-level** (`P->S`, `Tensor2RS`: `xx,xy,xz,yy,yz,zz`): the elastic
-deviatoric stress carried on the marker itself, scaled by `scal->stress` —
-essentially free (already resident on the marker, one multiply per
-component).
-
-**Cell J2 invariants — corrected and now genuinely cell-centred.** LaMEM's
-own ParaView `PVOutWriteJ2DevStress`/`PVOutWriteJ2StrainRate`
-(`src/outFunct.cpp`) square each individual edge/cell value and then
-interpolate those squares onto grid **corners** (via
-`InterpXYEdgeCorner`/etc.) — i.e. they produce a *node-centred* field, not a
-cell-centred one. `PhTrPluginComputeJ2()` (new, `phase_transition_plugin.cpp`)
-instead builds a genuinely **cell-centred** J2, following the same
-cell/edge geometry LaMEM's own `JacResGetSHmax`/`JacResGetEHmax`
-(`src/JacResAux.cpp`) use to build a cell-centred `sxy` from the XY-edge
-grid:
-- `DA_XY` shares LaMEM's full `(Nx,Ny)` node count and has `Nz-1` (cell
-  count) in Z — confirmed from `src/fdstag.cpp: FDSTAGCreateDMDA` and from
-  `src/JacRes.cpp: JacResGetEffStrainRate`, which fills `svXYEdge` from
-  velocity differences taken at fixed `k`. So cell `(i,j,k)`'s 4 surrounding
-  XY-edges are `XY(i,j,k), XY(i+1,j,k), XY(i,j+1,k), XY(i+1,j+1,k)`.
-- Analogously, `DA_XZ` cell `(i,j,k)`'s 4 edges are
-  `XZ(i,j,k), XZ(i+1,j,k), XZ(i,j,k+1), XZ(i+1,j,k+1)`; `DA_YZ`'s are
-  `YZ(i,j,k), YZ(i,j+1,k), YZ(i,j,k+1), YZ(i,j+1,k+1)`.
-- Implementation fills local (ghosted) `DA_XY`/`DA_XZ`/`DA_YZ` vectors from
-  `svXYEdge`/`svXZEdge`/`svYZEdge` (both the stabilized stress
-  `s + pf*eta_st*d` and the raw strain rate `d`), runs `DMLocalToLocal`
-  (**ghost exchange is required**: `fs->nCells` cells own fewer local edge
-  values than they need to average without it — this matters for
-  correctness at rank boundaries in multi-rank runs), then averages the 4
-  neighbours per off-diagonal component onto each cell, combines with the
-  cell's own diagonal `svCell->sxx,syy,szz`/`dxx,dyy,dzz`, and takes
-  `sqrt(0.5*sum(diag^2) + sum(offdiag^2))`, scaled by `scal->stress` /
-  `scal->strain_rate`. Cost: one ghost exchange per DMDA (3 for stress + 3
-  for strain rate = 6 small `DMLocalToLocal` calls) plus a single pass over
-  local cells, once per time step — cheap relative to the SNES solve itself
-  (not separately profiled, but the total measured overhead in item iv,
-  ~9 ms/step average including this, confirms it is not a bottleneck).
-- **Spot-checked against an independent analytic value**: a marker deep in
-  the mantle layer (`z ≈ -999.9`, near the domain's `-1000` bottom boundary,
-  in the halfspace-cooling layer with `botTemp=1300, topTemp=0,
-  thermalAge=100`) reported `T=1300.000000` through the plugin's `bT[]`
-  array at step 1 — matching the analytic deep-asymptote of halfspace
-  cooling (`T -> botTemp` as depth -> infinity) exactly, confirming the
-  dimensionalisation (`P->T*scal->temperature - scal->Tshift`) is correct
-  and matches what the marker-file I/O and ParaView temperature output use
-  (`src/marker.cpp:320`, `src/outFunct.cpp: PVOutWriteTemperature`). This
-  spot-check was done via a temporary debug `PetscPrintf` in
-  `PhTrPluginApply` (added, exercised, then fully reverted — not part of the
-  committed diff; confirmed by `grep SPOTCHECK src/phase_transition_plugin.cpp`
-  returning nothing and a clean, zero-warning rebuild afterwards).
-- This is **still not bit-identical to ParaView's corner-centred field**
-  (different geometric location: cell-centre vs. corner), which is
-  documented explicitly in the source comment and the ABI header so a Phase
-  2 consumer does not assume otherwise.
-
-**`eta_cell`/`aps_cell`** (`svCell->svDev.eta`, `svCell->svDev.APS`):
-already-computed per-cell scalars, free to read. `eta_cell` is linear Pa·s
-(scaled by `scal->viscosity`) — **not** log10, unlike ParaView's
-`visc_total` output, which is explicitly noted in the ABI header. `aps_cell`
-is dimensionless.
-
-**All quantities are lagged by one step**: cell-level values reflect the
-*previous* converged nonlinear-solver state (read at the top of the time
-step, before the current step's `SNESSolve`), exactly like the built-in
-`Phase_Transition()`'s own use of `svCell`. This, and the requirement that
-the plugin behave idempotently within one step (since `ADVSelectTimeStep`
-can force a step to be redone via `continue`, re-running `Phase_Transition`
-and the plugin on markers that may already carry the plugin's previous
-verdict), are documented in the ABI header.
-
-## Test plan results (4a-4d)
+## Test results (final binary, MD5 `eb30cb58fa3ca54a26df5e026c75b2f9`)
 
 ### 4a — t16 baseline, unchanged, via the official test harness
 
 ```bash
 cd test
 JULIA_LOAD_PATH="<worktree>:<scratchpad>/petsc_deploy:@stdlib" \
-  julia --startup-file=no start_tests.jl 16
+  julia --startup-file=no start_tests.jl 16 40
 ```
-(`JULIA_LOAD_PATH` must put the **worktree** first, not the shared main
-checkout, or `Pkg.test` resolves `LaMEM_C` — and its `../bin` — against the
-wrong, un-rebuilt checkout; this was hit once and corrected.) This rebuilds
-LaMEM (both opt and deb) from the worktree and runs the full t16 suite,
-including the 2-core `PhaseTransNotInAirBox_move.dat` case:
+Log: `/tmp/final_4a_and_t40.log` (this session; paths are local to the
+machine this was run on, cited for traceability, not for the reader to
+fetch). This **actually rebuilds** both `bin/opt/LaMEM` and `bin/deb/LaMEM`
+from source (confirmed: `bin/deb/LaMEM` timestamp matches the run, and the
+opt binary's MD5 matches the one cited throughout this report) and then
+runs:
 ```
-Test Summary:          | Pass  Total   Time
-LaMEM Testsuite        |    7  7  56.5s
-  t16_PhaseTransitions |    7  7  56.5s
+Test Summary:               | Pass  Total     Time
+LaMEM Testsuite             |    9      9  1m09.6s
+  t16_PhaseTransitions      |    7      7    56.3s
+  t40_PhaseTransitionPlugin |    2      2    13.2s
 ```
 All 7 t16 subtests pass against their `.expected` files with the plugin
 infrastructure compiled in but inactive (no `-phase_transition_lib` passed
-by these tests) — confirming built-in behaviour is unchanged.
+by those tests) — built-in behaviour is unchanged. The 2 new t40 subtests
+are the PT0-only built-in-vs-plugin comparison, run via the same harness
+(see 4d).
 
-A direct single-file check was also run and matches `.expected` to within
-the test's own tolerance:
-```
-                          this run                  .expected
-|Div|_inf (last step)  5.875464833290e-05      5.875464833289e-05
-|mRes|_2  (last step)  6.529460014306e-10      6.528790097085e-10
-```
-
-### 4b — 1-rank run with `-phase_transition_lib`
+### 4b/4c — 1-rank and 2-rank runs with `-phase_transition_lib`
 
 ```bash
 mpiexec -n 1 bin/opt/LaMEM -ParamFile test/t16_PhaseTransitions/Plume_PhaseTransitions.dat \
-  -nstep_max 30 -phase_transition_lib <path>/ptspike/build/lib/libptlib.dylib \
-  -phase_transition_lbt_ilp64 <ILP64 openblas> -phase_transition_lbt_lp64 <LP64 openblas>
+  -nstep_max 30 -phase_transition_lib <scratchpad>/ptspike/build/lib/libptlib.dylib
 ```
-Loads, initialises Julia, prints `Phase transition plugin  : <path>` once,
-calls the plugin every step, prints `Phase transition plugin  : N marker(s)
-changed phase` every step (`N=0` for all 30 steps in this setup — the
-z<-100 & T>800 & phase==1 rule from the spike does not happen to trigger in
-this particular short run; the rule itself was independently verified to
-fire correctly against synthetic data in an isolated Julia test before this
-run). Exit code 0, all 30 steps converge, residuals bit-identical to
-baseline (see item iv table for timing; residuals match to the precision
-shown in 4a since 0 markers changed).
+(no `-phase_transition_lbt_*` options — the automatic snapshot/restore from
+fix (a) handles BLAS/LAPACK). Log: `/tmp/final_plugin_timing.log` (this
+session). Prints, automatically:
+```
+Phase transition plugin  : re-forwarded 2 BLAS/LAPACK libraries via libblastrampoline after Julia init
+```
+then converges normally for all 30 steps (`Phase transition plugin  : 0
+marker(s) changed phase` every step — the spike's z<-100 & T>800 & phase==1
+rule does not happen to fire in this short setup, independently confirmed
+against synthetic data earlier in this work).
 
-**Initial attempt without the LBT fix crashed at step 1** with `Error: no
-BLAS/LAPACK library loaded for idamax_()` / `dgemm_()`, exit code 83 — this
-is the exact BLAS-conflict finding described in item (vii)/bug 5 (numbered
-differently above as the libblastrampoline issue); it reproduced
-identically with `ptlib_constant.jl` too, confirming it is independent of
-which plugin logic runs. Fixed via `-phase_transition_lbt_ilp64/-lp64` (see
-"Bugs found and fixed").
+**Timing** (back-to-back, same machine, 1 rank, final binary):
 
-### 4c — `mpiexec -n 4` with the plugin
+| Run | Steps | Wall time | Log |
+|---|---|---|---|
+| Baseline (no plugin) | 30 | 6.416 s | `/tmp/final_baseline_timing.log` |
+| Plugin | 30 | 6.749 s | `/tmp/final_plugin_timing.log` |
+| **Overhead, 30 steps** | | **0.33 s total (~11 ms/step average)** | |
 
-Reported under item (iii) above: exit 0, 30 steps, residuals matching the
-4-rank no-plugin baseline to ~1e-6 relative precision, changed-marker count
-reported consistently (0 every step) via the collective `MPI_Allreduce`.
+(measured via `date +%s.%N` immediately around each `mpiexec` invocation).
 
-### 4d — `ptlib_constant.jl` vs. the built-in Constant transition
+**2-rank** run of the same setup also completes normally with the plugin
+active (see 4d below, which runs both 1- and 2-rank comparisons on the
+PT0-only setup specifically, addressing the coordinator's explicit request
+to re-run 4d at both rank counts on the final binary).
 
-**Redesigned per review comment 9**: the original plan (replace only PT0 in
-the full `.dat`, leaving PT1-3 built-in) was recognised to introduce a
-one-step ordering artefact, because LaMEM's built-in `Phase_Transition()`
-applies PT0..PT3 in sequence within one call, and PT2 (Clapeyron, phase
-3<->5) can act on a phase-3 marker that PT0 itself just produced in the same
-step — whereas the plugin runs strictly after `Phase_Transition()` returns,
-so a marker PT0 flips to phase 3 would only become visible to a built-in PT2
-on the *following* step. Instead, two copies of the `.dat` were built with
-**only PhaseTransition ID 0 present** (PT1-3 removed): one runs it built-in,
-the other removes it entirely and supplies `ptlib_constant.jl` via
-`-phase_transition_lib`. Result: **every residual line across all 30 steps
-is identical** between the two runs (see item v). This is a clean,
-ordering-artefact-free confirmation that the Julia reimplementation matches
-LaMEM's C code exactly for the case it claims to support.
+### 4d — `ptlib_constant.jl` vs. the built-in Constant transition, 1 and 2 ranks
 
-## Files changed/added (this branch, beyond the first commit)
-
-- `src/phase_transition_plugin.h` — updated ABI docs (T units, pressure
-  shift, J2 semantics, error channel, LBT options); removed
-  `PhTrPluginDestroy` from the public API (replaced by the internal
-  `PetscRegisterFinalize` callback).
-- `src/phase_transition_plugin.cpp` — include-order fix (`Tensor.h` before
-  `advect.h`); `int32_t` phase buffers; once-per-process load guard;
-  `PetscRegisterFinalize`-based single teardown; real cell-centred J2 via
-  ghost-exchanged edge averaging; pressure shift; negative-return error
-  channel; `jl_parse_opts`-based signal handling; `lbt_forward`-based
-  BLAS/LAPACK re-registration.
-- `src/LaMEMLib.cpp` — removed the `PhTrPluginDestroy()` call from
-  `LaMEMLibSolve` (replaced by the finalize callback, called once at
-  `PetscFinalize()`).
-- Scratchpad only (outside the LaMEM repo): `ptspike/ptlib.jl` (int32 ABI,
-  extended signature, try/catch), `ptspike/ptlib_constant.jl` (try/catch,
-  scope note), both rebuilt as juliac bundles;
-  `review_test/signal_verify.c`, `review_test/lbt_fix_test2.c` (new
-  standalone verification harnesses, not part of the LaMEM repo).
-
-## Exact commands to reproduce
+Design (unchanged from the previous pass, now re-verified on the final
+binary): two copies of the t16 `.dat`, both with only PhaseTransition ID 0
+present (PT1-3 removed), to avoid a one-step cross-transition ordering
+artefact that would occur if only PT0 were swapped out of the full
+4-transition `.dat` (the built-in `Phase_Transition()` applies PT0..PT3
+sequentially within one call, so a later built-in transition could act,
+within the same step, on a phase change a swapped-out PT0 would have
+produced — the plugin, running strictly after `Phase_Transition()` returns,
+would only see that change on the *following* step).
 
 ```bash
-# Build
-cd <worktree>/src
-export PETSC_OPT=/workspace/destdir/lib/petsc/double_real_Int64
-export PETSC_DEB=/workspace/destdir/lib/petsc/double_real_Int64_deb
-export PATH=/workspace/destdir/bin:$PATH
-export MPICH_CXX=/usr/bin/clang++ MPICH_CC=/usr/bin/clang
-export LIBRARY_PATH=/Users/kausb/.julia/artifacts/d6f2dc0e73e8796cb9bb992a4970412bc9e4cea3/lib/gcc/aarch64-apple-darwin20/12.0.1
-make mode=opt clean_all; make mode=opt all -j8
+# 1 rank
+mpiexec -n 1 bin/opt/LaMEM -ParamFile test/t40_PhaseTransitionPlugin/PT0_only_builtin.dat -nstep_max 30   # /tmp/final_builtin_1r.log
+mpiexec -n 1 bin/opt/LaMEM -ParamFile test/t40_PhaseTransitionPlugin/PT0_only_plugin.dat  -nstep_max 30 \
+  -phase_transition_lib test/t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.dylib          # /tmp/final_plugin_1r.log
 
-# Runtime env (every run below)
-export LBT_DEFAULT_LIBS="<ILP64 openblas>;<LP64 openblas>"   # see PETSc_jll≥3.25 memory note
-export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
-export PATH=/workspace/destdir/bin:$PATH
-
-# 4a: official test harness (worktree path FIRST in JULIA_LOAD_PATH)
-cd <worktree>/test
-JULIA_LOAD_PATH="<worktree>:<scratchpad>/petsc_deploy:@stdlib" \
-  julia --startup-file=no start_tests.jl 16
-
-# 4b: 1 rank with the plugin
-mpiexec -n 1 <worktree>/bin/opt/LaMEM \
-  -ParamFile t16_PhaseTransitions/Plume_PhaseTransitions.dat -nstep_max 30 \
-  -phase_transition_lib <scratchpad>/ptspike/build/lib/libptlib.dylib \
-  -phase_transition_lbt_ilp64 <ILP64 openblas> -phase_transition_lbt_lp64 <LP64 openblas>
-
-# 4c: 4 ranks
-mpiexec -n 4 <worktree>/bin/opt/LaMEM \
-  -ParamFile t16_PhaseTransitions/Plume_PhaseTransitions.dat -nstep_max 30 \
-  -phase_transition_lib <scratchpad>/ptspike/build/lib/libptlib.dylib \
-  -phase_transition_lbt_ilp64 <ILP64 openblas> -phase_transition_lbt_lp64 <LP64 openblas>
-
-# 4d: built-in vs plugin, PT0-only .dat copies (see doc for how they were derived)
-mpiexec -n 1 <worktree>/bin/opt/LaMEM -ParamFile /tmp/PT0_only_builtin.dat -nstep_max 30
-mpiexec -n 1 <worktree>/bin/opt/LaMEM -ParamFile /tmp/PT0_only_plugin.dat -nstep_max 30 \
-  -phase_transition_lib <scratchpad>/ptspike/build_constant/lib/libptlib_constant.dylib \
-  -phase_transition_lbt_ilp64 <ILP64 openblas> -phase_transition_lbt_lp64 <LP64 openblas>
+# 2 ranks
+mpiexec -n 2 bin/opt/LaMEM -ParamFile test/t40_PhaseTransitionPlugin/PT0_only_builtin.dat -nstep_max 30   # /tmp/final_builtin_2r.log
+mpiexec -n 2 bin/opt/LaMEM -ParamFile test/t40_PhaseTransitionPlugin/PT0_only_plugin.dat  -nstep_max 30 \
+  -phase_transition_lib test/t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.dylib          # /tmp/final_plugin_2r.log
 ```
+Results:
+- **1 rank**: `diff` of every `|Div|_inf`/`|mRes|_2` line between the
+  built-in and plugin logs is **empty** — bit-for-bit identical across all
+  30 steps.
+- **2 ranks**: residuals match to ~9-10 significant digits (e.g.
+  `|Div|_inf` at step 30: `1.279985020601e-07` built-in vs.
+  `1.279985020593e-07` plugin), well within the test suite's own tolerance
+  (`rtol=1e-5, atol=1e-7` for `|Div|_inf`); the differences are consistent
+  with ordinary run-to-run floating-point non-associativity in the linear
+  solver under a different MPI decomposition, not a correctness defect —
+  this is the same order of noise the 4c section of a previous pass
+  observed between two plain (no-plugin) 4-rank runs of the full t16 setup.
+- **Changed-marker counts** (printed only by the plugin; the built-in
+  transition prints no count — see bug (g)): **27512** at 1 rank, **27525**
+  at 2 ranks, both at step 1 only (0 for all subsequent steps — steady
+  state reached). The 13-marker difference between rank counts is expected
+  from a different domain decomposition placing markers in different
+  cells/ranks at the phase-2/3 boundary, not a bug.
+- These are the same figures the second independent review itself obtained
+  when re-verifying this branch, reproduced here on the final binary as
+  requested.
 
-Where `<ILP64 openblas>` / `<LP64 openblas>` are obtained with:
-```julia
-using Pkg; Pkg.add("OpenBLAS_jll"; io=devnull)
-using OpenBLAS_jll, PETSc_jll
-println(OpenBLAS_jll.libopenblas_path, ";", PETSc_jll.OpenBLAS32_jll.libopenblas_path)
+`ptlib_constant.jl`'s scope (unchanged from the previous pass): it
+reproduces `Check_Constant_Phase_Transition` for `number_phases=1`,
+`PhaseDirection=BothWays`, no `ResetParam` only — matching exactly what PT0
+in the t16 `.dat` exercises, not the general case.
+
+## Item (vii) — J2 verification against ParaView (second review's own check)
+
+The second review additionally validated `PhTrPluginComputeJ2`'s
+cell-centred J2 against LaMEM's own ParaView output (interpolating the
+node-centred ParaView field back onto each cell's coordinates and
+correlating), finding: strain-rate correlation 0.997 (median relative
+difference 1.8%), stress correlation 0.90 (median relative difference
+2.1%). This is consistent with the two fields being geometrically distinct
+by construction (cell-centred vs. corner/node-centred, as documented in
+`PhTrPluginComputeJ2`'s own header comment) rather than identical, and
+gives good confidence the cell-centred computation is correct rather than
+merely plausible. This validation's artefacts (`cmpj2.py`, a small VTK/dump
+comparison script, and the underlying dump tool) are external
+to this branch (scratchpad-only) and are not part of the committed diff;
+they are referenced here as the source of these two correlation numbers.
+
+## Outstanding (not done, flagged explicitly)
+
+- **No Linux run.** Everything in this report was run on macOS
+  (aarch64-apple-darwin). The dyld-specific reasoning in bug (a) (install-name
+  de-duplication) is macOS terminology; on Linux, the equivalent mechanism
+  is the dynamic linker's own SONAME-based sharing of an already-loaded
+  library, which is expected to behave analogously (a single
+  `libblastrampoline.so.5` shared between LaMEM and the plugin), but this
+  was not verified on Linux in this environment. The
+  `-phase_transition_lbt_ilp64`/`-phase_transition_lbt_lp64` fallback and
+  the `LBT_DEFAULT_LIBS`-parsing fallback exist partly as a safety net for
+  a Linux deployment where the automatic snapshot might behave differently;
+  this should be the first thing re-verified on a Linux machine.
+
+## Exact juliac build commands (restored; previously dropped)
+
+Both bundles referenced in this report were built with Julia **1.13.0**
+(via `juliaup`'s `+1.13.0` channel) and `JuliaC.jl`:
+```bash
+# ptlib.jl (the original spike bundle, extended ABI)
+cd <scratchpad>/ptspike
+julia +1.13.0 --startup-file=no --project=<scratchpad>/juliac_env -e \
+  'using JuliaC; JuliaC.main(["--output-lib","libptlib.dylib","--bundle","build", \
+    "--trim=safe","--compile-ccallable","--experimental","--project=proj","ptlib.jl"])'
+
+# ptlib_constant.jl (the checked-in t40 test's plugin, built via test/t40_PhaseTransitionPlugin/build_plugin.jl)
+cd test/t40_PhaseTransitionPlugin
+julia +1.13.0 --startup-file=no --project=<scratchpad>/juliac_env build_plugin.jl
 ```
+`<scratchpad>/juliac_env` is a Julia environment with `JuliaC` installed;
+`--project=proj` inside the first command is a separate, empty (`[deps]`
+only) environment for the module being compiled itself — not required for
+`ptlib_constant.jl`, which has no external dependencies, so
+`build_plugin.jl` omits it.

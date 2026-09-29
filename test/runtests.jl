@@ -1628,6 +1628,57 @@ if should_run_test("t39_PhaseInjection")
 end
 end
 #---------------------------------------------------------------------------
+if should_run_test("t40_PhaseTransitionPlugin")
+@testset "t40_PhaseTransitionPlugin" begin
+    # Compares LaMEM's built-in Constant phase transition against a Julia
+    # re-implementation of it (ptlib_constant.jl), compiled with `juliac`
+    # into a shared library and loaded at runtime via -phase_transition_lib
+    # (see src/phase_transition_plugin.{h,cpp}). Both .dat files here are
+    # copies of t16_PhaseTransitions/Plume_PhaseTransitions.dat stripped
+    # down to ONLY PhaseTransition ID 0 (the T-dependent Constant
+    # transition, PhaseBelow=2/PhaseAbove=3/BothWays): PT0_only_builtin.dat
+    # keeps it as a built-in <PhaseTransitionStart> block, PT0_only_plugin.dat
+    # removes it entirely so the plugin is the only source of phase
+    # changes. Comparing against a PT0-only baseline (rather than swapping
+    # only PT0 out of the full 4-transition t16 .dat) avoids a one-step
+    # ordering artefact: LaMEM's built-in Phase_Transition() applies all of
+    # a .dat's transitions in sequence within one call, so a transition
+    # that acts on a phase another transition just produced can cascade
+    # within the same step, whereas the plugin always runs strictly after
+    # Phase_Transition() returns and would only see such a change on the
+    # NEXT step. See doc/phase_transition_plugin_PHASE1_REPORT.md.
+    #
+    # Requires a juliac-compiled bundle at
+    # t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.{dylib,so},
+    # built from ptlib_constant.jl by build_plugin.jl in this directory
+    # (juliac is not assumed to be available in ordinary CI runs that only
+    # build LaMEM's C/C++ code, so this testset skips itself, with a clear
+    # message, if the bundle is not present rather than failing).
+    cd(test_dir)
+    dir = "t40_PhaseTransitionPlugin"
+
+    bundle_name = Sys.isapple() ? "libptlib_constant.dylib" : "libptlib_constant.so"
+    bundle_path = joinpath(test_dir, dir, "build_constant", "lib", bundle_name)
+
+    if !isfile(bundle_path)
+        @info "t40_PhaseTransitionPlugin: skipped - compiled plugin bundle not found at $bundle_path. " *
+              "Build it first with: cd $dir && julia --project=<a project with JuliaC installed> build_plugin.jl"
+    else
+        keywords = ("|Div|_inf", "|mRes|_2")
+        acc      = ((rtol=1e-5, atol=1e-7), (rtol=1e-2, atol=1e-3))
+
+        @test perform_lamem_test(dir, "PT0_only_builtin.dat", "PT0_only_builtin",
+                                keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
+                                create_expected_file=update_expected, clean_dir=clean_files)
+
+        @test perform_lamem_test(dir, "PT0_only_plugin.dat", "PT0_only_plugin",
+                                args="-phase_transition_lib $bundle_path",
+                                keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
+                                create_expected_file=update_expected, clean_dir=clean_files)
+    end
+end
+end
+#---------------------------------------------------------------------------
 end
 #---------------------------------------------------------------------------
 

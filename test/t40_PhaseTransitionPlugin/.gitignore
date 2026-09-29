@@ -1,0 +1,3 @@
+# Compiled juliac bundle (large, machine/Julia-version-specific binary
+# artifact) - built locally by build_plugin.jl, never checked in.
+/build_constant/
