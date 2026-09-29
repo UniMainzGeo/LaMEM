@@ -1667,14 +1667,55 @@ if should_run_test("t40_PhaseTransitionPlugin")
         keywords = ("|Div|_inf", "|mRes|_2")
         acc      = ((rtol=1e-5, atol=1e-7), (rtol=1e-2, atol=1e-3))
 
+        # Each run is compared against its OWN .expected file (below), which
+        # only tests for a regression against a saved snapshot, not that the
+        # two runs agree with EACH OTHER - the two .expected files could in
+        # principle drift apart (e.g. one gets regenerated and the other
+        # doesn't) while both individual comparisons still pass. Keep the
+        # first run's log file around (clean_dir=false) so it can be
+        # compared directly against the second run's log file afterwards,
+        # then clean up both manually.
         @test perform_lamem_test(dir, "PT0_only_builtin.dat", "PT0_only_builtin",
                                 keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
-                                create_expected_file=update_expected, clean_dir=clean_files)
+                                create_expected_file=update_expected, clean_dir=false)
 
         @test perform_lamem_test(dir, "PT0_only_plugin.dat", "PT0_only_plugin",
                                 args="-phase_transition_lib $bundle_path",
                                 keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
-                                create_expected_file=update_expected, clean_dir=clean_files)
+                                create_expected_file=update_expected, clean_dir=false)
+
+        # Direct cross-comparison: the built-in Constant transition and the
+        # Julia plugin re-implementing it must produce matching |Div|_inf and
+        # |mRes|_2 residual sequences on these PT0-only inputs (see the
+        # ordering-artefact note above for why the .dat files are set up the
+        # way they are). NOTE: the |mRes|_2 comparison uses atol=1e-3, which
+        # given typical |mRes|_2 magnitudes of 1e-8..1e-12 here makes that
+        # particular keyword's accuracy check close to vacuous (almost any
+        # two small values satisfy isapprox at atol=1e-3); |Div|_inf (typical
+        # magnitude 1e-4..1e-9) is the keyword actually doing discriminating
+        # work at this tolerance. This mirrors the same accuracy tuple used
+        # for the .expected comparisons above and for t16, not a tuple picked
+        # specifically to make this cross-check pass.
+        builtin_out = joinpath(dir, "PT0_only_builtin.out")
+        plugin_out  = joinpath(dir, "PT0_only_plugin.out")
+
+        if isfile(builtin_out) && isfile(plugin_out)
+            builtin_vals = extract_info_logfiles(builtin_out, keywords)
+            plugin_vals  = extract_info_logfiles(plugin_out,  keywords)
+
+            for (i, kw) in enumerate(keywords)
+                rtol = haskey(acc[i], :rtol) ? acc[i].rtol : 0
+                atol = haskey(acc[i], :atol) ? acc[i].atol : 0
+                @test length(builtin_vals[i]) == length(plugin_vals[i])
+                @test isapprox(builtin_vals[i], plugin_vals[i]; rtol=rtol, atol=atol)
+            end
+        else
+            @test false # one or both runs above failed to even produce a log file
+        end
+
+        if clean_files
+            clean_test_directory(dir)
+        end
     end
 end
 end

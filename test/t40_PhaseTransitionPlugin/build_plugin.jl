@@ -19,7 +19,16 @@
 using JuliaC
 
 JuliaC.main([
-    "--output-lib", "libptlib_constant.dylib", # ".so" is substituted automatically on Linux
+    "--output-lib", "libptlib_constant", # no extension: JuliaC appends the
+                                          # platform's own dlext (.dylib on
+                                          # macOS, .so on Linux) itself, in
+                                          # link_products() (JuliaC's
+                                          # src/linking.jl); passing an
+                                          # explicit but WRONG extension
+                                          # (e.g. ".dylib" on Linux) is a
+                                          # hard error there, not silently
+                                          # substituted, so no extension must
+                                          # be given here.
     "--bundle", "build_constant",
     "--trim=safe",
     "--compile-ccallable",

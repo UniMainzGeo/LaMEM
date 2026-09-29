@@ -75,7 +75,16 @@ Base.@ccallable function lamem_phase_transition(
         end
         return Cint(changed)
     catch
-        # See ptlib.jl for why no I/O happens here under --trim=safe.
+        # An uncaught exception inside a @ccallable function aborts the
+        # whole process outside PETSc's error handling, so every exception
+        # is caught here and turned into a negative return value instead
+        # (see phase_transition_plugin.h: LaMEM turns a negative return
+        # into a normal SETERRQ). No I/O (e.g. printing the exception)
+        # happens here: even a fixed-string println pulls in dynamic
+        # dispatch that the `--trim=safe` verifier cannot resolve inside a
+        # @ccallable function, so the build would fail; this was hit and
+        # worked around by removing the print entirely, not by finding a
+        # trim-safe way to log it.
         return Cint(-1)
     end
 end

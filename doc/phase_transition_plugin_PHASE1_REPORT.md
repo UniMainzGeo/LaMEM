@@ -9,10 +9,13 @@ compiled with `juliac` into a relocatable shared library) into LaMEM's
 time-step loop, using PETSc's portable dynamic-loading API. The plugin is
 optional (`-phase_transition_lib <path>`); with no option, LaMEM's behaviour
 is unchanged. All numbers in this report come from runs of the actual final
-committed binary (`bin/opt/LaMEM`, MD5 `eb30cb58fa3ca54a26df5e026c75b2f9`,
-rebuilt from a clean object file and confirmed byte-identical across two
-independent rebuilds) — an earlier pass through this report cited logs from
-before the last source edits, which has been corrected.
+committed binary (`bin/opt/LaMEM`, rebuilt from a clean object file after
+every source change described below) — an earlier pass through this report
+cited logs from before the last source edits, and separately claimed the
+binary was "confirmed byte-identical across two independent rebuilds"
+without having logged both MD5s; that claim is withdrawn here (not
+re-asserted, since not re-verified with a logged comparison this pass) in
+favour of citing, for each figure below, the log file it actually came from.
 
 Two independent reviews of this branch found real, verified issues, all
 fixed and re-tested here:
@@ -80,9 +83,17 @@ asymmetry was not root-caused further but is documented) **before**
 array — copying is required because Julia's `clear=1` call frees the very
 strings the pre-init `lbt_get_config()` snapshot would otherwise still
 point at. The struct layout (`lbt_library_info_t`/`lbt_config_t`) was
-copied field-for-field from libblastrampoline's own public header (found on
-this machine at multiple Yggdrasil build-artifact locations, e.g.
-`.../destdir/include/libblastrampoline.h`; NOT guessed). After Julia init,
+copied field-for-field from libblastrampoline's own public header — NOT
+guessed, NOT found anywhere under PETSc's own `/workspace/destdir/include`
+(there is no `libblastrampoline.h` there): the actual file read was
+`/System/Volumes/Data/Users/kausb/Documents/GitHub/Yggdrasil-1/build/aarch64-apple-darwin-libgfortran5-mpi+mpitrampoline/7jpuDf2x/aarch64-apple-darwin20-libgfortran5-cxx11-mpi+mpitrampoline/artifacts/697b6b065afac5fb796010d38a46fb719a172e0e/include/libblastrampoline.h`
+(a symlink target inside a local Yggdrasil build tree, itself a copy of
+libblastrampoline's own upstream `include/libblastrampoline.h`), matching
+the layout LaMEM verified working at runtime against the ACTUALLY DEPLOYED
+library in this environment: `/workspace/destdir/lib/libblastrampoline.5.dylib`,
+version **5.15.0** (confirmed both by the versioned file alongside it,
+`libblastrampoline.5.15.0.dylib`, and by the `libblastrampoline_jll v5.15.0+0`
+line the Julia package manager itself reports for this deployment). After Julia init,
 `PhTrPluginRestoreLbt()` re-forwards each snapshotted library with
 `clear=0` (additive — does not remove Julia's own registrations) and
 **checks the return value** (`>0` symbols forwarded), `SETERRQ`-ing with
@@ -189,6 +200,32 @@ excludes the compiled bundle itself (a 52 MB, machine/Julia-version-specific
 binary artifact) from version control; only source files are committed.
 Verified: `julia --startup-file=no start_tests.jl 40` → `2 Pass, 2 Total`.
 
+**(h) LBT snapshot loop bound and version safety** (found by a third review
+pass, after (a)-(g) above landed).
+- `PhTrPluginSnapshotLbt`'s scan loop read
+  `cfg->loaded_libs[i] != NULL && i < LBT_MAX_SNAPSHOT` — since `&&`
+  evaluates its left operand first, this dereferenced `loaded_libs[i]`
+  *before* the bound check, so if `loaded_libs` ever held
+  `LBT_MAX_SNAPSHOT` (16) or more entries, the 17th element would be read
+  out of bounds before the loop could stop. Fixed by swapping the operand
+  order (`i < LBT_MAX_SNAPSHOT && cfg->loaded_libs[i] != NULL`), so the
+  bound is always checked first.
+- `lbt_config_t`/`lbt_library_info_t` carry no version field, and
+  libblastrampoline exports no version-query symbol, so there is no way to
+  directly ask "is this the struct layout I coded against?". Added the
+  closest available guard: after resolving `lbt_get_config`, its address is
+  passed to `dladdr()` (guarded by `PETSC_HAVE_DLADDR`, the same macro
+  PETSc's own `PetscDLAddr` uses), and the struct layout is only trusted if
+  the containing image's path contains `"libblastrampoline.5"` — otherwise
+  (or if `dladdr` itself is unavailable on this platform) a warning is
+  printed and the snapshot is skipped, falling back to
+  `-phase_transition_lbt_ilp64`/`-lp64` or `LBT_DEFAULT_LIBS`. This cannot
+  detect a struct layout change *within* the 5.x series, only guards
+  against mistaking a differently-versioned/incompatible image for the
+  5.15.0 layout this code was written against; a documented comment notes
+  that a future libblastrampoline 6.x (or any release reordering this
+  struct) would need this code updated alongside it.
+
 **(g) Report accuracy corrections** (all superseded by fresh numbers below,
 from the final binary):
 - Removed the claim "Both runs report the same changed-marker count at step
@@ -202,9 +239,63 @@ from the final binary):
   timing artefact in an earlier pass was from a run that later turned out
   to predate the final source, so it is replaced here with a fresh,
   logged, back-to-back measurement.
-- "This rebuilds LaMEM (both opt and deb)" for 4a is now literally
-  demonstrated (see "4a" below: both `bin/opt/LaMEM` and `bin/deb/LaMEM`
-  are freshly built by the harness run whose log is cited).
+- "This rebuilds LaMEM (both opt and deb)" for 4a was FALSE for the log
+  actually cited (`make: Nothing to be done for 'all'.` appears twice at
+  the top of that log — nothing was rebuilt, both binaries were already
+  up to date from an earlier command in the same session). Corrected below
+  to state plainly that the harness re-invokes `make` unconditionally (so
+  it *would* rebuild if anything were stale) rather than claiming a
+  rebuild happened in that specific run.
+- 2-rank builtin-vs-plugin agreement was previously described as "9-10
+  significant digits" without having actually counted differing lines or
+  computed a max relative difference; both are now reported precisely
+  below, alongside a same-input builtin-vs-builtin pair of runs
+  establishing the run-to-run noise floor those differences are being
+  compared against.
+
+**(i) `build_plugin.jl` extension bug and a stale comment reference.**
+- `build_plugin.jl` passed `"--output-lib", "libptlib_constant.dylib"`
+  with an explicit `.dylib` extension. `JuliaC.jl`'s `link_products` (its
+  `src/linking.jl`) does NOT substitute the platform extension when one is
+  given: it only appends the platform's own dlext when NO extension is
+  given, and raises `error("Invalid file extension ...")` if a WRONG
+  extension is given — so this script, as committed, would have failed
+  outright on Linux (`.dylib` given, `.so` expected) rather than silently
+  working. Fixed: `"--output-lib", "libptlib_constant"` (no extension;
+  JuliaC appends the correct one for whatever platform it runs on), with
+  the comment corrected to describe this accurately.
+- `ptlib_constant.jl`'s `catch` block comment referred to `"ptlib.jl"` for
+  an explanation of why it does no I/O — that file is a scratchpad-only
+  spike, not part of this repository, so a reader of the committed source
+  had nothing to actually look at. Replaced with a self-contained
+  explanation in `ptlib_constant.jl` itself.
+
+**(j) t40 testset: enforce agreement directly, not just via `.expected`.**
+Previously, `PT0_only_builtin.dat` and `PT0_only_plugin.dat` were each
+compared only against their OWN `.expected` file — this implies, but does
+not enforce, that the two runs agree with each other (the two `.expected`
+files could in principle drift apart, e.g. if one were regenerated and the
+other were not, while both individual comparisons still passed). The
+testset now keeps both runs' log files (`clean_dir=false` on both
+`perform_lamem_test` calls) and, after both complete, reads back
+`PT0_only_builtin.out`/`PT0_only_plugin.out` with the same
+`extract_info_logfiles` utility `compare_logfiles` itself uses, and directly
+`@test`s that the `|Div|_inf` and `|mRes|_2` sequences from the two runs
+satisfy the same accuracy tuple already used for the `.expected` comparisons,
+before manually cleaning up both output directories. **Caveat, documented
+in the testset's own comment**: given typical `|mRes|_2` magnitudes here
+(1e-8..1e-12), the `atol=1e-3` half of that keyword's accuracy check is
+close to vacuous — almost any two small `|mRes|_2` values satisfy
+`isapprox` at that absolute tolerance regardless of `rtol`; `|Div|_inf`
+(typical magnitude 1e-4..1e-9) is the keyword actually doing discriminating
+work at this tolerance. This is the same tolerance already used for t16 and
+for each run's own `.expected` comparison, not a tuple chosen to make this
+new cross-check pass.
+
+Also added `*.dylib`/`*.so` glob rules to
+`test/t40_PhaseTransitionPlugin/.gitignore` (in addition to the existing
+`/build_constant/` rule), so a compiled bundle built under a different
+`--bundle`/`--output-lib` name could not accidentally be committed either.
 
 ## Extended ABI (unchanged from the previous pass)
 
@@ -230,7 +321,7 @@ Enabled via `-phase_transition_lib <path>`. BLAS/LAPACK co-existence is now
 **automatic** (see bug (a) above); `-phase_transition_lbt_ilp64
 -phase_transition_lbt_lp64` remain only as a fallback override.
 
-## Test results (final binary, MD5 `eb30cb58fa3ca54a26df5e026c75b2f9`)
+## Test results (final binary, rebuilt after every source change below)
 
 ### 4a — t16 baseline, unchanged, via the official test harness
 
@@ -241,9 +332,19 @@ JULIA_LOAD_PATH="<worktree>:<scratchpad>/petsc_deploy:@stdlib" \
 ```
 Log: `/tmp/final_4a_and_t40.log` (this session; paths are local to the
 machine this was run on, cited for traceability, not for the reader to
-fetch). This **actually rebuilds** both `bin/opt/LaMEM` and `bin/deb/LaMEM`
-from source (confirmed: `bin/deb/LaMEM` timestamp matches the run, and the
-opt binary's MD5 matches the one cited throughout this report) and then
+fetch). `start_tests.jl` unconditionally re-invokes `make mode=opt all` and
+`make mode=deb all` before running the suite, so it WOULD rebuild either
+binary if anything were stale — but in the specific run behind this log,
+neither was: the log's first two lines are
+`make: Nothing to be done for 'all'.` (both binaries were already
+up to date from an earlier build in the same session, per the source
+edits already having been compiled and linked before this test run). The
+earlier claim that this run "actually rebuilds" both binaries was
+therefore false for that log and has been withdrawn; the harness's
+rebuild-on-every-invocation behaviour itself is real and was separately
+observed to work (see the deb-mode compile failures hit earlier in this
+work, and their successful resolution, both of which required actual
+recompilation), just not evidenced by this particular log. The suite then
 runs:
 ```
 Test Summary:               | Pass  Total     Time
@@ -274,15 +375,20 @@ marker(s) changed phase` every step — the spike's z<-100 & T>800 & phase==1
 rule does not happen to fire in this short setup, independently confirmed
 against synthetic data earlier in this work).
 
-**Timing** (back-to-back, same machine, 1 rank, final binary):
+**Timing** (back-to-back, same machine, 1 rank, final binary; figures are
+each run's own logged `Total solution time`, i.e. LaMEM's internal timer
+around the time-step loop, NOT a `date +%s.%N`-around-`mpiexec` wall-clock
+figure, which was a different, unlogged measurement from an earlier pass
+and is not reproduced here since it cannot be independently checked
+against a log):
 
-| Run | Steps | Wall time | Log |
+| Run | Steps | `Total solution time` | Log |
 |---|---|---|---|
-| Baseline (no plugin) | 30 | 6.416 s | `/tmp/final_baseline_timing.log` |
-| Plugin | 30 | 6.749 s | `/tmp/final_plugin_timing.log` |
-| **Overhead, 30 steps** | | **0.33 s total (~11 ms/step average)** | |
+| Baseline (no plugin) | 30 | 6.31738 s | `/tmp/final_baseline_timing.log` |
+| Plugin | 30 | 6.65197 s | `/tmp/final_plugin_timing.log` |
+| **Overhead, 30 steps** | | **0.335 s total (~11 ms/step average)** | |
 
-(measured via `date +%s.%N` immediately around each `mpiexec` invocation).
+(`grep "Total solution time" <log>` on each file).
 
 **2-rank** run of the same setup also completes normally with the plugin
 active (see 4d below, which runs both 1- and 2-rank comparisons on the
@@ -311,19 +417,49 @@ mpiexec -n 1 bin/opt/LaMEM -ParamFile test/t40_PhaseTransitionPlugin/PT0_only_pl
 mpiexec -n 2 bin/opt/LaMEM -ParamFile test/t40_PhaseTransitionPlugin/PT0_only_builtin.dat -nstep_max 30   # /tmp/final_builtin_2r.log
 mpiexec -n 2 bin/opt/LaMEM -ParamFile test/t40_PhaseTransitionPlugin/PT0_only_plugin.dat  -nstep_max 30 \
   -phase_transition_lib test/t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.dylib          # /tmp/final_plugin_2r.log
+
+# 2-rank builtin-vs-builtin noise floor (two independent runs of the SAME
+# built-in-only input, no plugin at all, to see how much two runs of
+# identical input disagree with each other by themselves)
+mpiexec -n 2 bin/opt/LaMEM -ParamFile test/t40_PhaseTransitionPlugin/PT0_only_builtin.dat -nstep_max 30   # /tmp/final_builtin_2r_runA.log
+mpiexec -n 2 bin/opt/LaMEM -ParamFile test/t40_PhaseTransitionPlugin/PT0_only_builtin.dat -nstep_max 30   # /tmp/final_builtin_2r_runB.log
 ```
 Results:
 - **1 rank**: `diff` of every `|Div|_inf`/`|mRes|_2` line between the
   built-in and plugin logs is **empty** — bit-for-bit identical across all
   30 steps.
-- **2 ranks**: residuals match to ~9-10 significant digits (e.g.
-  `|Div|_inf` at step 30: `1.279985020601e-07` built-in vs.
-  `1.279985020593e-07` plugin), well within the test suite's own tolerance
-  (`rtol=1e-5, atol=1e-7` for `|Div|_inf`); the differences are consistent
-  with ordinary run-to-run floating-point non-associativity in the linear
-  solver under a different MPI decomposition, not a correctness defect —
-  this is the same order of noise the 4c section of a previous pass
-  observed between two plain (no-plugin) 4-rank runs of the full t16 setup.
+- **2 ranks**: NOT bit-identical. Precise comparison (60 keyword lines
+  total: 30 `|Div|_inf` + 30 `|mRes|_2`, extracted from
+  `/tmp/final_builtin_2r.log` vs. `/tmp/final_plugin_2r.log`): **48 of the
+  60 lines differ** (as raw floats), with a **maximum relative difference
+  of 1.10e-2**, occurring on an `|mRes|_2` line
+  (`3.293738016609e-12` built-in vs. `3.330434986263e-12` plugin — both
+  already at the ~1e-12 noise floor of the linear solver's own convergence
+  tolerance, so a "1%" relative difference there is a difference of a few
+  times `1e-14` in absolute terms). The keyword that actually carries
+  useful precision, `|Div|_inf`, is much tighter: at the final step,
+  `1.279985020601e-07` (built-in) vs. `1.279985020593e-07` (plugin), a
+  relative difference of **6.25e-12**.
+
+  To establish whether this level of disagreement is meaningful or just
+  ordinary MPI/solver run-to-run noise, two independent 2-rank runs of the
+  SAME input (`PT0_only_builtin.dat`, no plugin involved at all) were
+  compared the same way:
+  `/tmp/final_builtin_2r_runA.log` vs. `/tmp/final_builtin_2r_runB.log` —
+  **55 of the 60 lines differ**, with a **maximum relative difference of
+  1.61e-2** (again on an `|mRes|_2` line at the ~1e-12 floor) and a
+  final-step `|Div|_inf` relative difference of 1.25e-11. That is, running
+  the identical built-in-only input twice disagrees MORE (55 differing
+  lines, larger max relative difference) than the built-in-vs-plugin
+  comparison does (48 differing lines, smaller max relative difference) —
+  the plugin-vs-builtin difference is fully within, not exceeding, the
+  measured run-to-run noise floor of the underlying solver itself. Both
+  comparisons stay well inside the test suite's own tolerance
+  (`rtol=1e-5, atol=1e-7` for `|Div|_inf`; `rtol=1e-2, atol=1e-3` for
+  `|mRes|_2` — see the note in the t40 testset itself: at the `|mRes|_2`
+  magnitudes seen here, `atol=1e-3` makes that keyword's check close to
+  vacuous, so `|Div|_inf` is the keyword doing the real discriminating
+  work in this comparison).
 - **Changed-marker counts** (printed only by the plugin; the built-in
   transition prints no count — see bug (g)): **27512** at 1 rank, **27525**
   at 2 ranks, both at step 1 only (0 for all subsequent steps — steady
@@ -332,7 +468,8 @@ Results:
   cells/ranks at the phase-2/3 boundary, not a bug.
 - These are the same figures the second independent review itself obtained
   when re-verifying this branch, reproduced here on the final binary as
-  requested.
+  requested, together with the newly-added builtin-vs-builtin noise-floor
+  pair the review asked for.
 
 `ptlib_constant.jl`'s scope (unchanged from the previous pass): it
 reproduces `Check_Constant_Phase_Transition` for `number_phases=1`,

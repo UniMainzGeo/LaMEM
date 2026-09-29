@@ -1,3 +1,9 @@
 # Compiled juliac bundle (large, machine/Julia-version-specific binary
 # artifact) - built locally by build_plugin.jl, never checked in.
 /build_constant/
+
+# Belt-and-braces: a compiled shared library must never be committed here
+# regardless of what directory or name it ends up under (e.g. if
+# build_plugin.jl is ever pointed at a different --bundle/--output-lib).
+*.dylib
+*.so

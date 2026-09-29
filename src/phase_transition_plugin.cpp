@@ -22,6 +22,9 @@
 #include "phase_transition_plugin.h"
 #include <cstddef>
 #include <cstdint>
+#if defined(PETSC_HAVE_DLADDR)
+#include <dlfcn.h>
+#endif
 //---------------------------------------------------------------------------
 // C ABI of the plugin function (see phase_transition_plugin.h for the
 // full, documented signature). Note: phase_in/phase_out are `int` (Cint,
@@ -180,6 +183,30 @@ static PetscErrorCode PhTrPluginFinalize(void)
 // LinearAlgebra.__init__ calls lbt_forward(..., clear=1), which both
 // overwrites the table AND frees the very strings lbt_get_config() would
 // otherwise still be pointing at, so the strings are copied out here.
+//
+// VERSION SAFETY: lbt_config_t/lbt_library_info_t (defined above, LbtConfig/
+// LbtLibraryInfo) have no version field, and libblastrampoline exports no
+// version-query symbol either, so there is no direct way to ask "is this
+// struct layout the one I coded against?". The struct layout used here was
+// copied field-for-field from libblastrampoline's own public header at
+// version 5.15.0 (the version actually deployed here: the loaded image is
+// /workspace/destdir/lib/libblastrampoline.5.dylib, a copy of the header
+// exists in several Yggdrasil build-artifact trees on this machine, e.g.
+// .../aarch64-apple-darwin20-libgfortran5-cxx11-mpi+mpitrampoline/destdir/
+// include/libblastrampoline.h, matching the upstream
+// github.com/JuliaLinearAlgebra/libblastrampoline "include/libblastrampoline.h"
+// for that release). As the closest available guard, resolve lbt_get_config's
+// OWN address with dladdr() and only trust the struct layout if the
+// containing image's path names "libblastrampoline.5" (i.e. is recognisably
+// an LBT 5.x build) -- this cannot detect a struct layout change WITHIN the
+// 5.x series, only guards against a hypothetical future LBT 6+ that
+// re-orders/extends the struct under the same-looking "libblastrampoline.5"
+// name never being mistaken for 5.15.0's layout by a differently-tagged
+// image name. If dladdr is unavailable (PETSC_HAVE_DLADDR undefined) or the
+// image name doesn't match, this snapshot is skipped and
+// PhTrPluginRestoreLbt falls back to -phase_transition_lbt_ilp64/-lp64 or
+// LBT_DEFAULT_LIBS. A future libblastrampoline 6 (or any release that
+// changes this struct) would need this code updated together with it.
 static PetscErrorCode PhTrPluginSnapshotLbt(void)
 {
 	void *sym = NULL;
@@ -196,13 +223,38 @@ static PetscErrorCode PhTrPluginSnapshotLbt(void)
 
 	if(!sym) PetscFunctionReturn(0); // no libblastrampoline visible - nothing to snapshot
 
+#if defined(PETSC_HAVE_DLADDR)
+	{
+		Dl_info info;
+
+		if(!dladdr(sym, &info) || !info.dli_fname || !strstr(info.dli_fname, "libblastrampoline.5"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "Phase transition plugin  : WARNING: lbt_get_config resolved to an "
+				"unrecognised libblastrampoline image (%s); not trusting the struct layout this code was "
+				"written against (libblastrampoline 5.15.0). Falling back to "
+				"-phase_transition_lbt_ilp64/-phase_transition_lbt_lp64 or LBT_DEFAULT_LIBS.\n",
+				(info.dli_fname ? info.dli_fname : "(unknown)"));
+			PetscFunctionReturn(0);
+		}
+	}
+#else
+	// No dladdr available on this platform: cannot even perform the
+	// name-based sanity check above, so do not risk misinterpreting an
+	// unknown libblastrampoline layout - skip the snapshot and rely on the
+	// options/LBT_DEFAULT_LIBS fallback in PhTrPluginRestoreLbt.
+	PetscPrintf(PETSC_COMM_WORLD, "Phase transition plugin  : WARNING: dladdr unavailable on this platform; "
+		"cannot verify the libblastrampoline version before trusting its struct layout. Falling back to "
+		"-phase_transition_lbt_ilp64/-phase_transition_lbt_lp64 or LBT_DEFAULT_LIBS.\n");
+	PetscFunctionReturn(0);
+#endif
+
 	{
 		const LbtConfig *cfg = ((LbtGetConfigFn)sym)();
 		int              i;
 
 		if(!cfg || !cfg->loaded_libs) PetscFunctionReturn(0);
 
-		for(i = 0; cfg->loaded_libs[i] != NULL && i < LBT_MAX_SNAPSHOT; i++)
+		for(i = 0; i < LBT_MAX_SNAPSHOT && cfg->loaded_libs[i] != NULL; i++)
 		{
 			PetscCall(PetscStrallocpy(cfg->loaded_libs[i]->libname, &lbtSnap[i].libname));
 			PetscCall(PetscStrallocpy(cfg->loaded_libs[i]->suffix,  &lbtSnap[i].suffix));
