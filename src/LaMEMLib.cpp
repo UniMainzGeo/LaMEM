@@ -39,6 +39,7 @@
 #include "adjoint.h"
 #include "paraViewOutPassiveTracers.h"
 #include "phase_transition.h"
+#include "phase_transition_plugin.h"
 #include "passive_tracer.h"
 #include "fastscape.h"
 #include "LaMEMLib.h"
@@ -593,6 +594,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		PetscCall(PetscOptionsHasName(NULL, NULL, "-snes_track_stages", &flag)); if(flag) { track_stages = 1; }
 	}
 
+	// load user-defined phase transition plugin (no-op unless -phase_transition_lib is given)
+	PetscCall(PhTrPluginLoad(&lm->actx));
+
 	if(track_stages)
 	{
 		// name computational stages
@@ -632,6 +636,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// apply phase transitions on particles
 		PetscCall(Phase_Transition(&lm->actx));
+
+		// apply user-defined phase transition plugin (no-op unless loaded)
+		PetscCall(PhTrPluginApply(&lm->actx));
 
 		// inject geometric primitives whose injection time has been reached
 		PetscCall(ADVMarkInjectGeom(&lm->actx));
@@ -794,6 +801,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 	// destroy objects
 	PetscCall(NLSolDestroy(&snes));
+
+	// unload user-defined phase transition plugin (no-op unless loaded)
+	PetscCall(PhTrPluginDestroy());
 
 	// save marker database
 	PetscCall(ADVMarkSave(&lm->actx));
