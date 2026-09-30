@@ -187,6 +187,20 @@ jobs:
         echo "--- CXX/CC lines in petscvariables via the mount ---"
         grep -E '^(CXX|CC|MPICXX|MPICC) *=' /workspace/destdir/lib/petsc/double_real_Int64/lib/petsc/conf/petscvariables || true
 
+    - name: 'Debug: reproduce single compiler invocation directly'
+      run: |
+        cd src
+        c++ -fPIC -fno-stack-protector -O3 -std=gnu++17 -fPIC \
+          -I/workspace/destdir/bin/petsc/double_real_Int64/include \
+          -I/workspace/destdir/include/HYPRE64 -I/workspace/destdir/include/suitesparse \
+          -I/workspace/destdir/include -I/workspace/destdir/include/superlu_dist_Int64 \
+          -std=c++17 -Wall -Wextra -Wconversion -Wpointer-arith -Wcast-align -Wwrite-strings \
+          -Wformat=2 -Wundef -Wnon-virtual-dtor -Wno-unused-result -Wunused-but-set-variable \
+          -Wduplicated-cond -Wlogical-op -Wnull-dereference -DWITH_FASTSCAPE \
+          -c adjoint.cpp -o /tmp/adjoint.o
+        echo "exit code: $?"
+        cd ..
+
     - name: 'Compile LaMEM | Int64'
       env:
         LAMEM_CI_DESTDIR: ${{ github.workspace }}\lamem_destdir
