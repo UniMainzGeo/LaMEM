@@ -24,7 +24,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cmath>
-#if defined(PETSC_HAVE_DLADDR)
+#if defined(PETSC_HAVE_DLADDR) && !defined(_WIN32)
 #include <dlfcn.h>
 #endif
 //---------------------------------------------------------------------------
