@@ -200,7 +200,10 @@ jobs:
           FASTSCAPE_LIB=/workspace/destdir/lib/fastscape \
           -d lamemlib > /tmp/make_debug.log 2>&1
         echo "exit code: $?"
-        grep -nE "rm -rf|mkdir|Considering target|Finished prerequisites|Must remake target" /tmp/make_debug.log | grep -iE "lib/opt|makefile.stat|builddir" | head -60
+        echo "--- lines around adjoint.o and any error ---"
+        grep -n "adjoint" /tmp/make_debug.log | tail -5
+        echo "--- last 80 lines of the debug log (where the real failure is) ---"
+        tail -80 /tmp/make_debug.log
         cd ..
 
     - name: 'Compile LaMEM | Int64'
