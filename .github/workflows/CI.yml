@@ -178,17 +178,19 @@ jobs:
         julia --project=. setup_packages.jl
         cd ..
 
-    - name: 'Debug: plain make (no -d) run directly in bash, not via Julia'
+    - name: 'Debug: find the libs the linker cannot locate'
       run: |
-        set +e
-        cd src
-        make mode=opt \
-          PETSC_OPT=/workspace/destdir/lib/petsc/double_real_Int64 \
-          PETSC_DEB=/workspace/destdir/lib/petsc/double_real_Int64_deb \
-          FASTSCAPE_LIB=/workspace/destdir/lib/fastscape \
-          surf=scape all
-        echo "exit code: $?"
-        cd ..
+        echo "--- HYPRE64 ---"
+        find /workspace/destdir -iname '*hypre*' 2>/dev/null
+        echo "--- mumps/pord ---"
+        find /workspace/destdir -iname '*mumps*' -o -iname '*pord*' 2>/dev/null
+        echo "--- tet/triangle ---"
+        find /workspace/destdir -iname '*tet*' -o -iname '*triangle*' 2>/dev/null
+        echo "--- gfortran ---"
+        find /workspace/destdir -iname '*gfortran*' 2>/dev/null
+        find / -maxdepth 6 -iname 'libgfortran*' 2>/dev/null
+        echo "--- dl (libdl equivalent on mingw, if any) ---"
+        find / -maxdepth 6 -iname 'libdl*' 2>/dev/null
 
     - name: 'Compile LaMEM | Int64'
       env:
