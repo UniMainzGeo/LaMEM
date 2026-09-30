@@ -66,7 +66,7 @@ module PTLibConstant
 # the .dat with ONLY PhaseTransition ID 0 present (PT1-3 removed), so built-in
 # vs. plugin must match exactly with no ordering effects.
 
-include("LaMEMPlugin.jl")
+include(joinpath(@__DIR__, "LaMEMPlugin.jl"))
 using .LaMEMPlugin
 
 const CONSTANT_VALUE_DIM = 1200.0   # dimensional, scal units (Celsius in geo mode)

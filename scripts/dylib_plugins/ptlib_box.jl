@@ -4,7 +4,7 @@ module PTLibBox
 # box spanning the whole domain, phase 3 -> 2 (BothWays) and T is reset to a
 # constant 900 C (Check_Box_Phase_Transition, PTBox_TempType=constant).
 
-include("LaMEMPlugin.jl")
+include(joinpath(@__DIR__, "LaMEMPlugin.jl"))
 using .LaMEMPlugin
 
 const XLO, XHI, YLO, YHI, ZLO, ZHI = -500.0, 500.0, -10.0, 10.0, -1000.0, 0.0

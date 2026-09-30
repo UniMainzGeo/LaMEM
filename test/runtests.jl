@@ -1650,19 +1650,22 @@ if should_run_test("t40_PhaseTransitionPlugin")
     #
     # Requires a juliac-compiled bundle at
     # t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.{dylib,so},
-    # built from ptlib_constant.jl by build_plugin.jl in this directory
-    # (juliac is not assumed to be available in ordinary CI runs that only
-    # build LaMEM's C/C++ code, so this testset skips itself, with a clear
-    # message, if the bundle is not present rather than failing).
+    # built from scripts/dylib_plugins/ptlib_constant.jl by
+    # scripts/dylib_plugins/build_plugin.jl (juliac is not assumed to be
+    # available in ordinary CI runs that only build LaMEM's C/C++ code, so
+    # this testset skips itself, with a clear message, if the bundle is not
+    # present rather than failing).
     cd(test_dir)
     dir = "t40_PhaseTransitionPlugin"
+    build_script = joinpath(test_dir, "..", "scripts", "dylib_plugins", "build_plugin.jl")
 
     bundle_name = Sys.isapple() ? "libptlib_constant.dylib" : "libptlib_constant.so"
     bundle_path = joinpath(test_dir, dir, "build_constant", "lib", bundle_name)
 
     if !isfile(bundle_path)
         @info "t40_PhaseTransitionPlugin: skipped - compiled plugin bundle not found at $bundle_path. " *
-              "Build it first with: cd $dir && julia --project=<a project with JuliaC installed> build_plugin.jl"
+              "Build it first with: julia --project=@juliac $build_script " *
+              "scripts/dylib_plugins/ptlib_constant.jl $(joinpath(test_dir, dir))"
     else
         keywords = ("|Div|_inf", "|mRes|_2")
         acc      = ((rtol=1e-5, atol=1e-7), (rtol=1e-2, atol=1e-3))
@@ -1755,7 +1758,8 @@ if should_run_test("t40_PhaseTransitionPlugin")
 
         if !isfile(box_bundle_path)
             @info "t40_PhaseTransitionPlugin: Box comparison skipped - compiled plugin bundle not found at $box_bundle_path. " *
-                  "Build it first with: cd $dir && julia --project=<a project with JuliaC installed> build_plugin.jl ptlib_box.jl box"
+                  "Build it first with: julia --project=@juliac $build_script " *
+                  "scripts/dylib_plugins/ptlib_box.jl $(joinpath(test_dir, dir))"
         else
             @test perform_lamem_test(dir, "Box_only_builtin.dat", "Box_only_builtin",
                                     keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
