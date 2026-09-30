@@ -1716,6 +1716,32 @@ if should_run_test("t40_PhaseTransitionPlugin")
         if clean_files
             clean_test_directory(dir)
         end
+
+        # Scaling-struct guard: exercise LaMEMPlugin.jl's loud-failure check
+        # (a DELIBERATELY corrupted LaMEMPluginScaling - length set to 0,
+        # which is never valid for a real LaMEM run - must make
+        # lamem_phase_transition return -2, not silently misread garbage and
+        # return a plausible-looking result). This CANNOT be done by
+        # ccall-ing jl_init_with_image_handle from inside this already-
+        # running test-harness Julia process: initialising a second Julia
+        # runtime inside a process that is already one is exactly the
+        # unsupported scenario documented in src/phase_transition_plugin.h's
+        # "this design cannot be used in-process from a Julia host" note.
+        # Instead, compile and run a small standalone C harness as a
+        # separate PROCESS (mirroring exactly what the real LaMEM binary
+        # does: dlopen, jl_parse_opts, jl_init_with_image_handle, then call
+        # lamem_phase_transition with the corrupted struct).
+        guard_src = joinpath(dir, "scaling_guard_test.c")
+        guard_bin = joinpath(dir, "scaling_guard_test")
+        cc = Sys.which("cc") === nothing ? "clang" : "cc"
+        try
+            run(`$cc -O0 $guard_src -o $guard_bin -ldl`)
+            guard_out = read(`$guard_bin $bundle_path`, String)
+            @test occursin("bad struct (length=0): rc=-2", guard_out)
+            @test occursin("good struct: rc=", guard_out) && !occursin("good struct: rc=-2", guard_out)
+        finally
+            isfile(guard_bin) && rm(guard_bin, force=true)
+        end
     end
 end
 end

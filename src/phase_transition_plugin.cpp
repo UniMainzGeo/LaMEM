@@ -22,6 +22,7 @@
 #include "phase_transition_plugin.h"
 #include <cstddef>
 #include <cstdint>
+#include <cmath>
 #if defined(PETSC_HAVE_DLADDR)
 #include <dlfcn.h>
 #endif
@@ -29,6 +30,10 @@
 // C ABI of the plugin function (see phase_transition_plugin.h for the
 // full, documented signature). Note: phase_in/phase_out are `int` (Cint,
 // 32-bit) by ABI contract, NOT PetscInt (64-bit in Int64 PETSc builds).
+// ABI v2: every array is LaMEM's raw INTERNAL (non-dimensional) value - no
+// dimensionalisation happens on the C side at all, see phase_transition_plugin.h;
+// the trailing `scaling` argument and the T_out in/out array are ABI v2
+// additions.
 typedef int (*PhTrPluginFn)(
 	size_t n,
 	double *x,  double *y,  double *z,
@@ -38,7 +43,12 @@ typedef int (*PhTrPluginFn)(
 	double *sxy, double *sxz, double *syz,
 	double *j2_stress_cell, double *j2_strainrate_cell,
 	double *eta_cell,       double *aps_cell,
-	int    *phase_in, int *phase_out);
+	int    *phase_in, int *phase_out,
+	double *T_out,
+	const LaMEMPluginScaling *scaling);
+
+// function pointer signature of the optional lamem_phase_transition_abi_version(void)
+typedef int (*PhTrPluginAbiVersionFn)(void);
 
 // function pointer signature of jl_parse_opts(int *argc, char ***argv)
 typedef void (*JlParseOptsFn)(int *argc, char ***argv);
@@ -109,6 +119,7 @@ namespace
 	// SoA scratch buffers, reused & grown across time steps
 	PetscInt      bufcap = 0;
 	PetscScalar  *bx = NULL, *by = NULL, *bz = NULL, *bT = NULL, *bp = NULL;
+	PetscScalar  *bT_out = NULL; // ABI v2: plugin-requested marker temperature (internal units)
 	PetscScalar  *bsxx = NULL, *bsyy = NULL, *bszz = NULL;
 	PetscScalar  *bsxy = NULL, *bsxz = NULL, *bsyz = NULL;
 	PetscScalar  *bj2s = NULL, *bj2e = NULL, *beta = NULL, *baps = NULL;
@@ -162,7 +173,7 @@ static PetscErrorCode PhTrPluginFinalize(void)
 	active   = PETSC_FALSE;
 
 	PetscCall(PetscFree(bx));         PetscCall(PetscFree(by));   PetscCall(PetscFree(bz));
-	PetscCall(PetscFree(bT));         PetscCall(PetscFree(bp));
+	PetscCall(PetscFree(bT));         PetscCall(PetscFree(bp));   PetscCall(PetscFree(bT_out));
 	PetscCall(PetscFree(bsxx));       PetscCall(PetscFree(bsyy)); PetscCall(PetscFree(bszz));
 	PetscCall(PetscFree(bsxy));       PetscCall(PetscFree(bsxz)); PetscCall(PetscFree(bsyz));
 	PetscCall(PetscFree(bj2s));       PetscCall(PetscFree(bj2e));
@@ -552,6 +563,27 @@ PetscErrorCode PhTrPluginLoad(AdvCtx *actx)
 	// call above (see PhTrPluginRestoreLbt for the full explanation).
 	PetscCall(PhTrPluginRestoreLbt(nthreadsBefore));
 
+	// Optional ABI version check: if the plugin exports
+	// lamem_phase_transition_abi_version(), call it and refuse to proceed
+	// (loudly, via SETERRQ) if it does not match the ABI this LaMEM build
+	// expects. A plugin that omits this optional symbol is NOT protected
+	// this way - see phase_transition_plugin.h's "ABI VERSIONING" section.
+	PetscCall(PetscDLSym(handle, "lamem_phase_transition_abi_version", &sym));
+
+	if(sym)
+	{
+		int reportedVersion = ((PhTrPluginAbiVersionFn)sym)();
+
+		if(reportedVersion != PHASE_TRANSITION_PLUGIN_ABI_VERSION)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB,
+				"phase_transition_lib: ABI version mismatch loading %s: this LaMEM build expects "
+				"lamem_phase_transition ABI v%d, but the plugin reports v%d (via "
+				"lamem_phase_transition_abi_version()). Rebuild the plugin against the current "
+				"phase_transition_plugin.h.", lib, PHASE_TRANSITION_PLUGIN_ABI_VERSION, reportedVersion);
+		}
+	}
+
 	// look up the actual phase-transition entry point
 	PetscCall(PetscDLSym(handle, "lamem_phase_transition", &sym));
 
@@ -582,7 +614,7 @@ static PetscErrorCode PhTrPluginEnsureMarkerCapacity(PetscInt n)
 	if(n <= bufcap) PetscFunctionReturn(0);
 
 	PetscCall(PetscFree(bx));         PetscCall(PetscFree(by));   PetscCall(PetscFree(bz));
-	PetscCall(PetscFree(bT));         PetscCall(PetscFree(bp));
+	PetscCall(PetscFree(bT));         PetscCall(PetscFree(bp));   PetscCall(PetscFree(bT_out));
 	PetscCall(PetscFree(bsxx));       PetscCall(PetscFree(bsyy)); PetscCall(PetscFree(bszz));
 	PetscCall(PetscFree(bsxy));       PetscCall(PetscFree(bsxz)); PetscCall(PetscFree(bsyz));
 	PetscCall(PetscFree(bj2s));       PetscCall(PetscFree(bj2e));
@@ -594,6 +626,7 @@ static PetscErrorCode PhTrPluginEnsureMarkerCapacity(PetscInt n)
 	PetscCall(PetscMalloc((size_t)n*sizeof(PetscScalar), &bz));
 	PetscCall(PetscMalloc((size_t)n*sizeof(PetscScalar), &bT));
 	PetscCall(PetscMalloc((size_t)n*sizeof(PetscScalar), &bp));
+	PetscCall(PetscMalloc((size_t)n*sizeof(PetscScalar), &bT_out));
 	PetscCall(PetscMalloc((size_t)n*sizeof(PetscScalar), &bsxx));
 	PetscCall(PetscMalloc((size_t)n*sizeof(PetscScalar), &bsyy));
 	PetscCall(PetscMalloc((size_t)n*sizeof(PetscScalar), &bszz));
@@ -665,7 +698,6 @@ static PetscErrorCode PhTrPluginComputeJ2(AdvCtx *actx)
 {
 	FDSTAG      *fs;
 	JacRes      *jr;
-	Scaling     *scal;
 	SolVarCell  *svCell;
 	Vec          lxy_s, lxz_s, lyz_s;  // local edge vectors: (effective) stress
 	Vec          lxy_d, lxz_d, lyz_d;  // local edge vectors: strain rate
@@ -678,7 +710,6 @@ static PetscErrorCode PhTrPluginComputeJ2(AdvCtx *actx)
 
 	jr   = actx->jr;
 	fs   = actx->fs;
-	scal = jr->scal;
 
 	ncells = fs->nCells;
 	PetscCall(PhTrPluginEnsureCellCapacity(ncells));
@@ -772,8 +803,11 @@ static PetscErrorCode PhTrPluginComputeJ2(AdvCtx *actx)
 		PetscScalar J2e = 0.5*(svCell->dxx*svCell->dxx + svCell->dyy*svCell->dyy + svCell->dzz*svCell->dzz)
 		                   + dxy*dxy + dxz*dxz + dyz*dyz;
 
-		cellJ2Stress[iter]     = sqrt(J2s)*scal->stress;
-		cellJ2StrainRate[iter] = sqrt(J2e)*scal->strain_rate;
+		// ABI v2: leave these in LaMEM's internal, non-dimensional units -
+		// the plugin dimensionalises using the scaling struct (scal->stress /
+		// scal->strain_rate) itself, see phase_transition_plugin.h.
+		cellJ2Stress[iter]     = sqrt(J2s);
+		cellJ2StrainRate[iter] = sqrt(J2e);
 
 		iter++;
 	}
@@ -797,13 +831,15 @@ PetscErrorCode PhTrPluginApply(AdvCtx *actx)
 	JacRes      *jr;
 	Scaling     *scal;
 	Marker      *P;
-	PetscInt     i, ID, n, changed_loc, changed_glob;
+	PetscInt     i, ID, n, changedPhase_loc, changedPhase_glob;
+	PetscInt     changedT_loc, changedT_glob;
 	PetscInt     numPhases;
-	PetscScalar  time_dim, pShift;
 	int          rc;
 	PetscInt     errFlagLoc, errFlagGlob;
 	PetscInt     badIdx = -1;
 	int32_t      badPhase = 0;
+	PetscBool    badT = PETSC_FALSE;
+	LaMEMPluginScaling scaling;
 
 	PetscFunctionBeginUser;
 
@@ -816,68 +852,98 @@ PetscErrorCode PhTrPluginApply(AdvCtx *actx)
 
 	PetscCall(PhTrPluginEnsureMarkerCapacity(n));
 
-	// once-per-step, genuinely cell-centred J2 invariants (stress & strain rate)
+	// once-per-step, genuinely cell-centred J2 invariants (stress & strain
+	// rate); ABI v2: these stay in LaMEM's internal, non-dimensional units.
 	PetscCall(PhTrPluginComputeJ2(actx));
 
-	// dimensional simulation time
-	time_dim = jr->bc->ts->time*scal->time;
+	// ABI v2: build the read-only scaling struct the plugin uses to convert
+	// between internal and dimensional units itself (see
+	// phase_transition_plugin.h for the exact meaning of every field, and
+	// why unit conversion is deliberately NOT done here in C). This is a
+	// function-local stack struct, passed by pointer to fn() below; it is
+	// only valid for the duration of that call.
+	scaling.abi_version = PHASE_TRANSITION_PLUGIN_ABI_VERSION;
+	scaling.utype        = (int32_t)scal->utype;
+	scaling.length       = (double)scal->length;
+	scaling.time         = (double)scal->time;
+	scaling.stress       = (double)scal->stress;
+	scaling.temperature  = (double)scal->temperature;
+	scaling.viscosity    = (double)scal->viscosity;
+	scaling.strain_rate  = (double)scal->strain_rate;
+	scaling.velocity     = (double)scal->velocity;
+	scaling.density      = (double)scal->density;
+	scaling.Tshift       = (double)scal->Tshift;
+	scaling.pShift       = (double)((jr->ctrl.pShift != 0.0) ? jr->ctrl.pShift : 0.0);
+	scaling.dt           = (double)jr->bc->ts->dt;
+	scaling.step         = (int64_t)jr->bc->ts->istep;
+	scaling.lbl_length      = scal->lbl_length;
+	scaling.lbl_time        = scal->lbl_time;
+	scaling.lbl_stress      = scal->lbl_stress;
+	scaling.lbl_temperature = scal->lbl_temperature;
+	scaling.lbl_viscosity   = scal->lbl_viscosity;
+	scaling.lbl_strain_rate = scal->lbl_strain_rate;
+	scaling.lbl_velocity    = scal->lbl_velocity;
+	scaling.lbl_density     = scal->lbl_density;
 
-	// pressure shift used by the rheology/plasticity and by the built-in
-	// "Pressure" Constant transition (see Check_Constant_Phase_Transition)
-	pShift = (jr->ctrl.pShift != 0.0) ? jr->ctrl.pShift : 0.0;
-
-	// build SoA input arrays (dimensional) from the local markers. n==0 is
-	// handled the same way as n>0 below: every rank still calls fn() and
-	// takes part in every collective (MPI_Allreduce for the error flag and
-	// for the changed-marker count), it just does so with n=0 - a rank
-	// with zero local markers must never skip these collectives, or ranks
-	// that DO have markers would deadlock waiting for it.
+	// build SoA input arrays from the local markers, in LaMEM's own
+	// INTERNAL (non-dimensional) units - no scaling applied here at all,
+	// see phase_transition_plugin.h ("UNIT HANDLING IS DELIBERATELY ALL ON
+	// THE JULIA SIDE"). n==0 is handled the same way as n>0 below: every
+	// rank still calls fn() and takes part in every collective
+	// (MPI_Allreduce for the error flag and for the changed-marker counts),
+	// it just does so with n=0 - a rank with zero local markers must never
+	// skip these collectives, or ranks that DO have markers would deadlock
+	// waiting for it.
 	for(i = 0; i < n; i++)
 	{
 		P  = &actx->markers[i];
 		ID = actx->cellnum[i];
 
-		bx[i] = P->X[0]*scal->length;
-		by[i] = P->X[1]*scal->length;
-		bz[i] = P->X[2]*scal->length;
-		bT[i] = P->T*scal->temperature - scal->Tshift;
-		bp[i] = (P->p + pShift)*scal->stress;
+		bx[i] = P->X[0];
+		by[i] = P->X[1];
+		bz[i] = P->X[2];
+		bT[i] = P->T;
+		bp[i] = P->p; // raw internal solution pressure, WITHOUT pShift folded in
 
-		bsxx[i] = P->S.xx*scal->stress;
-		bsyy[i] = P->S.yy*scal->stress;
-		bszz[i] = P->S.zz*scal->stress;
-		bsxy[i] = P->S.xy*scal->stress;
-		bsxz[i] = P->S.xz*scal->stress;
-		bsyz[i] = P->S.yz*scal->stress;
+		bsxx[i] = P->S.xx;
+		bsyy[i] = P->S.yy;
+		bszz[i] = P->S.zz;
+		bsxy[i] = P->S.xy;
+		bsxz[i] = P->S.xz;
+		bsyz[i] = P->S.yz;
 
 		bj2s[i] = cellJ2Stress[ID];
 		bj2e[i] = cellJ2StrainRate[ID];
 
-		beta[i] = jr->svCell[ID].svDev.eta*scal->viscosity;
-		baps[i] = jr->svCell[ID].svDev.APS; // dimensionless
+		beta[i] = jr->svCell[ID].svDev.eta;
+		baps[i] = jr->svCell[ID].svDev.APS; // already dimensionless in LaMEM itself
 
 		bphase_in[i]  = (int32_t)P->phase;
 		bphase_out[i] = (int32_t)P->phase;
+		bT_out[i]     = (PetscScalar)bT[i]; // default: "no change"
 	}
 
 	// call the plugin once for all local markers on this rank (even if
 	// n==0). A negative return value is a plugin-signalled failure (e.g.
 	// an exception caught on the Julia side) - see phase_transition_plugin.h.
 	rc = fn((size_t)n,
-		bx, by, bz, bT, bp, (double)time_dim,
+		bx, by, bz, bT, bp, (double)(jr->bc->ts->time),
 		bsxx, bsyy, bszz, bsxy, bsxz, bsyz,
 		bj2s, bj2e, beta, baps,
-		bphase_in, bphase_out);
+		bphase_in, bphase_out, bT_out,
+		&scaling);
 
-	// --- Pass 1: VALIDATE ALL returned phases before writing anything back ---
-	// A plugin can fail (rc<0) or return an out-of-range phase on just SOME
-	// ranks. Calling SETERRQ directly from inside a per-rank check would
-	// make only the failing rank(s) abort while the others carry on into
-	// the collectives below (MPI_Allreduce, PetscPrintf) - a classic
-	// collective-mismatch hang. Instead: compute a local error flag first,
-	// MPI_Allreduce it (MAX) across all ranks, and only THEN have every
-	// rank call SETERRQ together if any rank detected a problem - keeping
-	// the error path collective, exactly like the success path.
+	// --- Pass 1: VALIDATE ALL returned phases/temperatures before writing
+	// anything back ---
+	// A plugin can fail (rc<0), return an out-of-range phase, or return a
+	// non-finite temperature on just SOME ranks. Calling SETERRQ directly
+	// from inside a per-rank check would make only the failing rank(s)
+	// abort while the others carry on into the collectives below
+	// (MPI_Allreduce, PetscPrintf) - a classic collective-mismatch hang.
+	// Instead: compute a local error flag first, MPI_Allreduce it (MAX)
+	// across all ranks, and only THEN have every rank call SETERRQ together
+	// if any rank detected a problem - keeping the error path collective,
+	// exactly like the success path.
 	errFlagLoc = 0;
 
 	if(rc < 0)
@@ -895,6 +961,14 @@ PetscErrorCode PhTrPluginApply(AdvCtx *actx)
 				badPhase   = bphase_out[i];
 				break;
 			}
+
+			if(!std::isfinite((double)bT_out[i]))
+			{
+				errFlagLoc = 1;
+				badIdx     = i;
+				badT       = PETSC_TRUE;
+				break;
+			}
 		}
 	}
 
@@ -907,6 +981,12 @@ PetscErrorCode PhTrPluginApply(AdvCtx *actx)
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB,
 				"phase_transition_lib: plugin reported failure on at least one rank "
 				"(this rank's lamem_phase_transition returned %d)", rc);
+		}
+		else if(badIdx >= 0 && badT)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,
+				"phase_transition_lib: plugin returned a non-finite T_out on at least one rank "
+				"(this rank: local marker %" PetscInt_FMT ")", badIdx);
 		}
 		else if(badIdx >= 0)
 		{
@@ -921,26 +1001,35 @@ PetscErrorCode PhTrPluginApply(AdvCtx *actx)
 			// still abort collectively rather than silently continuing
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB,
 				"phase_transition_lib: another MPI rank reported a plugin failure "
-				"(bad return value or out-of-range phase); aborting collectively.");
+				"(bad return value, out-of-range phase, or non-finite T_out); aborting collectively.");
 		}
 	}
 
 	// --- Pass 2: only now write back, once every rank is known-good ---
-	changed_loc = 0;
+	changedPhase_loc = 0;
+	changedT_loc     = 0;
 
 	for(i = 0; i < n; i++)
 	{
+		P = &actx->markers[i];
+
 		if(bphase_out[i] != bphase_in[i])
 		{
-			P = &actx->markers[i];
 			P->phase = (PetscInt)bphase_out[i];
-			changed_loc++;
+			changedPhase_loc++;
+		}
+
+		if(bT_out[i] != bT[i])
+		{
+			P->T = bT_out[i];
+			changedT_loc++;
 		}
 	}
 
-	PetscCallMPI(MPI_Allreduce(&changed_loc, &changed_glob, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD));
+	PetscCallMPI(MPI_Allreduce(&changedPhase_loc, &changedPhase_glob, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD));
+	PetscCallMPI(MPI_Allreduce(&changedT_loc,     &changedT_glob,     1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD));
 
-	if(changed_glob)
+	if(changedPhase_glob)
 	{
 		// re-validate all local marker phases (cheap, collective-safe;
 		// matches the pattern ADVRemap uses before ADVInterpMarkToCell) and
@@ -949,7 +1038,8 @@ PetscErrorCode PhTrPluginApply(AdvCtx *actx)
 		PetscCall(ADVInterpMarkToCell(actx));
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD, "Phase transition plugin  : %" PetscInt_FMT " marker(s) changed phase\n", changed_glob);
+	PetscPrintf(PETSC_COMM_WORLD, "Phase transition plugin  : %" PetscInt_FMT " marker(s) changed phase, "
+		"%" PetscInt_FMT " marker(s) changed temperature\n", changedPhase_glob, changedT_glob);
 
 	PetscFunctionReturn(0);
 }

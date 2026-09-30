@@ -297,31 +297,217 @@ Also added `*.dylib`/`*.so` glob rules to
 `/build_constant/` rule), so a compiled bundle built under a different
 `--bundle`/`--output-lib` name could not accidentally be committed either.
 
-## Extended ABI (unchanged from the previous pass)
+## ABI v2: internal units + scaling; outputs phase and T
+
+A third design pass (after the first two review rounds captured above)
+changed the ABI again, before it had ever shipped in any released form, so
+there is exactly one ABI that matters going forward. The array arguments
+now carry LaMEM's **raw internal, non-dimensional** values (no
+dimensionalisation happens in C at all); a new read-only
+`LaMEMPluginScaling` struct, passed by pointer as the last argument, gives
+the plugin everything needed to convert to/from dimensional units itself;
+and a new in/out array `T_out` lets a plugin change a marker's temperature
+(matching what the built-in Box-type transitions can already do), in
+addition to its phase.
 
 ```c
 int lamem_phase_transition(
     size_t  n,
-    double *x, double *y, double *z,       // marker coords [dimensional]
-    double *T,                              // marker T [scal units: Celsius
-                                             //   in geo mode, Kelvin in SI/none]
-    double *p,                              // marker p, INCLUDING pShift
-                                             // [dimensional, MPa in geo mode]
-    double  time,                           // simulation time [dimensional]
+    double *x, double *y, double *z,       // marker coords [INTERNAL]
+    double *T,                              // marker T [INTERNAL -- P->T itself]
+    double *p,                              // marker p [INTERNAL, RAW -- P->p itself,
+                                             //   WITHOUT pShift folded in]
+    double  time,                           // simulation time [INTERNAL]
     double *sxx,double *syy,double *szz,
-    double *sxy,double *sxz,double *syz,    // marker deviatoric stress [dimensional]
-    double *j2_stress_cell,                 // cell-centred J2(dev. stress) [dimensional]
-    double *j2_strainrate_cell,             // cell-centred J2(strain rate) [dimensional]
-    double *eta_cell,                       // cell effective viscosity [dimensional, linear Pa*s]
+    double *sxy,double *sxz,double *syz,    // marker deviatoric stress [INTERNAL]
+    double *j2_stress_cell,                 // cell-centred J2(dev. stress) [INTERNAL]
+    double *j2_strainrate_cell,             // cell-centred J2(strain rate) [INTERNAL]
+    double *eta_cell,                       // cell effective viscosity [INTERNAL]
     double *aps_cell,                       // cell accumulated plastic strain [-]
-    int    *phase_in, int *phase_out);      // marker phase, in/out
-    // returns: number of markers changed, or a NEGATIVE value on plugin failure
+    int    *phase_in, int *phase_out,       // marker phase, in/out
+    double *T_out,                          // marker temperature, out [INTERNAL];
+                                             //   pre-filled with a copy of T
+                                             //   ("no change" by default);
+                                             //   validated with isfinite()
+    const LaMEMPluginScaling *scaling);     // LaMEM's characteristic scales (below)
+    // returns: number of markers changed, or a NEGATIVE value on plugin
+    // failure (-1: exception/generic failure; -2 reserved by convention for
+    // "scaling struct looks wrong", see "loud failure" test below)
 ```
-Enabled via `-phase_transition_lib <path>`. BLAS/LAPACK co-existence is now
+Enabled via `-phase_transition_lib <path>`. BLAS/LAPACK co-existence is
 **automatic** (see bug (a) above); `-phase_transition_lbt_ilp64
 -phase_transition_lbt_lp64` remain only as a fallback override.
 
+### Why unit conversion moved entirely to Julia
+
+The array values are now exactly what's stored on LaMEM's `Marker`/
+`SolVarCell` structs, unconverted. The only thing LaMEM computes and hands
+over is the scaling struct below; every dimensionalisation happens in
+Julia (`test/t40_PhaseTransitionPlugin/LaMEMPlugin.jl`), where a plugin
+author reasons in familiar units and the conversion logic is easy to read,
+test, and get right in one shared place, rather than being baked into (and
+hidden inside) the C loader.
+
+### `LaMEMPluginScaling` — every field, its source, and its unit
+
+| Field | Type | Source (verified against source, not assumed) | Unit, geo mode | Unit, SI/none mode |
+|---|---|---|---|---|
+| `abi_version` | `int32_t` | `PHASE_TRANSITION_PLUGIN_ABI_VERSION` (= 2), `src/phase_transition_plugin.h` | - | - |
+| `utype` | `int32_t` | `scal->utype`, `enum UnitsType` — `src/scaling.h:22-28` (`_NONE_=0, _SI_=1, _GEO_=2`) | - | - |
+| `length` | `double` | `scal->length` — `src/scaling.h:70`; geo-mode formula `length/km`, `src/scaling.cpp:215` | km | m |
+| `time` | `double` | `scal->time` — `src/scaling.h:68`; geo-mode formula `time/Myr`, `src/scaling.cpp:213` | Myr | s |
+| `stress` | `double` | `scal->stress` — `src/scaling.h:80`; geo-mode formula `stress/MPa`, `src/scaling.cpp:225` | MPa | Pa |
+| `temperature` | `double` | `scal->temperature` — `src/scaling.h:74`; **same formula in both modes**, `src/scaling.cpp:161,219` (`scal->temperature = temperature`, i.e. always K — the "C" you see in geo mode comes entirely from `Tshift`, not from a Celsius-scaled `temperature`) | K (Tshift makes displayed T read as C) | K |
+| `viscosity` | `double` | `scal->viscosity` — `src/scaling.h:93`; identical formula both modes, `src/scaling.cpp:180,238` | Pa·s | Pa·s |
+| `strain_rate` | `double` | `scal->strain_rate` — `src/scaling.h:82`; formula `1.0/time` where `time` is the **SI** (seconds) characteristic time parameter, `src/scaling.cpp:169,227` — confirmed NOT `1/Myr` even in geo mode, despite `scal->time` itself being in Myr there | 1/s | 1/s |
+| `velocity` | `double` | `scal->velocity` — `src/scaling.h:79`; geo-mode formula `length/time/cm_yr`, `src/scaling.cpp:224` | cm/yr | m/s |
+| `density` | `double` | `scal->density` — `src/scaling.h:92`; identical formula both modes, `src/scaling.cpp:179,237` | kg/m³ | kg/m³ |
+| `Tshift` | `double` | `scal->Tshift` — `src/scaling.h:65`; set to `273.15` in geo mode, `src/scaling.cpp:210` (0 in SI/none mode) | - | - |
+| `pShift` | `double` | `jr->ctrl.pShift` — `src/JacRes.h:145`; same shift already implicit in the rheology (see `Check_Constant_Phase_Transition`'s own `(P->p+pShift)`, `src/phase_transition.cpp:1083`) | - | - |
+| `dt` | `double` | `jr->bc->ts->dt` — `src/tssolve.h:26` (`TSSol::dt`); **internal**, non-dimensional — multiply by `time` to dimensionalise | Myr (after ×`time`) | s (after ×`time`) |
+| `step` | `int64_t` | `jr->bc->ts->istep` — `src/tssolve.h:47` (`TSSol::istep`); number of steps **already completed** before this call (0 at the first step; confirmed against `PrintStep(ts->istep + 1)` in `src/tssolve.cpp:152`, the exact call that prints LaMEM's own "STEP N" banner) | - | - |
+| `lbl_length`, `lbl_time`, `lbl_stress`, `lbl_temperature`, `lbl_viscosity`, `lbl_strain_rate`, `lbl_velocity`, `lbl_density` | `const char*` | `scal->lbl_FIELD` — `src/scaling.h:100-115`; e.g. `"[km]"`, `"[Myr]"`, `"[MPa]"`, `"[C]"`, `"[Pa*s]"`, `"[1/s]"`, `"[cm/yr]"`, `"[kg/m^3]"` in geo mode, set at `src/scaling.cpp:213-238` | (label strings) | (label strings) |
+
+### Conversion formulas (implemented once, in `LaMEMPlugin.jl`)
+
+```julia
+dimensional_length      = internal * scaling.length
+dimensional_time        = internal * scaling.time
+dimensional_stress      = internal * scaling.stress
+dimensional_strain_rate = internal * scaling.strain_rate
+dimensional_viscosity   = internal * scaling.viscosity
+dimensional_velocity    = internal * scaling.velocity
+dimensional_density     = internal * scaling.density
+dimensional_T           = internal * scaling.temperature - scaling.Tshift
+dimensional_pressure    = (internal_p_raw + scaling.pShift) * scaling.stress   # what the rheology sees
+# inverse (needed to fill T_out, handed back in internal units):
+internal_T              = (dimensional_T + scaling.Tshift) / scaling.temperature
+```
+These are exactly the formulas `src/scaling.h`/`.cpp` and
+`src/phase_transition.cpp`'s `Set_Constant_Phase_Transition` already use
+internally (see the next section for exactly how `ptlib_constant.jl`
+reproduces the latter).
+
+### Reproducing the built-in Constant transition bit-for-bit, in internal units
+
+`Set_Constant_Phase_Transition` does not compare a dimensional marker
+temperature against a dimensional threshold at runtime. It
+non-dimensionalises its `ConstantValue` **once**, when the `.dat` is parsed
+(`src/phase_transition.cpp:271`):
+```c
+ph->ConstantValue = (ph->ConstantValue + scal->Tshift) / scal->temperature;
+```
+and then compares the marker's **raw internal** `P->T` against that
+internal threshold on every call (`src/phase_transition.cpp:1077`):
+```c
+if (P->T >= PhaseTrans->ConstantValue) { ph = PH2; ... }
+```
+`ptlib_constant.jl` reproduces this exact arithmetic path — not merely an
+algebraically-equivalent dimensional comparison:
+```julia
+constant_value_internal = (CONSTANT_VALUE_DIM + s.Tshift) / s.temperature   # once per call
+newph = m.T_internal >= constant_value_internal ? PHASE_ABOVE : PHASE_BELOW  # per marker
+```
+where `m.T_internal` is `MarkerView`'s copy of the raw, unconverted `T[i]`
+array element (kept alongside the dimensionalised `m.T`, specifically so a
+plugin wanting bit-exact reproduction of a built-in rule can compare in
+internal units without having to re-derive them). Algebraically, comparing
+`(T_dim + Tshift)/temperature >= (1200 + Tshift)/temperature` is equivalent
+to comparing `T_dim >= 1200` directly (dividing/adding the same quantities
+on both sides of an inequality does not change its truth value) — but
+performing the SAME sequence of floating-point operations LaMEM's own C
+code performs, rather than a dimensional shortcut, removes even the
+theoretical possibility of a rounding-induced mismatch at a boundary value,
+and is what was actually implemented and verified (see "Test results"
+below: bit-identical residuals at 1 rank, 30 steps).
+
+### A genuine floating-point pitfall this design surfaced (and fixed)
+
+Round-tripping an arbitrary internal `T` value through
+`dimensionalize_T` → `nondimensionalize_T` is **not** bit-exact in general:
+`Tshift` (273.15) is not a power of 2, so the intermediate
+`*temperature - Tshift` / `+Tshift /temperature` arithmetic rounds
+differently for a large fraction of inputs. Measured empirically: about
+23,828 of 100,000 uniformly-random internal T values in a plausible range
+failed to round-trip to the bit-identical value. The first working version
+of `LaMEMPlugin.jl`'s wrapper unconditionally wrote the round-tripped value
+back into `T_out` for every marker, which — even for `ptlib_constant.jl`'s
+own rule, which never touches T — silently perturbed thousands of markers'
+temperatures by ~1 ULP every time step (observed directly: "0 marker(s)
+changed phase, 2673 marker(s) changed temperature" on a rule that should
+report 0 T changes). **Fixed** in `LaMEMPlugin.jl`'s `lamem_pt_wrapper`: T
+is only round-tripped through the internal/dimensional conversion when the
+user's `rule` function actually returns a **different** dimensional T value
+than the marker started with (`new_T_dim == m.T`, compared in dimensional
+units); otherwise the original internal value is passed straight through
+unchanged, byte for byte. After the fix, the same run reports "0 marker(s)
+changed phase, 0 marker(s) changed temperature" for every step, matching
+the built-in transition's actual behaviour (which never touches T for this
+particular rule). This is the kind of subtlety that is easy to miss without
+actually counting/logging "unexpected" changes and investigating them, and
+is documented at length in `LaMEMPlugin.jl` itself.
+
+### ABI versioning and the "loud failure" scaling-struct guard
+
+If a plugin exports the optional `int lamem_phase_transition_abi_version(void)`
+symbol, `PhTrPluginLoad()` calls it and `SETERRQ`s with a clear message if
+it does not equal `PHASE_TRANSITION_PLUGIN_ABI_VERSION` (2). Verified with a
+standalone C harness (`scratchpad/review_test/abi_v2_guard_test.c`,
+mirroring exactly what LaMEM does: dlopen, `jl_parse_opts`,
+`jl_init_with_image_handle`, then call `lamem_phase_transition`):
+```
+abi_version=2
+good struct: rc=1
+bad struct (length=0): rc=-2 (expect -2)
+```
+`LaMEMPlugin.jl`'s `lamem_pt_wrapper` also checks the scaling struct itself
+for a minimal sanity condition (`utype >= 0`, `length > 0`, `time > 0`,
+`stress > 0`) and returns `-2` if it fails — a distinctive code so a future
+struct-layout mismatch (which would otherwise either segfault or silently
+read garbage and produce a plausible-but-wrong result) fails loudly and
+identifiably instead. This is now a checked-in regression test too: `test/t40_PhaseTransitionPlugin/scaling_guard_test.c`
+(a committed, cleaned-up version of the same standalone harness) is
+compiled and run as a subprocess by the `t40_PhaseTransitionPlugin`
+testset, asserting a corrupted struct (`length=0`) returns exactly `-2`
+while a valid one does not. This has to run as a **separate OS process**,
+not via `ccall` from the Julia test-harness process itself: initialising a
+second Julia runtime (`jl_init_with_image_handle`) inside a process that is
+already running Julia (the test harness) is exactly the unsupported
+scenario `phase_transition_plugin.h` documents ("this design cannot be used
+in-process from a Julia host").
+
+### Re-verification of the existing test plan after the ABI v2 change
+
+Everything in "Test results" below (4a/4b/4c/4d, the J2 validation) was
+originally run against the pre-ABI-v2 (dimensional-array) signature. After
+switching to ABI v2, the full `test/t40_PhaseTransitionPlugin` PT0-only
+comparison was re-run end to end on the rebuilt binary and BOTH rebuilt
+bundles (`ptlib.jl` and `ptlib_constant.jl`, both updated to ABI v2 and
+rebuilt with the exact `juliac` commands above):
+```
+mpiexec -n 1 bin/opt/LaMEM -ParamFile PT0_only_builtin.dat -nstep_max 30            # /tmp/v2_builtin_1r.log
+mpiexec -n 1 bin/opt/LaMEM -ParamFile PT0_only_plugin.dat  -nstep_max 30 \
+  -phase_transition_lib .../build_constant/lib/libptlib_constant.dylib             # /tmp/v2_plugin_1r.log
+```
+Result: `diff` of every `|Div|_inf`/`|mRes|_2` line between the two logs is
+**empty** — still bit-for-bit identical across all 30 steps, exactly as
+before the ABI change (confirming the internal-units + scaling-struct
+redesign is behaviour-preserving for this comparison). Timing (same
+`Total solution time` metric as before): baseline 5.97602 s, plugin
+6.29907 s (30 steps, 1 rank) — consistent with the previously-measured
+~11 ms/step overhead. The full `julia start_tests.jl 16 40` suite (which
+includes both the PT0-only comparison AND the new scaling-struct guard
+test) passes **15/15** on this final ABI-v2 binary (see "Test summary"
+at the very end of this report for the authoritative, most-recent run).
+
 ## Test results (final binary, rebuilt after every source change below)
+
+**NOTE**: the numbers immediately below (4a-4d, J2 validation) predate the
+ABI v2 change (see the subsection just above for ABI v2's own
+re-verification) and were measured against the dimensional-array signature
+described in the superseded "Extended ABI" text; they are kept here as a
+historical record of what was verified at each stage, not as the final
+word on ABI v2's behaviour.
 
 ### 4a — t16 baseline, unchanged, via the official test harness
 
@@ -511,11 +697,15 @@ they are referenced here as the source of these two correlation numbers.
 Both bundles referenced in this report were built with Julia **1.13.0**
 (via `juliaup`'s `+1.13.0` channel) and `JuliaC.jl`:
 ```bash
-# ptlib.jl (the original spike bundle, extended ABI)
+# ptlib.jl (the original spike bundle, ABI v2)
 cd <scratchpad>/ptspike
 julia +1.13.0 --startup-file=no --project=<scratchpad>/juliac_env -e \
-  'using JuliaC; JuliaC.main(["--output-lib","libptlib.dylib","--bundle","build", \
+  'using JuliaC; JuliaC.main(["--output-lib","libptlib","--bundle","build", \
     "--trim=safe","--compile-ccallable","--experimental","--project=proj","ptlib.jl"])'
+# NOTE: --output-lib takes NO extension (JuliaC appends the platform's own
+# dlext itself; a WRONG explicit extension is a hard error in JuliaC.jl's
+# link_products, not silently substituted - see "ABI v2" below, item (i)
+# from the previous review pass).
 
 # ptlib_constant.jl (the checked-in t40 test's plugin, built via test/t40_PhaseTransitionPlugin/build_plugin.jl)
 cd test/t40_PhaseTransitionPlugin

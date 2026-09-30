@@ -7,3 +7,8 @@
 # build_plugin.jl is ever pointed at a different --bundle/--output-lib).
 *.dylib
 *.so
+
+# Compiled by the t40 testset itself (scaling_guard_test.c -> a throwaway
+# binary), removed again after the test runs, but ignored here too as a
+# safety net.
+/scaling_guard_test

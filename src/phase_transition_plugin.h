@@ -16,54 +16,192 @@
 // per time step, once per MPI rank, to let the plugin decide phase changes
 // for the local markers.
 //
-// The plugin library must export a symbol with EXACTLY this C ABI:
+// The plugin library must export a symbol with EXACTLY this C ABI
+// (this is ABI v2; see "ABI VERSIONING" below):
 //
 //   int lamem_phase_transition(
 //       size_t        n,                    // number of local markers
-//       double       *x,                    // marker x [dimensional]
-//       double       *y,                    // marker y [dimensional]
-//       double       *z,                    // marker z [dimensional]
-//       double       *T,                    // marker temperature [scal units: Celsius
-//                                            //   in "geo" mode, Kelvin in "SI"/"none" mode
-//                                            //   -- i.e. P->T*scal->temperature - scal->Tshift,
-//                                            //   the SAME quantity/units LaMEM's own marker
-//                                            //   I/O and ParaView temperature output use]
-//       double       *p,                    // marker pressure, INCLUDING the same pressure
-//                                            // shift the rheology/plasticity and the built-in
-//                                            // "Pressure" Constant transition see:
-//                                            // (P->p + jr->ctrl.pShift)*scal->stress
-//                                            // [dimensional, MPa in "geo" mode]
-//       double        time,                 // current simulation time [dimensional]
-//       double       *sxx,                  // marker deviatoric stress xx [dimensional]
-//       double       *syy,                  // marker deviatoric stress yy [dimensional]
-//       double       *szz,                  // marker deviatoric stress zz [dimensional]
-//       double       *sxy,                  // marker deviatoric stress xy [dimensional]
-//       double       *sxz,                  // marker deviatoric stress xz [dimensional]
-//       double       *syz,                  // marker deviatoric stress yz [dimensional]
-//       double       *j2_stress_cell,       // host-cell J2 (deviatoric stress) [dimensional],
-//       double       *j2_strainrate_cell,   // host-cell J2 (strain rate) [dimensional]
-//                                            // Both are computed the same way LaMEM's own
-//                                            // ParaView j2_dev_stress / j2_strain_rate fields
-//                                            // are (diagonal cell components + the 4
-//                                            // surrounding edge components per off-diagonal
-//                                            // direction, averaged, see PhTrPluginComputeJ2()
-//                                            // in phase_transition_plugin.cpp) -- NOT a
-//                                            // diagonal-only approximation.
-//       double       *eta_cell,             // host-cell effective viscosity [dimensional,
-//                                            // linear Pa*s -- NOT log10, unlike the ParaView
-//                                            // visc_total field which IS log10-scaled]
+//       double       *x,                    // marker x [INTERNAL, non-dimensional]
+//       double       *y,                    // marker y [INTERNAL, non-dimensional]
+//       double       *z,                    // marker z [INTERNAL, non-dimensional]
+//       double       *T,                    // marker temperature [INTERNAL, non-dimensional
+//                                            //   -- i.e. P->T itself, unconverted]
+//       double       *p,                    // marker pressure [INTERNAL, non-dimensional,
+//                                            //   RAW solution pressure -- i.e. P->p itself,
+//                                            //   WITHOUT jr->ctrl.pShift folded in; the
+//                                            //   pressure the rheology/plasticity actually
+//                                            //   sees is (P->p + pShift), see `scaling` below]
+//       double        time,                 // current simulation time [INTERNAL,
+//                                            //   non-dimensional -- jr->bc->ts->time itself]
+//       double       *sxx,                  // marker deviatoric stress xx [INTERNAL]
+//       double       *syy,                  // marker deviatoric stress yy [INTERNAL]
+//       double       *szz,                  // marker deviatoric stress zz [INTERNAL]
+//       double       *sxy,                  // marker deviatoric stress xy [INTERNAL]
+//       double       *sxz,                  // marker deviatoric stress xz [INTERNAL]
+//       double       *syz,                  // marker deviatoric stress yz [INTERNAL]
+//       double       *j2_stress_cell,       // host-cell J2 (deviatoric stress) [INTERNAL],
+//       double       *j2_strainrate_cell,   // host-cell J2 (strain rate) [INTERNAL]
+//                                            // Both use the same cell/edge-averaging geometry
+//                                            // as LaMEM's own ParaView j2_dev_stress /
+//                                            // j2_strain_rate fields (diagonal cell components
+//                                            // + the 4 surrounding edge components per
+//                                            // off-diagonal direction, averaged, see
+//                                            // PhTrPluginComputeJ2() in
+//                                            // phase_transition_plugin.cpp) -- NOT a
+//                                            // diagonal-only approximation -- but are left
+//                                            // in LaMEM's internal (non-dimensional) units
+//                                            // here; multiply by scaling->stress /
+//                                            // scaling->strain_rate to dimensionalise.
+//       double       *eta_cell,             // host-cell effective viscosity [INTERNAL,
+//                                            //   svCell->svDev.eta itself]
 //       double       *aps_cell,             // host-cell accumulated plastic strain [-]
+//                                            //   (already dimensionless in LaMEM itself)
 //       int          *phase_in,             // marker phase, current
-//       int          *phase_out);           // marker phase, requested by plugin
-//                                            // returns: number of markers changed,
-//                                            // or a NEGATIVE value to signal a plugin-side
-//                                            // failure (LaMEM aborts the run with SETERRQ
-//                                            // if a negative value is returned). The Julia
-//                                            // side must wrap its body in try/catch and
-//                                            // return -1 on any caught exception: an
-//                                            // uncaught exception inside a @ccallable
-//                                            // function aborts the whole process outside
-//                                            // PETSc's error handling.
+//       int          *phase_out,            // marker phase, requested by plugin
+//       double       *T_out,                // marker temperature, requested by plugin
+//                                            //   [INTERNAL, non-dimensional, same units as
+//                                            //   the T array above]. Pre-filled by LaMEM with
+//                                            //   a copy of the T array (i.e. "no change" is
+//                                            //   the default); the built-in Box-type
+//                                            //   transitions can also reset a marker's
+//                                            //   temperature (e.g. a linear/halfspace T
+//                                            //   profile inside the box), so this gives the
+//                                            //   plugin the same capability. Every value MUST
+//                                            //   be finite (checked with isfinite() before any
+//                                            //   write-back; NaN/Inf is treated as a plugin
+//                                            //   failure, collectively across all MPI ranks --
+//                                            //   see PhTrPluginApply()).
+//       const LaMEMPluginScaling *scaling);  // LaMEM's characteristic scales (see below);
+//                                            // read-only for the duration of the call, valid
+//                                            // only until lamem_phase_transition returns (it
+//                                            // points at a function-local stack struct in
+//                                            // PhTrPluginApply, NOT retained across calls)
+//                                            // returns: number of markers changed (phase
+//                                            // and/or T; see PhTrPluginApply for exactly how
+//                                            // this is counted and reported), or a NEGATIVE
+//                                            // value to signal a plugin-side failure (LaMEM
+//                                            // aborts the run with SETERRQ, collectively
+//                                            // across all MPI ranks, if a negative value is
+//                                            // returned on ANY rank). The Julia side must wrap
+//                                            // its body in try/catch and return -1 on any
+//                                            // caught exception: an uncaught exception inside
+//                                            // a @ccallable function aborts the whole process
+//                                            // outside PETSc's error handling.
+//
+// UNIT HANDLING IS DELIBERATELY ALL ON THE JULIA SIDE. The C side (LaMEM
+// itself) does NOT dimensionalise or non-dimensionalise anything in the
+// arrays above: every array (in and out) carries LaMEM's raw internal,
+// non-dimensional values, exactly as stored on the Marker/SolVarCell
+// structs. The ONLY thing LaMEM adds is the read-only `scaling` struct, so
+// that unit conversion -- which is where a Phase 1 plugin author most needs
+// to reason in familiar units (km, Myr, MPa, C, ...) -- happens entirely in
+// Julia, where it is easy to read, test and get exactly right, rather than
+// being baked into (and hidden inside) the C plugin loader. The conversion
+// formulas a plugin needs (and that
+// test/t40_PhaseTransitionPlugin/LaMEMPlugin.jl implements once, for reuse
+// by any plugin that includes it) are:
+//
+//   dimensional_length      = internal_length      * scaling->length
+//   dimensional_time        = internal_time         * scaling->time
+//   dimensional_stress      = internal_stress       * scaling->stress
+//   dimensional_strain_rate = internal_strain_rate  * scaling->strain_rate
+//   dimensional_viscosity   = internal_viscosity    * scaling->viscosity
+//   dimensional_velocity    = internal_velocity     * scaling->velocity
+//   dimensional_density     = internal_density      * scaling->density
+//   dimensional_T           = internal_T * scaling->temperature - scaling->Tshift
+//   pressure the rheology/plasticity sees, dimensional:
+//                             = (internal_p + scaling->pShift) * scaling->stress
+//
+// and the exact inverses (needed to fill T_out, which must be handed back
+// in internal units):
+//
+//   internal_T = (dimensional_T + scaling->Tshift) / scaling->temperature
+//   internal_length      = dimensional_length      / scaling->length
+//   internal_time        = dimensional_time        / scaling->time
+//   internal_stress      = dimensional_stress       / scaling->stress
+//   internal_strain_rate = dimensional_strain_rate  / scaling->strain_rate
+//
+// These are exactly the formulas src/scaling.h/.cpp and
+// src/phase_transition.cpp's Set_Constant_Phase_Transition (which
+// non-dimensionalises its own ConstantValue threshold as
+// `(ConstantValue + Tshift)/temperature` before comparing it against a
+// marker's raw internal P->T) already use internally -- see "ABI v2:
+// internal units + scaling" in doc/phase_transition_plugin_PHASE1_REPORT.md
+// for where each formula was verified against LaMEM's own source, and for
+// the exact Julia code that reproduces the Constant transition's
+// comparison bit-for-bit using them.
+//
+// LaMEMPluginScaling: a plain, packed, read-only struct, isbits on the
+// Julia side (test/t40_PhaseTransitionPlugin/LaMEMPlugin.jl defines the
+// matching Julia struct). Every "scal->FIELD" / "jr->FIELD" comment below
+// names the exact source struct field this value is copied from (verified
+// against src/scaling.h, src/JacRes.h and src/tssolve.h, not assumed):
+//
+//   typedef struct
+//   {
+//       int32_t  abi_version;   // = 2 for this signature (see "ABI VERSIONING")
+//       int32_t  utype;         // scal->utype (enum UnitsType, src/scaling.h):
+//                                //   0 = _NONE_ (non-dimensional in/out)
+//                                //   1 = _SI_   (SI units in/out)
+//                                //   2 = _GEO_  (geological units in/out: the
+//                                //       units named below for each field)
+//       double   length;        // scal->length      [km  in geo, m   in SI]
+//       double   time;          // scal->time        [Myr in geo, s   in SI]
+//       double   stress;        // scal->stress      [MPa in geo, Pa  in SI]
+//       double   temperature;   // scal->temperature [K in both geo AND si --
+//                                //   scal->temperature is never rescaled by
+//                                //   utype, only Tshift differs; the "C" you
+//                                //   see in geo-mode dimensional T comes
+//                                //   entirely from Tshift below, not from a
+//                                //   Celsius-scaled `temperature` factor]
+//       double   viscosity;     // scal->viscosity   [Pa*s in both geo and SI]
+//       double   strain_rate;   // scal->strain_rate [1/s in both geo and SI
+//                                //   -- confirmed from scaling.cpp: computed
+//                                //   as 1/time_SI, i.e. NOT 1/Myr even in geo
+//                                //   mode, despite scal->time itself being
+//                                //   in Myr there]
+//       double   velocity;      // scal->velocity    [cm/yr in geo, m/s in SI]
+//       double   density;       // scal->density     [kg/m^3 in both geo and SI]
+//       double   Tshift;        // scal->Tshift: dimensional T = internal*temperature - Tshift
+//                                //   (Tshift = 273.15 in geo mode -> Celsius output;
+//                                //    Tshift = 0 in SI/none mode -> Kelvin output)
+//       double   pShift;        // jr->ctrl.pShift: dimensional pressure seen by the
+//                                //   rheology/plasticity = (internal_p + pShift)*stress
+//                                //   (the `p` array above is the RAW internal_p, i.e.
+//                                //   WITHOUT pShift folded in -- add it yourself)
+//       double   dt;            // jr->bc->ts->dt [INTERNAL, non-dimensional; multiply
+//                                //   by `time` above to dimensionalise]
+//       int64_t  step;          // jr->bc->ts->istep: number of time steps ALREADY
+//                                //   COMPLETED before this call (0 at the very first
+//                                //   step; the step about to be solved is step+1,
+//                                //   matching the "STEP N" banner LaMEM itself prints
+//                                //   via PrintStep(ts->istep + 1) in tssolve.cpp)
+//       const char *lbl_length, *lbl_time, *lbl_stress, *lbl_temperature,
+//                  *lbl_viscosity, *lbl_strain_rate, *lbl_velocity, *lbl_density;
+//                                // scal->lbl_FIELD: the exact unit-label strings LaMEM's
+//                                //   own screen output uses for each field above (e.g.
+//                                //   "[km]", "[Myr]", "[MPa]", "[C]", "[Pa*s]", "[1/s]",
+//                                //   "[cm/yr]", "[kg/m^3]" in geo mode) -- NUL-terminated,
+//                                //   valid only for the duration of the call (they point
+//                                //   into jr->scal itself, not a copy)
+//   } LaMEMPluginScaling;
+//
+// ABI VERSIONING: this struct, the trailing `scaling` argument, and the new
+// `T_out` argument were all introduced together as ABI v2; there was no
+// shipped v1 (the original Phase 1 signature was changed before ever being
+// released, so there is exactly one C ABI in this repository's history that
+// matters going forward: this one). A plugin built against a different
+// argument list will crash (wrong argument count/stack layout) if loaded.
+// To fail loudly instead of crashing on a future ABI break: if the plugin
+// ALSO exports an optional symbol `int lamem_phase_transition_abi_version(void)`
+// (a @ccallable Julia function is enough, no struct needed), PhTrPluginLoad()
+// calls it and SETERRQs with a clear message if the returned value does not
+// equal 2. A plugin that does not export this optional symbol at all is NOT
+// detected this way -- exporting the version symbol is therefore effectively
+// mandatory in practice for a plugin that wants a safe failure mode instead
+// of a hard crash on a future ABI break; this is documented, not silently
+// worked around. test/t40_PhaseTransitionPlugin/LaMEMPlugin.jl exports it
+// for any plugin that `include`s it.
 //
 // enabled by the runtime option:
 //
@@ -170,6 +308,52 @@
 #ifndef phase_transition_plugin_h_
 #define phase_transition_plugin_h_
 //---------------------------------------------------------------------------
+
+// ABI v2 scaling struct passed by pointer as the last argument to
+// lamem_phase_transition (see the header comment above for the exact
+// meaning/units of every field). Plain, packed-by-natural-alignment (no
+// #pragma pack: field order was chosen doubles-before-int64-before-pointers
+// to avoid any padding surprises, but this is not itself part of the ABI
+// contract - what matters is that the Julia-side struct in
+// test/t40_PhaseTransitionPlugin/LaMEMPlugin.jl mirrors this EXACT field
+// order and EXACT field types, which is verified by the "loud failure on a
+// wrong struct" test in the t40 testset).
+// NOTE: every numeric field here is a fixed-width/fixed-layout C type
+// (int32_t/double/int64_t), deliberately NOT PetscScalar/PetscInt: the ABI
+// must be identical regardless of how THIS PARTICULAR PETSc build defines
+// those (e.g. PetscInt is 64-bit in the Int64 configuration this was built
+// and tested against, but is not guaranteed 64-bit in general, and
+// PetscScalar could in principle be complex or single-precision in another
+// build) - the plugin's Julia-side struct is fixed at Cdouble/Cint/Clong,
+// so the C side must match that exactly, not whatever this build's PETSc
+// happens to use.
+struct LaMEMPluginScaling
+{
+	int32_t     abi_version;
+	int32_t     utype;
+	double      length;
+	double      time;
+	double      stress;
+	double      temperature;
+	double      viscosity;
+	double      strain_rate;
+	double      velocity;
+	double      density;
+	double      Tshift;
+	double      pShift;
+	double      dt;
+	int64_t     step;
+	const char *lbl_length;
+	const char *lbl_time;
+	const char *lbl_stress;
+	const char *lbl_temperature;
+	const char *lbl_viscosity;
+	const char *lbl_strain_rate;
+	const char *lbl_velocity;
+	const char *lbl_density;
+};
+
+#define PHASE_TRANSITION_PLUGIN_ABI_VERSION 2
 
 struct AdvCtx;
 
