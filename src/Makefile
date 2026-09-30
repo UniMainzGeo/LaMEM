@@ -70,7 +70,15 @@ MPI_COMPILER_SHOW := $(shell \
 	$(MPI_COMPILER) --show 2>/dev/null || \
 	$(MPI_COMPILER) -show 2>/dev/null )
 
-CXX_COMMAND  := $(word 1, $(filter-out ccache,$(MPI_COMPILER_SHOW)))
+# CXX is not always an MPI compiler wrapper: e.g. PETSc built against
+# MicrosoftMPI has no mpicxx-style wrapper at all, so CXX is the raw
+# compiler directly and none of the --showme:command/--show/-show probes
+# above succeed. Fall back to CXX itself in that case.
+ifeq ($(strip $(MPI_COMPILER_SHOW)),)
+   CXX_COMMAND := $(CXX)
+else
+   CXX_COMMAND := $(word 1, $(filter-out ccache,$(MPI_COMPILER_SHOW)))
+endif
 CXX_COMPILER := $(shell readlink -f $$(which $(CXX_COMMAND)))
 
 # set dependency flag (should be supported by all compilers)
