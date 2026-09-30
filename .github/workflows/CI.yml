@@ -40,7 +40,7 @@ jobs:
     - name: 'Install julia'
       uses: julia-actions/setup-julia@v3
       with:
-        version: '1.12.7'
+        version: '1.13'
         
     - run: julia -e 'using InteractiveUtils; versioninfo(verbose=true)'
 
@@ -85,13 +85,23 @@ jobs:
         sudo -E mv -f deb deb64
         cd ..
 
+    - name: 'Build dylib plugin bundle (t40)'
+      run: |
+        cd test/t40_PhaseTransitionPlugin
+        julia --project=@juliac -e 'using Pkg; Pkg.add("JuliaC")'
+        julia --project=@juliac build_plugin.jl ptlib_constant.jl constant
+        julia --project=@juliac build_plugin.jl ptlib_box.jl box
+        test -f build_constant/lib/libptlib_constant.so
+        test -f build_box/lib/libptlib_box.so
+        cd ../..
+
     - name: 'Test LaMEM | Int32'
       run: |
         cd bin
         sudo -E cp -r opt32 opt
         sudo -E cp -r deb32 deb
         cd ..
-        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl  
+        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl
 
     - name: 'Test LaMEM | Int64'
       run: |
