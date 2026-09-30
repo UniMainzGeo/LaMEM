@@ -1632,8 +1632,8 @@ if should_run_test("t40_PhaseTransitionPlugin")
 @testset "t40_PhaseTransitionPlugin" begin
     # Compares LaMEM's built-in Constant phase transition against a Julia
     # re-implementation of it (ptlib_constant.jl), compiled with `juliac`
-    # into a shared library and loaded at runtime via -phase_transition_lib
-    # (see src/phase_transition_plugin.{h,cpp}). Both .dat files here are
+    # into a shared library and loaded at runtime via -dylib_plugin
+    # (see src/dylib_plugins.{h,cpp}). Both .dat files here are
     # copies of t16_PhaseTransitions/Plume_PhaseTransitions.dat stripped
     # down to ONLY PhaseTransition ID 0 (the T-dependent Constant
     # transition, PhaseBelow=2/PhaseAbove=3/BothWays): PT0_only_builtin.dat
@@ -1680,7 +1680,7 @@ if should_run_test("t40_PhaseTransitionPlugin")
                                 create_expected_file=update_expected, clean_dir=false)
 
         @test perform_lamem_test(dir, "PT0_only_plugin.dat", "PT0_only_plugin",
-                                args="-phase_transition_lib $bundle_path",
+                                args="-dylib_plugin $bundle_path",
                                 keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
                                 create_expected_file=update_expected, clean_dir=false)
 
@@ -1733,7 +1733,7 @@ if should_run_test("t40_PhaseTransitionPlugin")
                                     create_expected_file=update_expected, clean_dir=false)
 
             @test perform_lamem_test(dir, "Box_only_plugin.dat", "Box_only_plugin",
-                                    args="-phase_transition_lib $box_bundle_path",
+                                    args="-dylib_plugin $box_bundle_path",
                                     keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
                                     create_expected_file=update_expected, clean_dir=false)
 

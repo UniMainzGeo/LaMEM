@@ -8,21 +8,23 @@
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 //---------------------------------------------------------------------------
-//..............   USER-DEFINED PHASE TRANSITION PLUGIN (Julia)   ...........
+//..............   USER-DEFINED DYLIB PLUGINS (Julia)   .....................
 //---------------------------------------------------------------------------
-// Loads a juliac-built shared library (-phase_transition_lib <path>) and
-// calls lamem_phase_transition() once per time step, per MPI rank. ABI v2:
-// all arrays are LaMEM's internal (non-dimensional) units; the plugin
-// dimensionalises using the LaMEMPluginScaling struct passed in:
-//   dim        = internal*scale        (length/time/stress/viscosity/
-//                                        strain_rate/velocity/density)
-//   T_dim      = T*temperature - Tshift
-//   p_rheology = (p_raw + pShift)*stress
-// Outputs: phase_out, T_out (pre-filled with phase_in/T, internal units).
-// Returns markers with phase or T changed, or <0 on failure (-1 generic,
-// -2 bad scaling struct, -3 ABI mismatch).
-#ifndef phase_transition_plugin_h_
-#define phase_transition_plugin_h_
+// Loads a juliac-built shared library (-dylib_plugin <path>). This is the
+// plugin ABI: the LaMEMPluginScaling struct it shares with every hook below,
+// plus the hooks themselves. Current hooks:
+//   lamem_phase_transition() - called once per time step, per MPI rank. ABI v2:
+//     all arrays are LaMEM's internal (non-dimensional) units; the plugin
+//     dimensionalises using the LaMEMPluginScaling struct passed in:
+//       dim        = internal*scale        (length/time/stress/viscosity/
+//                                            strain_rate/velocity/density)
+//       T_dim      = T*temperature - Tshift
+//       p_rheology = (p_raw + pShift)*stress
+//     Outputs: phase_out, T_out (pre-filled with phase_in/T, internal units).
+//     Returns markers with phase or T changed, or <0 on failure (-1 generic,
+//     -2 bad scaling struct, -3 ABI mismatch).
+#ifndef dylib_plugins_h_
+#define dylib_plugins_h_
 //---------------------------------------------------------------------------
 
 #define PHASE_TRANSITION_PLUGIN_ABI_VERSION 2
@@ -38,7 +40,7 @@ struct LaMEMPluginScaling
 	int64_t step;
 };
 
-typedef int (*PhTrPluginFn)(
+typedef int (*DylibPluginFn)(
 	size_t n,
 	double *x,  double *y,  double *z,
 	double *T,  double *p,
@@ -53,9 +55,9 @@ typedef int (*PhTrPluginFn)(
 
 struct AdvCtx;
 
-PetscErrorCode PhTrPluginLoad(AdvCtx *actx);
-PetscErrorCode PhTrPluginApply(AdvCtx *actx);
-PetscBool      PhTrPluginIsActive(void);
+PetscErrorCode DylibPluginLoad(AdvCtx *actx);
+PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx);
+PetscBool      DylibPluginIsActive(void);
 
 //---------------------------------------------------------------------------
 #endif

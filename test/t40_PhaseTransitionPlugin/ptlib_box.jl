@@ -43,7 +43,7 @@ Base.@ccallable function lamem_phase_transition(
     end
 end
 
-Base.@ccallable function lamem_phase_transition_abi_version()::Cint
+Base.@ccallable function lamem_plugin_abi_version()::Cint
     return LaMEMPlugin.ABI_VERSION
 end
 

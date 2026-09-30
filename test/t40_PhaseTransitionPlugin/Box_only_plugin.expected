@@ -6,6 +6,7 @@ Parsing PETSc options
 Total number of options added: 0
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
+-dylib_plugin /Users/kausb/WORK/LaMEM/LaMEM/.claude/worktrees/agent-a717ed7a97a5811d5/test/t40_PhaseTransitionPlugin/build_box/lib/libptlib_box.dylib # (source: code)
 -jp_pc_factor_mat_solver_type mumps # (source: code)
 -jp_pc_type lu # (source: code)
 -jp_pgamma 100 # (source: code)
@@ -18,7 +19,6 @@ Total number of options added: 0
 -js_ksp_type fgmres # (source: code)
 -options_left # (source: code)
 -ParamFile Box_only_plugin.dat # (source: code)
--phase_transition_lib /Users/kausb/WORK/LaMEM/LaMEM/.claude/worktrees/agent-a717ed7a97a5811d5/test/t40_PhaseTransitionPlugin/build_box/lib/libptlib_box.dylib # (source: code)
 -snes_atol 0.0001 # (source: code)
 -snes_linesearch_max_it 5 # (source: code)
 -snes_linesearch_maxlambda 1.0 # (source: code)
@@ -36,7 +36,7 @@ Total number of options added: 0
 #End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Sep 30 2026 - Time: 06:21:32 	    
+     Compiled: Date: Sep 30 2026 - Time: 09:23:24 	    
      Version : 3.3.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -143,7 +143,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.666667 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.0036995 sec)
+Reading geometric primitives ... done (0.00381179 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Plume_PhaseTransitions 
@@ -171,22 +171,22 @@ AVD output parameters:
    Write .pvd file       : yes 
    AVD refinement factor : 3 
 --------------------------------------------------------------------------
-Phase transition plugin  : /Users/kausb/WORK/LaMEM/LaMEM/.claude/worktrees/agent-a717ed7a97a5811d5/test/t40_PhaseTransitionPlugin/build_box/lib/libptlib_box.dylib
+Dylib plugin  : /Users/kausb/WORK/LaMEM/LaMEM/.claude/worktrees/agent-a717ed7a97a5811d5/test/t40_PhaseTransitionPlugin/build_box/lib/libptlib_box.dylib
 Preconditioner parameters: 
    Picard operator type          : assembled
    Preconditioner type           : user-defined
    Penalty parameter (pgamma)    : 1.000000e+02
-Initializing pressure with lithostatic pressure ... done (0.00127392 sec)
+Initializing pressure with lithostatic pressure ... done (0.00105046 sec)
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
-Saving output ... done (0.0795044 sec)
+Saving output ... done (0.0874037 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.01000000 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 201942 marker(s) changed phase, 210652 marker(s) changed temperature
+Dylib plugin  : 201942 marker(s) changed phase, 210652 marker(s) changed temperature
   0 SNES Function norm 2.892666218787e+02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -199,7 +199,7 @@ Phase transition plugin  : 201942 marker(s) changed phase, 210652 marker(s) chan
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 0.252264 (sec)
+SNES solution time      : 0.26646 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -211,16 +211,16 @@ Residual summary:
 Actual time step : 0.01100 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 193 markers and merged 190 markers in 2.5359e-03 s
+Marker control [0]: (subgrid) cloned 193 markers and merged 190 markers in 2.6704e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0771916 sec)
+Saving output ... done (0.080328 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.01100000 [Myr] 
 Tentative time step : 0.01100000 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 2 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 2 marker(s) changed temperature
   0 SNES Function norm 2.640303061869e+00
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -231,7 +231,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 2 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.105001 (sec)
+SNES solution time      : 0.111652 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -243,16 +243,16 @@ Residual summary:
 Actual time step : 0.01210 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 4 markers and merged 4 markers in 2.6052e-03 s
+Marker control [0]: (subgrid) cloned 4 markers and merged 4 markers in 2.6073e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0768092 sec)
+Saving output ... done (0.0791801 sec)
 --------------------------------------------------------------------------
 ================================= STEP 3 =================================
 --------------------------------------------------------------------------
 Current time        : 0.02310000 [Myr] 
 Tentative time step : 0.01210000 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 9.845606010654e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -266,7 +266,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.107858 (sec)
+SNES solution time      : 0.114882 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -278,14 +278,14 @@ Residual summary:
 Actual time step : 0.01331 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.4092e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5506e-03 s
 --------------------------------------------------------------------------
 ================================= STEP 4 =================================
 --------------------------------------------------------------------------
 Current time        : 0.03641000 [Myr] 
 Tentative time step : 0.01331000 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 3.928386968824e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -296,7 +296,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0972039 (sec)
+SNES solution time      : 0.102679 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -308,16 +308,16 @@ Residual summary:
 Actual time step : 0.01464 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.4574e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5342e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0737563 sec)
+Saving output ... done (0.0752587 sec)
 --------------------------------------------------------------------------
 ================================= STEP 5 =================================
 --------------------------------------------------------------------------
 Current time        : 0.05105100 [Myr] 
 Tentative time step : 0.01464100 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 4.651355364503e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -328,7 +328,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.1047 (sec)
+SNES solution time      : 0.100892 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -340,14 +340,14 @@ Residual summary:
 Actual time step : 0.01611 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.3861e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5522e-03 s
 --------------------------------------------------------------------------
 ================================= STEP 6 =================================
 --------------------------------------------------------------------------
 Current time        : 0.06715610 [Myr] 
 Tentative time step : 0.01610510 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 4.742001468397e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -358,7 +358,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0976626 (sec)
+SNES solution time      : 0.100627 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -370,16 +370,16 @@ Residual summary:
 Actual time step : 0.01772 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.4784e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5757e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0740655 sec)
+Saving output ... done (0.078076 sec)
 --------------------------------------------------------------------------
 ================================= STEP 7 =================================
 --------------------------------------------------------------------------
 Current time        : 0.08487171 [Myr] 
 Tentative time step : 0.01771561 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 5.209298904335e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -390,7 +390,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0982119 (sec)
+SNES solution time      : 0.102921 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -402,14 +402,14 @@ Residual summary:
 Actual time step : 0.01949 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.4885e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5832e-03 s
 --------------------------------------------------------------------------
 ================================= STEP 8 =================================
 --------------------------------------------------------------------------
 Current time        : 0.10435888 [Myr] 
 Tentative time step : 0.01948717 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 5.721904836124e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -420,7 +420,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0968355 (sec)
+SNES solution time      : 0.100909 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -432,16 +432,16 @@ Residual summary:
 Actual time step : 0.02144 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.4617e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5710e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0738291 sec)
+Saving output ... done (0.0760642 sec)
 --------------------------------------------------------------------------
 ================================= STEP 9 =================================
 --------------------------------------------------------------------------
 Current time        : 0.12579477 [Myr] 
 Tentative time step : 0.02143589 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 6.284055961853e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -452,7 +452,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0964706 (sec)
+SNES solution time      : 0.10015 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -464,14 +464,14 @@ Residual summary:
 Actual time step : 0.02358 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.7394e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.4831e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 10 =================================
 --------------------------------------------------------------------------
 Current time        : 0.14937425 [Myr] 
 Tentative time step : 0.02357948 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 6.900356984593e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -482,7 +482,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0966374 (sec)
+SNES solution time      : 0.101913 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -494,16 +494,16 @@ Residual summary:
 Actual time step : 0.02594 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.4859e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5580e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.072387 sec)
+Saving output ... done (0.0768583 sec)
 --------------------------------------------------------------------------
 ================================ STEP 11 =================================
 --------------------------------------------------------------------------
 Current time        : 0.17531167 [Myr] 
 Tentative time step : 0.02593742 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 7.735577219564e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -514,7 +514,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0965643 (sec)
+SNES solution time      : 0.101885 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -526,14 +526,14 @@ Residual summary:
 Actual time step : 0.02853 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.4789e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.4952e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 12 =================================
 --------------------------------------------------------------------------
 Current time        : 0.20384284 [Myr] 
 Tentative time step : 0.02853117 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 8.315796459502e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -544,7 +544,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.101202 (sec)
+SNES solution time      : 0.101099 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -556,16 +556,16 @@ Residual summary:
 Actual time step : 0.03138 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.6367e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5370e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.075384 sec)
+Saving output ... done (0.0756854 sec)
 --------------------------------------------------------------------------
 ================================ STEP 13 =================================
 --------------------------------------------------------------------------
 Current time        : 0.23522712 [Myr] 
 Tentative time step : 0.03138428 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 9.126205782308e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -576,7 +576,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0968688 (sec)
+SNES solution time      : 0.102389 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -588,14 +588,14 @@ Residual summary:
 Actual time step : 0.03452 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.4062e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.7787e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 14 =================================
 --------------------------------------------------------------------------
 Current time        : 0.26974983 [Myr] 
 Tentative time step : 0.03452271 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 1.001334128077e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -606,7 +606,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0971543 (sec)
+SNES solution time      : 0.116715 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -618,16 +618,16 @@ Residual summary:
 Actual time step : 0.03797 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.4091e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.4314e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0735451 sec)
+Saving output ... done (0.0761683 sec)
 --------------------------------------------------------------------------
 ================================ STEP 15 =================================
 --------------------------------------------------------------------------
 Current time        : 0.30772482 [Myr] 
 Tentative time step : 0.03797498 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 1.098401130922e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -638,7 +638,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0966399 (sec)
+SNES solution time      : 0.099961 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -650,14 +650,14 @@ Residual summary:
 Actual time step : 0.04177 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.4613e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.4689e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 16 =================================
 --------------------------------------------------------------------------
 Current time        : 0.34949730 [Myr] 
 Tentative time step : 0.04177248 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 1.204553676688e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -668,7 +668,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0970898 (sec)
+SNES solution time      : 0.100528 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -680,16 +680,16 @@ Residual summary:
 Actual time step : 0.04595 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.4399e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5495e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0728208 sec)
+Saving output ... done (0.0755804 sec)
 --------------------------------------------------------------------------
 ================================ STEP 17 =================================
 --------------------------------------------------------------------------
 Current time        : 0.39544703 [Myr] 
 Tentative time step : 0.04594973 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 1.320577109039e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -700,7 +700,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0965842 (sec)
+SNES solution time      : 0.101447 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -712,14 +712,14 @@ Residual summary:
 Actual time step : 0.05054 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5473e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.3638e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 18 =================================
 --------------------------------------------------------------------------
 Current time        : 0.44599173 [Myr] 
 Tentative time step : 0.05054470 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 1.447311690729e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -730,7 +730,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.097679 (sec)
+SNES solution time      : 0.102727 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -742,16 +742,16 @@ Residual summary:
 Actual time step : 0.05560 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 4 markers and merged 4 markers in 2.4532e-03 s
+Marker control [0]: (subgrid) cloned 4 markers and merged 4 markers in 2.5570e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0734071 sec)
+Saving output ... done (0.0782283 sec)
 --------------------------------------------------------------------------
 ================================ STEP 19 =================================
 --------------------------------------------------------------------------
 Current time        : 0.50159090 [Myr] 
 Tentative time step : 0.05559917 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 2.215230432664e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -762,7 +762,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0985198 (sec)
+SNES solution time      : 0.101253 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -774,14 +774,14 @@ Residual summary:
 Actual time step : 0.06116 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.4987e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.4203e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 20 =================================
 --------------------------------------------------------------------------
 Current time        : 0.56274999 [Myr] 
 Tentative time step : 0.06115909 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 1.736562585114e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -792,7 +792,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0960787 (sec)
+SNES solution time      : 0.106098 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -804,16 +804,16 @@ Residual summary:
 Actual time step : 0.06727 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 3 markers and merged 2 markers in 2.4066e-03 s
+Marker control [0]: (subgrid) cloned 3 markers and merged 2 markers in 2.6220e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0738152 sec)
+Saving output ... done (0.0791664 sec)
 --------------------------------------------------------------------------
 ================================ STEP 21 =================================
 --------------------------------------------------------------------------
 Current time        : 0.63002499 [Myr] 
 Tentative time step : 0.06727500 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 1.052552371339e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -824,7 +824,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.096223 (sec)
+SNES solution time      : 0.104303 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -836,14 +836,14 @@ Residual summary:
 Actual time step : 0.07400 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5625e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.4966e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 22 =================================
 --------------------------------------------------------------------------
 Current time        : 0.70402749 [Myr] 
 Tentative time step : 0.07400250 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 2.192008414291e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -855,7 +855,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.10054 (sec)
+SNES solution time      : 0.106294 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -867,16 +867,16 @@ Residual summary:
 Actual time step : 0.08140 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 4 markers and merged 4 markers in 2.4404e-03 s
+Marker control [0]: (subgrid) cloned 4 markers and merged 4 markers in 2.5725e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0756544 sec)
+Saving output ... done (0.0796132 sec)
 --------------------------------------------------------------------------
 ================================ STEP 23 =================================
 --------------------------------------------------------------------------
 Current time        : 0.78543024 [Myr] 
 Tentative time step : 0.08140275 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 4.581543588554e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -887,7 +887,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0961304 (sec)
+SNES solution time      : 0.100766 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -899,14 +899,14 @@ Residual summary:
 Actual time step : 0.08954 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.3770e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.4873e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 24 =================================
 --------------------------------------------------------------------------
 Current time        : 0.87497327 [Myr] 
 Tentative time step : 0.08954302 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 3.347554225929e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -917,7 +917,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0983798 (sec)
+SNES solution time      : 0.101495 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -929,16 +929,16 @@ Residual summary:
 Actual time step : 0.09850 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 3 markers and merged 3 markers in 2.4495e-03 s
+Marker control [0]: (subgrid) cloned 3 markers and merged 3 markers in 2.5289e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0754053 sec)
+Saving output ... done (0.0759728 sec)
 --------------------------------------------------------------------------
 ================================ STEP 25 =================================
 --------------------------------------------------------------------------
 Current time        : 0.97347059 [Myr] 
 Tentative time step : 0.09849733 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 2.871343915873e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -949,7 +949,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0958251 (sec)
+SNES solution time      : 0.102632 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -961,14 +961,14 @@ Residual summary:
 Actual time step : 0.10835 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.4617e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5360e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 26 =================================
 --------------------------------------------------------------------------
 Current time        : 1.08181765 [Myr] 
 Tentative time step : 0.10834706 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 3.140910341064e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -979,7 +979,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0998221 (sec)
+SNES solution time      : 0.101846 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -991,16 +991,16 @@ Residual summary:
 Actual time step : 0.11918 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.6817e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5722e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0771647 sec)
+Saving output ... done (0.0777262 sec)
 --------------------------------------------------------------------------
 ================================ STEP 27 =================================
 --------------------------------------------------------------------------
 Current time        : 1.20099942 [Myr] 
 Tentative time step : 0.11918177 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 3.403758267320e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -1011,7 +1011,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0967664 (sec)
+SNES solution time      : 0.102147 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1023,14 +1023,14 @@ Residual summary:
 Actual time step : 0.13110 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5761e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 3.0028e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 28 =================================
 --------------------------------------------------------------------------
 Current time        : 1.33209936 [Myr] 
 Tentative time step : 0.13109994 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 3.710925388065e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -1041,7 +1041,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0966155 (sec)
+SNES solution time      : 0.101105 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1053,16 +1053,16 @@ Residual summary:
 Actual time step : 0.14421 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.4526e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.4698e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0740832 sec)
+Saving output ... done (0.076702 sec)
 --------------------------------------------------------------------------
 ================================ STEP 29 =================================
 --------------------------------------------------------------------------
 Current time        : 1.47630930 [Myr] 
 Tentative time step : 0.14420994 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 4.042610975103e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -1073,7 +1073,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0960037 (sec)
+SNES solution time      : 0.100657 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1085,14 +1085,14 @@ Residual summary:
 Actual time step : 0.15863 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 3 markers and merged 3 markers in 2.5391e-03 s
+Marker control [0]: (subgrid) cloned 3 markers and merged 3 markers in 2.5383e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 30 =================================
 --------------------------------------------------------------------------
 Current time        : 1.63494023 [Myr] 
 Tentative time step : 0.15863093 [Myr] 
 --------------------------------------------------------------------------
-Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
+Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
   0 SNES Function norm 4.400189751204e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
@@ -1103,7 +1103,7 @@ Phase transition plugin  : 0 marker(s) changed phase, 0 marker(s) changed temper
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0961458 (sec)
+SNES solution time      : 0.101039 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1115,13 +1115,13 @@ Residual summary:
 Actual time step : 0.17449 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 3 markers and merged 3 markers in 2.4862e-03 s
+Marker control [0]: (subgrid) cloned 3 markers and merged 3 markers in 2.5492e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0758023 sec)
+Saving output ... done (0.0779577 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 5.8985 (sec) 
+Total solution time : 6.67833 (sec) 
 --------------------------------------------------------------------------
 WARNING! There are options you set that were not used!
 WARNING! could be spelling mistake, etc!

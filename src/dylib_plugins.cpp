@@ -8,7 +8,7 @@
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 //---------------------------------------------------------------------------
-//..............   USER-DEFINED PHASE TRANSITION PLUGIN (Julia)   ...........
+//..............   USER-DEFINED DYLIB PLUGINS (Julia)   .....................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "Tensor.h"
@@ -19,7 +19,7 @@
 #include "bc.h"
 #include "tssolve.h"
 #include "phase.h"
-#include "phase_transition_plugin.h"
+#include "dylib_plugins.h"
 #include <cstddef>
 #include <cstdint>
 #include <cmath>
@@ -27,7 +27,7 @@
 #include <dlfcn.h>
 #endif
 //---------------------------------------------------------------------------
-typedef int      (*PhTrPluginAbiVersionFn)(void);
+typedef int      (*DylibPluginAbiVersionFn)(void);
 typedef void      (*JlParseOptsFn)(int *argc, char ***argv);
 typedef void      (*JlInitWithImageHandleFn)(void *handle);
 typedef void      (*JlAtexitHookFn)(int status);
@@ -47,7 +47,7 @@ namespace
 {
 	PetscBool     initTried = PETSC_FALSE, active = PETSC_FALSE;
 	PetscDLHandle handle    = NULL;
-	PhTrPluginFn  fn        = NULL;
+	DylibPluginFn  fn        = NULL;
 	JlAtexitHookFn atexitFn = NULL;
 	char          loadedPath[_str_len_] = "";
 
@@ -69,9 +69,9 @@ namespace
 	int         lbtSnapCount = 0;
 }
 //---------------------------------------------------------------------------
-PetscBool PhTrPluginIsActive(void) { return active; }
+PetscBool DylibPluginIsActive(void) { return active; }
 //---------------------------------------------------------------------------
-static PetscErrorCode PhTrPluginFreeBuffers(void)
+static PetscErrorCode DylibPluginFreeBuffers(void)
 {
 	int i;
 
@@ -86,7 +86,7 @@ static PetscErrorCode PhTrPluginFreeBuffers(void)
 //---------------------------------------------------------------------------
 // dlclose() of a library holding an initialised Julia runtime is unsupported;
 // the handle is leaked for the process lifetime, only jl_atexit_hook runs
-static PetscErrorCode PhTrPluginFinalize(void)
+static PetscErrorCode DylibPluginFinalize(void)
 {
 	PetscFunctionBeginUser;
 
@@ -94,7 +94,7 @@ static PetscErrorCode PhTrPluginFinalize(void)
 
 	fn = NULL; atexitFn = NULL; active = PETSC_FALSE;
 
-	PetscCall(PhTrPluginFreeBuffers());
+	PetscCall(DylibPluginFreeBuffers());
 
 	bufcap = 0; cellcap = 0;
 
@@ -107,7 +107,7 @@ static PetscErrorCode PhTrPluginFinalize(void)
 // they must be copied out first. lbt_get_config's struct layout is not
 // versioned; trust it only if the resolved symbol lives in a
 // "libblastrampoline.5" image (dladdr), else skip silently.
-static PetscErrorCode PhTrPluginSnapshotLbt(void)
+static PetscErrorCode DylibPluginSnapshotLbt(void)
 {
 	void *sym = NULL;
 
@@ -146,7 +146,7 @@ static PetscErrorCode PhTrPluginSnapshotLbt(void)
 //---------------------------------------------------------------------------
 // re-forward the snapshotted BLAS libs (clear=0, additive) and restore the
 // thread count, both clobbered by Julia's LinearAlgebra.__init__
-static PetscErrorCode PhTrPluginRestoreLbt(int32_t nthreadsBefore)
+static PetscErrorCode DylibPluginRestoreLbt(int32_t nthreadsBefore)
 {
 	void *fwdSym = NULL, *getSym = NULL, *setSym = NULL;
 	int   i;
@@ -164,7 +164,7 @@ static PetscErrorCode PhTrPluginRestoreLbt(int32_t nthreadsBefore)
 			if(rc <= 0)
 			{
 				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB,
-					"phase_transition_lib: failed to re-forward BLAS/LAPACK library '%s' after Julia init",
+					"dylib_plugin: failed to re-forward BLAS/LAPACK library '%s' after Julia init",
 					lbtSnap[i].libname);
 			}
 
@@ -176,7 +176,7 @@ static PetscErrorCode PhTrPluginRestoreLbt(int32_t nthreadsBefore)
 	}
 	else if(!fwdSym)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "Phase transition plugin  : no libblastrampoline found; PETSc's BLAS/LAPACK forwarding was not touched\n");
+		PetscPrintf(PETSC_COMM_WORLD, "Dylib plugin  : no libblastrampoline found; PETSc's BLAS/LAPACK forwarding was not touched\n");
 	}
 
 	PetscCall(PetscDLSym(NULL, "lbt_get_num_threads", &getSym));
@@ -186,7 +186,7 @@ static PetscErrorCode PhTrPluginRestoreLbt(int32_t nthreadsBefore)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PhTrPluginLoad(AdvCtx *actx)
+PetscErrorCode DylibPluginLoad(AdvCtx *actx)
 {
 	char      lib[_str_len_];
 	PetscBool found;
@@ -197,7 +197,7 @@ PetscErrorCode PhTrPluginLoad(AdvCtx *actx)
 
 	(void)actx;
 
-	PetscCall(PetscOptionsGetString(NULL, NULL, "-phase_transition_lib", lib, _str_len_, &found));
+	PetscCall(PetscOptionsGetString(NULL, NULL, "-dylib_plugin", lib, _str_len_, &found));
 	if(!found) PetscFunctionReturn(0); // later calls with the option set are still honoured
 
 	if(initTried)
@@ -205,7 +205,7 @@ PetscErrorCode PhTrPluginLoad(AdvCtx *actx)
 		if(active && strcmp(lib, loadedPath) != 0)
 		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP,
-				"phase_transition_lib: a different plugin ('%s') was already loaded in this process ('%s')",
+				"dylib_plugin: a different plugin ('%s') was already loaded in this process ('%s')",
 				lib, loadedPath);
 		}
 		PetscFunctionReturn(0);
@@ -213,14 +213,14 @@ PetscErrorCode PhTrPluginLoad(AdvCtx *actx)
 
 	initTried = PETSC_TRUE;
 	PetscCall(PetscStrncpy(loadedPath, lib, _str_len_));
-	PetscCall(PetscRegisterFinalize(PhTrPluginFinalize));
+	PetscCall(PetscRegisterFinalize(DylibPluginFinalize));
 
 	// PETSC_DL_NOW -> dlopen(RTLD_NOW|RTLD_GLOBAL), pulling in libjulia as
 	// the plugin's own dependency; LaMEM never links libjulia itself
 	PetscCall(PetscDLOpen(lib, PETSC_DL_NOW, &handle));
 
 	PetscCall(PetscDLSym(handle, "jl_parse_opts", &sym));
-	if(!sym) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "phase_transition_lib: jl_parse_opts not found in %s", lib);
+	if(!sym) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "dylib_plugin: jl_parse_opts not found in %s", lib);
 
 	// --handle-signals=no keeps PETSc's SIGSEGV/SIGBUS handler in charge;
 	// --threads=1 --gcthreads=1 keeps the embedded runtime single-threaded
@@ -233,7 +233,7 @@ PetscErrorCode PhTrPluginLoad(AdvCtx *actx)
 		((JlParseOptsFn)sym)(&jlargc, &jlargvp);
 	}
 
-	PetscCall(PhTrPluginSnapshotLbt());
+	PetscCall(DylibPluginSnapshotLbt());
 	{
 		void *getSym = NULL;
 		PetscCall(PetscDLSym(NULL, "lbt_get_num_threads", &getSym));
@@ -241,37 +241,37 @@ PetscErrorCode PhTrPluginLoad(AdvCtx *actx)
 	}
 
 	PetscCall(PetscDLSym(handle, "jl_init_with_image_handle", &sym));
-	if(!sym) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "phase_transition_lib: jl_init_with_image_handle not found in %s", lib);
+	if(!sym) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "dylib_plugin: jl_init_with_image_handle not found in %s", lib);
 	((JlInitWithImageHandleFn)sym)((void*)handle);
 
-	PetscCall(PhTrPluginRestoreLbt(nthreadsBefore));
+	PetscCall(DylibPluginRestoreLbt(nthreadsBefore));
 
-	PetscCall(PetscDLSym(handle, "lamem_phase_transition_abi_version", &sym));
+	PetscCall(PetscDLSym(handle, "lamem_plugin_abi_version", &sym));
 	if(sym)
 	{
-		int v = ((PhTrPluginAbiVersionFn)sym)();
+		int v = ((DylibPluginAbiVersionFn)sym)();
 		if(v != PHASE_TRANSITION_PLUGIN_ABI_VERSION)
 		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB,
-				"phase_transition_lib: %s reports ABI v%d, expected v%d", lib, v, PHASE_TRANSITION_PLUGIN_ABI_VERSION);
+				"dylib_plugin: %s reports ABI v%d, expected v%d", lib, v, PHASE_TRANSITION_PLUGIN_ABI_VERSION);
 		}
 	}
 
 	PetscCall(PetscDLSym(handle, "lamem_phase_transition", &sym));
-	if(!sym) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "phase_transition_lib: lamem_phase_transition not found in %s", lib);
-	fn = (PhTrPluginFn)sym;
+	if(!sym) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "dylib_plugin: lamem_phase_transition not found in %s", lib);
+	fn = (DylibPluginFn)sym;
 
 	PetscCall(PetscDLSym(handle, "jl_atexit_hook", &sym));
 	atexitFn = (JlAtexitHookFn)sym; // optional
 
 	active = PETSC_TRUE;
 
-	PetscPrintf(PETSC_COMM_WORLD, "Phase transition plugin  : %s\n", lib);
+	PetscPrintf(PETSC_COMM_WORLD, "Dylib plugin  : %s\n", lib);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-static PetscErrorCode PhTrPluginEnsureMarkerCapacity(PetscInt n)
+static PetscErrorCode DylibPluginEnsureMarkerCapacity(PetscInt n)
 {
 	int i;
 
@@ -291,7 +291,7 @@ static PetscErrorCode PhTrPluginEnsureMarkerCapacity(PetscInt n)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-static PetscErrorCode PhTrPluginEnsureCellCapacity(PetscInt ncells)
+static PetscErrorCode DylibPluginEnsureCellCapacity(PetscInt ncells)
 {
 	PetscFunctionBeginUser;
 
@@ -308,7 +308,7 @@ static PetscErrorCode PhTrPluginEnsureCellCapacity(PetscInt ncells)
 }
 //---------------------------------------------------------------------------
 // Fill+ghost-exchange one edge DA's stress/strain-rate fields from svEdge[]
-static PetscErrorCode PhTrPluginFillEdge(DM da, SolVarEdge *svEdge, PetscScalar pf, Vec ls, Vec ld)
+static PetscErrorCode DylibPluginFillEdge(DM da, SolVarEdge *svEdge, PetscScalar pf, Vec ls, Vec ld)
 {
 	PetscScalar ***as, ***ad;
 	PetscInt     i, j, k, sx, sy, sz, nx, ny, nz, iter = 0;
@@ -338,7 +338,7 @@ static PetscErrorCode PhTrPluginFillEdge(DM da, SolVarEdge *svEdge, PetscScalar 
 // Cell-centred (not ParaView's corner-centred) J2 of deviatoric stress and
 // strain rate: cell diagonal components plus its 4 surrounding edge values
 // per off-diagonal direction, averaged (same geometry as JacResGetSHmax).
-static PetscErrorCode PhTrPluginComputeJ2(AdvCtx *actx)
+static PetscErrorCode DylibPluginComputeJ2(AdvCtx *actx)
 {
 	FDSTAG      *fs = actx->fs;
 	JacRes      *jr = actx->jr;
@@ -349,14 +349,14 @@ static PetscErrorCode PhTrPluginComputeJ2(AdvCtx *actx)
 
 	PetscFunctionBeginUser;
 
-	PetscCall(PhTrPluginEnsureCellCapacity(fs->nCells));
+	PetscCall(DylibPluginEnsureCellCapacity(fs->nCells));
 
 	PetscCall(FDSTAGGetLocalVectorEdge(fs, &lxy_s, &lxz_s, &lyz_s));
 	PetscCall(FDSTAGGetLocalVectorEdge(fs, &lxy_d, &lxz_d, &lyz_d));
 
-	PetscCall(PhTrPluginFillEdge(fs->DA_XY, jr->svXYEdge, pf, lxy_s, lxy_d));
-	PetscCall(PhTrPluginFillEdge(fs->DA_XZ, jr->svXZEdge, pf, lxz_s, lxz_d));
-	PetscCall(PhTrPluginFillEdge(fs->DA_YZ, jr->svYZEdge, pf, lyz_s, lyz_d));
+	PetscCall(DylibPluginFillEdge(fs->DA_XY, jr->svXYEdge, pf, lxy_s, lxy_d));
+	PetscCall(DylibPluginFillEdge(fs->DA_XZ, jr->svXZEdge, pf, lxz_s, lxz_d));
+	PetscCall(DylibPluginFillEdge(fs->DA_YZ, jr->svYZEdge, pf, lyz_s, lyz_d));
 
 	PetscCall(DMDAVecGetArray(fs->DA_XY, lxy_s, &axy_s)); PetscCall(DMDAVecGetArray(fs->DA_XY, lxy_d, &axy_d));
 	PetscCall(DMDAVecGetArray(fs->DA_XZ, lxz_s, &axz_s)); PetscCall(DMDAVecGetArray(fs->DA_XZ, lxz_d, &axz_d));
@@ -397,7 +397,7 @@ static PetscErrorCode PhTrPluginComputeJ2(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PhTrPluginApply(AdvCtx *actx)
+PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx)
 {
 	JacRes      *jr = actx->jr;
 	Scaling     *scal = jr->scal;
@@ -414,8 +414,8 @@ PetscErrorCode PhTrPluginApply(AdvCtx *actx)
 
 	if(!active) PetscFunctionReturn(0);
 
-	PetscCall(PhTrPluginEnsureMarkerCapacity(n));
-	PetscCall(PhTrPluginComputeJ2(actx));
+	PetscCall(DylibPluginEnsureMarkerCapacity(n));
+	PetscCall(DylibPluginComputeJ2(actx));
 
 	scaling.abi_version = PHASE_TRANSITION_PLUGIN_ABI_VERSION;
 	scaling.utype       = (int32_t)scal->utype;
@@ -433,7 +433,7 @@ PetscErrorCode PhTrPluginApply(AdvCtx *actx)
 	scaling.step        = (int64_t)jr->bc->ts->istep;
 
 	// arrays are LaMEM's internal (non-dimensional) units, unconverted;
-	// the plugin dimensionalises using `scaling` (see phase_transition_plugin.h)
+	// the plugin dimensionalises using `scaling` (see dylib_plugins.h)
 	for(i = 0; i < n; i++)
 	{
 		P  = &actx->markers[i];
@@ -486,13 +486,13 @@ PetscErrorCode PhTrPluginApply(AdvCtx *actx)
 	if(glob2[0])
 	{
 		if(rc < 0)
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "phase_transition_lib: plugin failed on at least one rank (rc=%d)", rc);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "dylib_plugin: plugin failed on at least one rank (rc=%d)", rc);
 		else if(badIdx >= 0 && badT)
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "phase_transition_lib: non-finite T_out at local marker %" PetscInt_FMT, badIdx);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "dylib_plugin: non-finite T_out at local marker %" PetscInt_FMT, badIdx);
 		else if(badIdx >= 0)
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "phase_transition_lib: out-of-range phase %d at local marker %" PetscInt_FMT, badPhase, badIdx);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "dylib_plugin: out-of-range phase %d at local marker %" PetscInt_FMT, badPhase, badIdx);
 		else
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "phase_transition_lib: another MPI rank reported a plugin failure");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "dylib_plugin: another MPI rank reported a plugin failure");
 	}
 
 	err2[0] = 0; err2[1] = 0; // reused as local changed-phase/changed-T counters
@@ -515,7 +515,7 @@ PetscErrorCode PhTrPluginApply(AdvCtx *actx)
 		PetscCall(ADVInterpMarkToCell(actx));
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD, "Phase transition plugin  : %" PetscInt_FMT " marker(s) changed phase, "
+	PetscPrintf(PETSC_COMM_WORLD, "Dylib plugin  : %" PetscInt_FMT " marker(s) changed phase, "
 		"%" PetscInt_FMT " marker(s) changed temperature\n", glob2[0], glob2[1]);
 
 	PetscFunctionReturn(0);

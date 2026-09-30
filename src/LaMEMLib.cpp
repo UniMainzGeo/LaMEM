@@ -39,7 +39,7 @@
 #include "adjoint.h"
 #include "paraViewOutPassiveTracers.h"
 #include "phase_transition.h"
-#include "phase_transition_plugin.h"
+#include "dylib_plugins.h"
 #include "passive_tracer.h"
 #include "fastscape.h"
 #include "LaMEMLib.h"
@@ -594,8 +594,8 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		PetscCall(PetscOptionsHasName(NULL, NULL, "-snes_track_stages", &flag)); if(flag) { track_stages = 1; }
 	}
 
-	// load user-defined phase transition plugin (no-op unless -phase_transition_lib is given)
-	PetscCall(PhTrPluginLoad(&lm->actx));
+	// load user-defined dylib plugin (no-op unless -dylib_plugin is given)
+	PetscCall(DylibPluginLoad(&lm->actx));
 
 	if(track_stages)
 	{
@@ -637,8 +637,8 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// apply phase transitions on particles
 		PetscCall(Phase_Transition(&lm->actx));
 
-		// apply user-defined phase transition plugin (no-op unless loaded)
-		PetscCall(PhTrPluginApply(&lm->actx));
+		// apply user-defined dylib plugin's phase transition hook (no-op unless loaded)
+		PetscCall(DylibPluginPhaseTransition(&lm->actx));
 
 		// inject geometric primitives whose injection time has been reached
 		PetscCall(ADVMarkInjectGeom(&lm->actx));
@@ -802,7 +802,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	// destroy objects
 	PetscCall(NLSolDestroy(&snes));
 
-	// phase transition plugin (if any) is torn down once at PetscFinalize()
+	// dylib plugin (if any) is torn down once at PetscFinalize()
 
 	// save marker database
 	PetscCall(ADVMarkSave(&lm->actx));

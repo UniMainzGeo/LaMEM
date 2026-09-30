@@ -1,5 +1,5 @@
 # Shared helper for LaMEM phase-transition plugins (ABI v2, see
-# src/phase_transition_plugin.h). A plugin `include`s this and calls
+# src/dylib_plugins.h). A plugin `include`s this and calls
 # lamem_pt_wrapper with a `rule(m::MarkerView) -> (phase, T_dimensional)`;
 # all internal<->dimensional conversion happens here.
 module LaMEMPlugin
@@ -13,7 +13,7 @@ export LaMEMPluginScaling, MarkerView, lamem_pt_wrapper,
 
 const ABI_VERSION = Cint(2)
 
-# mirrors src/phase_transition_plugin.h's LaMEMPluginScaling exactly
+# mirrors src/dylib_plugins.h's LaMEMPluginScaling exactly
 struct LaMEMPluginScaling
     abi_version::Cint
     utype::Cint
@@ -153,6 +153,6 @@ function lamem_pt_wrapper(rule::F,
     end
 end
 
-lamem_phase_transition_abi_version() = ABI_VERSION
+lamem_plugin_abi_version() = ABI_VERSION
 
 end # module

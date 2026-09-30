@@ -1,6 +1,6 @@
 // Standalone harness used by the t40_PhaseTransitionPlugin testset to
 // verify the ABI v2 scaling-struct "loud failure" guard implemented in
-// LaMEMPlugin.jl's lamem_pt_wrapper (see src/phase_transition_plugin.h for
+// LaMEMPlugin.jl's lamem_pt_wrapper (see src/dylib_plugins.h for
 // the authoritative struct layout, and LaMEMPlugin.jl for the guard
 // itself: it rejects a LaMEMPluginScaling whose length/time/stress are not
 // strictly positive, returning -2, instead of silently reading garbage).
@@ -12,13 +12,13 @@
 // exercised via ccall from the Julia test harness itself, because
 // initialising a second Julia runtime inside a process that is already one
 // (the Julia process running `runtests.jl`) is unsupported - see
-// src/phase_transition_plugin.h's "this design cannot be used in-process
+// src/dylib_plugins.h's "this design cannot be used in-process
 // from a Julia host" note.
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdint.h>
 
-// Mirrors src/phase_transition_plugin.h's `struct LaMEMPluginScaling`.
+// Mirrors src/dylib_plugins.h's `struct LaMEMPluginScaling`.
 struct LaMEMPluginScaling
 {
 	int32_t abi_version, utype;
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 	pt_fn f = (pt_fn) dlsym(h, "lamem_phase_transition");
 	if (!f) { fprintf(stderr, "no lamem_phase_transition\n"); return 3; }
 
-	int (*abiver)(void) = (int(*)(void)) dlsym(h, "lamem_phase_transition_abi_version");
+	int (*abiver)(void) = (int(*)(void)) dlsym(h, "lamem_plugin_abi_version");
 	printf("abi_version=%d\n", abiver ? abiver() : -999);
 
 	// T_internal=1.5, temperature=1000, Tshift=273.15 -> T_dim=1226.85C >=
