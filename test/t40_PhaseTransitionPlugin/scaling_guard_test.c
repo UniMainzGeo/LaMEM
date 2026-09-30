@@ -54,11 +54,15 @@ int main(int argc, char **argv)
 	pt_fn f = (pt_fn) dlsym(h, "lamem_phase_transition");
 	if (!f) { fprintf(stderr, "no lamem_phase_transition\n"); return 3; }
 
+	int (*abiver)(void) = (int(*)(void)) dlsym(h, "lamem_phase_transition_abi_version");
+	printf("abi_version=%d\n", abiver ? abiver() : -999);
+
+	// T_internal=1.5, temperature=1000, Tshift=273.15 -> T_dim=1226.85C >=
+	// 1200 -> the Constant-transition plugin flips phase 2->3, rc=1
 	double x[1] = {0.0}, T[1] = {1.5}, o[1] = {0.0};
 	int pin[1] = {2}, pout[1];
 	double Tout[1];
 
-	// Test 1: a plausible, valid scaling struct.
 	struct LaMEMPluginScaling good = {
 		2, 2,
 		1.0, 1.0, 1.0, 1000.0, 1.0, 1.0, 1.0, 1.0,
@@ -67,8 +71,7 @@ int main(int argc, char **argv)
 	int c1 = f(1, x, x, x, T, o, 0.0, o, o, o, o, o, o, o, o, o, o, pin, pout, Tout, &good);
 	printf("good struct: rc=%d\n", c1);
 
-	// Test 2: the SAME struct but with length corrupted to 0 - must trigger
-	// the guard (rc == -2), not silently misbehave.
+	// SAME struct but length corrupted to 0 - must trigger the guard (-2)
 	struct LaMEMPluginScaling bad = good;
 	bad.length = 0.0;
 	int c2 = f(1, x, x, x, T, o, 0.0, o, o, o, o, o, o, o, o, o, o, pin, pout, Tout, &bad);

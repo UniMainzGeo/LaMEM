@@ -507,7 +507,9 @@ PetscErrorCode PhTrPluginApply(AdvCtx *actx)
 
 	PetscCallMPI(MPI_Allreduce(err2, glob2, 2, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD));
 
-	if(glob2[0])
+	// ADVInterpMarkToCell also seeds svBulk.Tn from marker T, which the next
+	// JacResInitTemp call reads - must run on a T-only change too, not just phase
+	if(glob2[0] || glob2[1])
 	{
 		PetscCall(ADVCheckMarkPhases(actx));
 		PetscCall(ADVInterpMarkToCell(actx));

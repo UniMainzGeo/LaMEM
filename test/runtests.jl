@@ -1717,30 +1717,67 @@ if should_run_test("t40_PhaseTransitionPlugin")
             clean_test_directory(dir)
         end
 
-        # Scaling-struct guard: exercise LaMEMPlugin.jl's loud-failure check
-        # (a DELIBERATELY corrupted LaMEMPluginScaling - length set to 0,
-        # which is never valid for a real LaMEM run - must make
-        # lamem_phase_transition return -2, not silently misread garbage and
-        # return a plausible-looking result). This CANNOT be done by
-        # ccall-ing jl_init_with_image_handle from inside this already-
-        # running test-harness Julia process: initialising a second Julia
-        # runtime inside a process that is already one is exactly the
-        # unsupported scenario documented in src/phase_transition_plugin.h's
-        # "this design cannot be used in-process from a Julia host" note.
-        # Instead, compile and run a small standalone C harness as a
-        # separate PROCESS (mirroring exactly what the real LaMEM binary
-        # does: dlopen, jl_parse_opts, jl_init_with_image_handle, then call
-        # lamem_phase_transition with the corrupted struct).
+        # Same cross-comparison, but for the Box transition (constant T
+        # inside a region) instead of Constant: exercises a plugin rule
+        # that resets T on markers whose phase is unchanged (H1 - T-only
+        # changes must still reach ADVInterpMarkToCell/svBulk.Tn).
+        box_bundle_name = Sys.isapple() ? "libptlib_box.dylib" : "libptlib_box.so"
+        box_bundle_path = joinpath(test_dir, dir, "build_box", "lib", box_bundle_name)
+
+        if !isfile(box_bundle_path)
+            @info "t40_PhaseTransitionPlugin: Box comparison skipped - compiled plugin bundle not found at $box_bundle_path. " *
+                  "Build it first with: cd $dir && julia --project=<a project with JuliaC installed> build_plugin.jl ptlib_box.jl box"
+        else
+            @test perform_lamem_test(dir, "Box_only_builtin.dat", "Box_only_builtin",
+                                    keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
+                                    create_expected_file=update_expected, clean_dir=false)
+
+            @test perform_lamem_test(dir, "Box_only_plugin.dat", "Box_only_plugin",
+                                    args="-phase_transition_lib $box_bundle_path",
+                                    keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
+                                    create_expected_file=update_expected, clean_dir=false)
+
+            box_builtin_out = joinpath(dir, "Box_only_builtin.out")
+            box_plugin_out  = joinpath(dir, "Box_only_plugin.out")
+
+            if isfile(box_builtin_out) && isfile(box_plugin_out)
+                box_builtin_vals = extract_info_logfiles(box_builtin_out, keywords)
+                box_plugin_vals  = extract_info_logfiles(box_plugin_out,  keywords)
+
+                for (i, kw) in enumerate(keywords)
+                    rtol = haskey(acc[i], :rtol) ? acc[i].rtol : 0
+                    atol = haskey(acc[i], :atol) ? acc[i].atol : 0
+                    @test length(box_builtin_vals[i]) == length(box_plugin_vals[i])
+                    @test isapprox(box_builtin_vals[i], box_plugin_vals[i]; rtol=rtol, atol=atol)
+                end
+            else
+                @test false # one or both runs above failed to even produce a log file
+            end
+
+            if clean_files
+                clean_test_directory(dir)
+            end
+        end
+
+        # Scaling-struct guard (see LaMEMPlugin.jl's lamem_pt_wrapper): run as
+        # a separate C process, not via ccall - a second jl_init_with_image_handle
+        # inside this already-running Julia process is unsupported.
         guard_src = joinpath(dir, "scaling_guard_test.c")
         guard_bin = joinpath(dir, "scaling_guard_test")
-        cc = Sys.which("cc") === nothing ? "clang" : "cc"
-        try
-            run(`$cc -O0 $guard_src -o $guard_bin -ldl`)
-            guard_out = read(`$guard_bin $bundle_path`, String)
-            @test occursin("bad struct (length=0): rc=-2", guard_out)
-            @test occursin("good struct: rc=", guard_out) && !occursin("good struct: rc=-2", guard_out)
-        finally
-            isfile(guard_bin) && rm(guard_bin, force=true)
+        cc = Sys.which("cc") !== nothing ? "cc" : Sys.which("clang")
+
+        if cc === nothing
+            @info "t40_PhaseTransitionPlugin: scaling-struct guard test skipped - no C compiler (cc/clang) found"
+        else
+            try
+                run(`$cc -O0 $guard_src -o $guard_bin -ldl`)
+                guard_out = read(`$guard_bin $bundle_path`, String)
+                @test occursin("abi_version=2", guard_out)
+                @test occursin("good struct: rc=1", guard_out)
+                @test occursin("bad struct (length=0): rc=-2", guard_out)
+            finally
+                isfile(guard_bin) && rm(guard_bin, force=true)
+            end
         end
     end
 end

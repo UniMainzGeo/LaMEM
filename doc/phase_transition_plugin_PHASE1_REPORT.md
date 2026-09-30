@@ -495,10 +495,8 @@ before the ABI change (confirming the internal-units + scaling-struct
 redesign is behaviour-preserving for this comparison). Timing (same
 `Total solution time` metric as before): baseline 5.97602 s, plugin
 6.29907 s (30 steps, 1 rank) — consistent with the previously-measured
-~11 ms/step overhead. The full `julia start_tests.jl 16 40` suite (which
-includes both the PT0-only comparison AND the new scaling-struct guard
-test) passes **15/15** on this final ABI-v2 binary (see "Test summary"
-at the very end of this report for the authoritative, most-recent run).
+~11 ms/step overhead. See "Final test summary (post H1 fix)" at the very
+end of this report for the authoritative, most-recent full-suite run.
 
 ## Test results (final binary, rebuilt after every source change below)
 
@@ -686,11 +684,12 @@ they are referenced here as the source of these two correlation numbers.
   is the dynamic linker's own SONAME-based sharing of an already-loaded
   library, which is expected to behave analogously (a single
   `libblastrampoline.so.5` shared between LaMEM and the plugin), but this
-  was not verified on Linux in this environment. The
-  `-phase_transition_lbt_ilp64`/`-phase_transition_lbt_lp64` fallback and
-  the `LBT_DEFAULT_LIBS`-parsing fallback exist partly as a safety net for
-  a Linux deployment where the automatic snapshot might behave differently;
-  this should be the first thing re-verified on a Linux machine.
+  was not verified on Linux in this environment. The automatic LBT
+  snapshot/restore is the only mechanism now (the earlier
+  `-phase_transition_lbt_ilp64`/`-phase_transition_lbt_lp64` options and the
+  `LBT_DEFAULT_LIBS`-parsing fallback were removed during the code-slimming
+  pass, per an explicit size-minimization request); this should be the
+  first thing re-verified on a Linux machine.
 
 ## Exact juliac build commands (restored; previously dropped)
 
@@ -716,3 +715,71 @@ julia +1.13.0 --startup-file=no --project=<scratchpad>/juliac_env build_plugin.j
 only) environment for the module being compiled itself — not required for
 `ptlib_constant.jl`, which has no external dependencies, so
 `build_plugin.jl` omits it.
+
+## Fourth review's fixes: T-only propagation; tighter t40 (this pass)
+
+A fourth review of the ABI-v2 + slimming commits found one real bug (H1)
+and several test/reporting gaps (M1-M3, L1-L3), fixed in this pass:
+
+- **H1 (bug)**: `PhTrPluginApply` only called `ADVCheckMarkPhases`/
+  `ADVInterpMarkToCell` when a marker's *phase* changed
+  (`if(glob2[0])`). But `ADVInterpMarkToCell` is what seeds
+  `svBulk.Tn` from marker `T` (`src/advect.cpp`, ~line 1721), and the very
+  next call in the step loop (`JacResInitTemp`) reads `svBulk.Tn` — so a
+  plugin rule that changes ONLY `T` (not phase) had that change silently
+  ignored for the thermal solve of that step. Fixed by gating on
+  `glob2[0] || glob2[1]` (phase-changed-count OR T-changed-count), both
+  already `MPI_Allreduce`d, so the call stays collective.
+- **Test evidence for H1**: added `ptlib_box.jl` (`Box_only_builtin.dat` /
+  `Box_only_plugin.dat`), a Julia rule that resets marker `T` to a
+  constant inside a box — exercising a T-only change, mirroring the
+  built-in Box transition's own semantics. Matching the built-in
+  `Check_Box_Phase_Transition`'s actual behaviour required one correction
+  to the naive rule: the built-in code's `Phase_Transition()` resets `T`
+  for **any** marker geometrically inside the box (via the "allow cases in
+  which we only reset T" branch for markers whose phase isn't
+  `PhaseInside`/`PhaseOutside`), while only markers with phase 2/3 also
+  get their *phase* flipped. `box_rule` was written to match this exactly
+  (T reset unconditionally inside the box; phase only touched for
+  phase-2/3 markers). With that, the 1-rank built-in-vs-plugin comparison
+  is bit-identical: `diff` of every `|Div|_inf`/`|mRes|_2` line between
+  `Box_only_builtin.dat` and `Box_only_plugin.dat` (5 steps) is empty.
+- **M1**: `lamem_pt_wrapper` now checks `s.abi_version != ABI_VERSION`
+  and returns `Cint(-3)` before touching any other field; documented as
+  `-3` in `phase_transition_plugin.h`'s return-value comment.
+- **M2**: `scaling_guard_test.c` now also `dlsym`s and calls
+  `lamem_phase_transition_abi_version`, printing `abi_version=N`; the
+  guard-test assertions in `test/runtests.jl` were tightened to
+  `occursin("abi_version=2", ...)` and `occursin("good struct: rc=1", ...)`
+  (previously a weak `!occursin("rc=-2")`, which a broken wrapper
+  returning e.g. `-1` or `0` would have incorrectly passed).
+- **M3**: the guard test now skips with `@info` (not an uncaught error)
+  when neither `cc` nor `clang` is on `PATH`.
+- **L1**: the wrapper's `changed` counter now increments on phase-changed
+  OR T-changed, matching the header's documented return-value contract
+  ("markers with phase or T changed").
+- **L2**: this section replaces the dangling "Test summary" forward
+  reference with a real one (below).
+- **L3**: all four `.expected` files in `test/t40_PhaseTransitionPlugin`
+  (`PT0_only_builtin`, `PT0_only_plugin`, `Box_only_builtin`,
+  `Box_only_plugin`) were regenerated against the final binary (H1 fix
+  included) via `julia start_tests.jl mode=update 40`.
+
+### Final test summary (post H1 fix)
+
+Full suite, final binary, both `.expected` files regenerated first:
+```
+julia --startup-file=no --project=.. start_tests.jl 16 40
+...
+Test Summary:               | Pass  Total     Time
+LaMEM Testsuite             |   22     22  1m36.9s
+  t16_PhaseTransitions      |    7      7  1m02.1s
+  t40_PhaseTransitionPlugin |   15     15    34.7s
+     Testing LaMEM_C tests passed
+```
+t40's 15 `@test` assertions cover, per transition (Constant and Box): the
+built-in run's `.expected` comparison, the plugin run's `.expected`
+comparison, and the direct built-in-vs-plugin cross-comparison (a
+length-match check plus one `isapprox` check per keyword, 2 keywords) —
+plus the 3 scaling-guard assertions (`abi_version=2`, `good struct: rc=1`,
+`bad struct (length=0): rc=-2`). All 15 pass, 0 failed, 0 errored.

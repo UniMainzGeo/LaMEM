@@ -85,6 +85,9 @@ function lamem_pt_wrapper(rule::F,
         s = unsafe_load(scaling)
 
         # loud failure on a wrong struct layout, instead of silently reading garbage
+        if s.abi_version != ABI_VERSION
+            return Cint(-3)
+        end
         if s.utype < 0 || !(s.length > 0.0) || !(s.time > 0.0) || !(s.stress > 0.0)
             return Cint(-2)
         end
@@ -130,20 +133,17 @@ function lamem_pt_wrapper(rule::F,
             new_phase, new_T_dim = rule(m)
 
             newph = Cint(new_phase)
-            if newph != Pin[i]
-                changed += 1
-            end
             Pout[i] = newph
+            phase_changed = newph != Pin[i]
 
             # round-trip through dimensionalize/nondimensionalize only when
             # T actually changed: it is not bit-exact in general (Tshift is
             # not a power of 2), so an unconditional round-trip would
             # perturb P->T by ~1 ULP even when a rule never touches T
-            if new_T_dim == m.T
-                Tout[i] = TT[i]
-            else
-                Tout[i] = nondimensionalize_T(s, Float64(new_T_dim))
-            end
+            T_changed = new_T_dim != m.T
+            Tout[i] = T_changed ? nondimensionalize_T(s, Float64(new_T_dim)) : TT[i]
+
+            (phase_changed || T_changed) && (changed += 1)
         end
         return Cint(changed)
     catch

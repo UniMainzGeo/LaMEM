@@ -1,37 +1,20 @@
-# Build the t40 phase-transition plugin bundle (ptlib_constant.jl) with
-# juliac, using the JuliaC.jl package. Run this manually (or via CI, once
-# juliac is available there) from this directory:
-#
-#   julia +1.13.0 --startup-file=no --project=<a project with JuliaC installed> build_plugin.jl
-#
-# It produces build_constant/lib/libptlib_constant.{dylib,so} (plus the
-# bundled Julia runtime alongside it), which test/runtests.jl's
-# "t40_PhaseTransitionPlugin" testset looks for and skips (with a clear
-# message) if not present -- this lets the testset run wherever a
-# juliac-capable Julia is available while not requiring one in ordinary CI
-# runs that only build LaMEM's C/C++ code.
-#
-# Built and verified with Julia 1.13.0 (juliaup channel "+1.13.0") against
-# JuliaC.jl as installed in a scratch project; any reasonably recent Julia
-# with a working `juliac`/JuliaC.jl setup should work, but 1.13.0 is what
-# this file's own bundle was actually produced and tested with (see
-# doc/phase_transition_plugin_PHASE1_REPORT.md).
+# Build a t40 phase-transition plugin bundle with juliac (JuliaC.jl). Run:
+#   julia +1.13.0 --startup-file=no --project=<env with JuliaC> build_plugin.jl [src.jl] [name]
+# src.jl defaults to ptlib_constant.jl, name to its stem; produces
+# build_<name>/lib/libptlib_<name>.{dylib,so}. --output-lib takes NO
+# extension (JuliaC appends the platform's own dlext; a wrong explicit one
+# is a hard error in JuliaC's link_products, not silently substituted).
 using JuliaC
 
+src  = length(ARGS) >= 1 ? ARGS[1] : "ptlib_constant.jl"
+name = length(ARGS) >= 2 ? ARGS[2] : replace(splitext(src)[1], "ptlib_" => "")
+
 JuliaC.main([
-    "--output-lib", "libptlib_constant", # no extension: JuliaC appends the
-                                          # platform's own dlext (.dylib on
-                                          # macOS, .so on Linux) itself, in
-                                          # link_products() (JuliaC's
-                                          # src/linking.jl); passing an
-                                          # explicit but WRONG extension
-                                          # (e.g. ".dylib" on Linux) is a
-                                          # hard error there, not silently
-                                          # substituted, so no extension must
-                                          # be given here.
-    "--bundle", "build_constant",
+    "--output-lib", "libptlib_$name",
+    "--bundle", "build_$name",
+    "--project", dirname(abspath(src)),
     "--trim=safe",
     "--compile-ccallable",
     "--experimental",
-    "ptlib_constant.jl",
+    src,
 ])

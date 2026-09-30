@@ -19,7 +19,8 @@
 //   T_dim      = T*temperature - Tshift
 //   p_rheology = (p_raw + pShift)*stress
 // Outputs: phase_out, T_out (pre-filled with phase_in/T, internal units).
-// Returns markers changed, or a negative value on failure (see doc/
+// Returns markers with phase or T changed, or <0 on failure (-1 generic,
+// -2 bad scaling struct, -3 ABI mismatch by convention; see doc/
 // phase_transition_plugin_PHASE1_REPORT.md for the full ABI/design notes).
 #ifndef phase_transition_plugin_h_
 #define phase_transition_plugin_h_

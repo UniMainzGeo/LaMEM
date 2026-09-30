@@ -1,6 +1,6 @@
-# Compiled juliac bundle (large, machine/Julia-version-specific binary
-# artifact) - built locally by build_plugin.jl, never checked in.
-/build_constant/
+# Compiled juliac bundles (large, machine/Julia-version-specific binary
+# artifacts) - built locally by build_plugin.jl, never checked in.
+/build_*/
 
 # Belt-and-braces: a compiled shared library must never be committed here
 # regardless of what directory or name it ends up under (e.g. if
@@ -12,3 +12,8 @@
 # binary), removed again after the test runs, but ignored here too as a
 # safety net.
 /scaling_guard_test
+
+# Empty-dependency Project/Manifest that build_plugin.jl's --project generates
+# in this directory (the plugin sources have no package deps of their own).
+/Project.toml
+/Manifest.toml
