@@ -187,24 +187,30 @@ jobs:
         echo "--- CXX/CC lines in petscvariables via the mount ---"
         grep -E '^(CXX|CC|MPICXX|MPICC) *=' /workspace/destdir/lib/petsc/double_real_Int64/lib/petsc/conf/petscvariables || true
 
-    - name: 'Compile LaMEM | Int64'
+    - name: 'Debug: trace make prerequisite order for lamemlib'
       env:
         LAMEM_CI_DESTDIR: ${{ github.workspace }}\lamem_destdir
       run: |
         set +e
+        D="$(cygpath -u '${{ github.workspace }}\lamem_destdir')"
+        cd src
+        make mode=opt \
+          PETSC_OPT=/workspace/destdir/lib/petsc/double_real_Int64 \
+          PETSC_DEB=/workspace/destdir/lib/petsc/double_real_Int64_deb \
+          FASTSCAPE_LIB=/workspace/destdir/lib/fastscape \
+          -d lamemlib > /tmp/make_debug.log 2>&1
+        echo "exit code: $?"
+        grep -nE "rm -rf|mkdir|Considering target|Finished prerequisites|Must remake target" /tmp/make_debug.log | grep -iE "lib/opt|makefile.stat|builddir" | head -60
+        cd ..
+
+    - name: 'Compile LaMEM | Int64'
+      env:
+        LAMEM_CI_DESTDIR: ${{ github.workspace }}\lamem_destdir
+      run: |
         cd test
         julia --project=. compile_lamem.jl int64
-        echo "julia exit status: $?"
         cd ..
-        echo "--- lib/opt after failure ---"
-        ls lib/opt || true
-        echo "--- retry the exact adjoint.o compile by hand to see the real stderr ---"
-        cd src
-        c++ -fPIC -fno-stack-protector -O3  -std=gnu++17 -fPIC  -I/workspace/destdir/bin/petsc/double_real_Int64/include -I/workspace/destdir/include/HYPRE64 -I/workspace/destdir/include/suitesparse -I/workspace/destdir/include -I/workspace/destdir/include/superlu_dist_Int64    -std=c++17 -Wall -Wextra -Wconversion -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wnon-virtual-dtor -Wno-unused-result -Wunused-but-set-variable -Wduplicated-cond -Wlogical-op -Wnull-dereference -DWITH_FASTSCAPE -c adjoint.cpp -o ../lib/opt/adjoint.o
-        echo "retry exit code: $?"
-        cd ..
-        ls bin/opt/ || true
-        exit 1
+        ls bin/opt/
 
     - name: 'Build dylib plugin bundle'
       run: |
