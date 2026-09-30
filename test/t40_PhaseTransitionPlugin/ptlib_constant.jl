@@ -62,10 +62,9 @@ module PTLibConstant
 # give identical results to the fully-built-in run: the plugin call happens
 # AFTER Phase_Transition() returns, so a marker that PT0 flips to phase 3
 # this step would only become visible to the built-in PT2 (Clapeyron, 3<->5)
-# on the FOLLOWING step, not immediately. The comparison actually run for
-# this report therefore uses a copy of the .dat with ONLY PhaseTransition
-# ID 0 present (PT1-3 removed), so built-in vs. plugin must match exactly
-# with no ordering effects. See doc/phase_transition_plugin_PHASE1_REPORT.md.
+# on the FOLLOWING step, not immediately. The test therefore uses a copy of
+# the .dat with ONLY PhaseTransition ID 0 present (PT1-3 removed), so built-in
+# vs. plugin must match exactly with no ordering effects.
 
 include("LaMEMPlugin.jl")
 using .LaMEMPlugin

@@ -1646,7 +1646,7 @@ if should_run_test("t40_PhaseTransitionPlugin")
     # that acts on a phase another transition just produced can cascade
     # within the same step, whereas the plugin always runs strictly after
     # Phase_Transition() returns and would only see such a change on the
-    # NEXT step. See doc/phase_transition_plugin_PHASE1_REPORT.md.
+    # NEXT step.
     #
     # Requires a juliac-compiled bundle at
     # t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.{dylib,so},
