@@ -51,6 +51,12 @@ PetscDLHandle handle    = NULL;
 DylibPluginFn  fn        = NULL;
 JlAtexitHookFn atexitFn = NULL;
 char          loadedPath[_str_len_] = "";
+#if defined(_WIN32)
+PetscDLHandle libjuliaHandle = NULL, lbtHandle = NULL; // sibling DLLs, see DylibPluginOpenWinDeps
+#define LbtSymHandle lbtHandle // GetProcAddress needs the specific DLL's own handle
+#else
+#define LbtSymHandle NULL // dlsym(NULL, ...) searches the whole process (RTLD_GLOBAL)
+#endif
 
 PetscInt      bufcap = 0;
 PetscScalar  *bx = NULL, *by = NULL, *bz = NULL, *bT = NULL, *bp = NULL, *bT_out = NULL;
@@ -120,6 +126,43 @@ static PetscErrorCode DylibPluginFinalize(void)
 
 	PetscFunctionReturn(0);
 }
+#if defined(_WIN32)
+//---------------------------------------------------------------------------
+// On POSIX, PetscDLOpen(..., PETSC_DL_NOW, ...) resolves with RTLD_GLOBAL, so a
+// symbol from any of the plugin's dependencies (libjulia, libblastrampoline-5,
+// pulled in by the JuliaC bundle) is visible via PetscDLSym(handle, ...) or even
+// PetscDLSym(NULL, ...) (searches the whole process). Windows has no equivalent:
+// GetProcAddress(handle, sym) only searches that exact DLL's own exports, and
+// GetProcAddress(GetCurrentProcess(), sym) only searches the main executable's,
+// never an arbitrary loaded DLL's. So on Windows the sibling DLLs a JuliaC
+// --bundle places next to the plugin (all flat in one directory - see JuliaC's
+// own docs, "Windows: everything under <output_dir>/bin") must be opened
+// explicitly, by name, to get a handle PetscDLSym can search.
+static PetscErrorCode DylibPluginOpenWinDeps(const char *pluginPath)
+{
+	char  dir[_str_len_], path[_str_len_];
+	char *slash;
+
+	PetscFunctionBeginUser;
+
+	PetscCall(PetscStrncpy(dir, pluginPath, _str_len_));
+	slash = strrchr(dir, '\\');
+	if(!slash) slash = strrchr(dir, '/');
+	if(slash) *slash = '\0'; else dir[0] = '\0'; // plugin given without a directory: current dir
+
+	PetscCall(PetscSNPrintf(path, _str_len_, "%s%slibjulia.dll", dir, dir[0] ? "\\" : ""));
+	PetscCall(PetscDLOpen(path, PETSC_DL_NOW, &libjuliaHandle));
+	if(!libjuliaHandle) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "dylib_plugin: %s not found next to %s", path, pluginPath);
+
+	// libblastrampoline's versioned name (libblastrampoline-5.dll); optional, a
+	// missing one is handled the same way as "no LBT" on POSIX (see
+	// DylibPluginSnapshotLbt/DylibPluginRestoreLbt below)
+	PetscCall(PetscSNPrintf(path, _str_len_, "%s%slibblastrampoline-5.dll", dir, dir[0] ? "\\" : ""));
+	PetscCall(PetscDLOpen(path, PETSC_DL_NOW, &lbtHandle)); // lbtHandle left NULL on failure, not an error
+
+	PetscFunctionReturn(0);
+}
+#endif
 //---------------------------------------------------------------------------
 // Snapshot libblastrampoline's forwarding table before jl_init_with_image_handle
 // runs: Julia's LinearAlgebra.__init__ calls lbt_forward(clear=1), which both
@@ -127,7 +170,10 @@ static PetscErrorCode DylibPluginFinalize(void)
 // they must be copied out first. lbt_get_config's struct layout is not
 // versioned; trust it only if the resolved symbol lives in a
 // "libblastrampoline.5" (macOS) or "libblastrampoline.so.5" (Linux) image
-// (dladdr), else skip silently.
+// (dladdr), else skip silently. On Windows lbtHandle already IS the specific
+// "libblastrampoline-5.dll" DylibPluginOpenWinDeps opened by that exact name (or
+// NULL if it was not found next to the plugin), so there is no address to
+// verify - the explicit filename is the check.
 static PetscErrorCode DylibPluginSnapshotLbt(void)
 {
 	void *sym = NULL;
@@ -136,9 +182,10 @@ static PetscErrorCode DylibPluginSnapshotLbt(void)
 
 	lbtSnapCount = 0;
 
-	PetscCall(PetscDLSym(NULL, "lbt_get_config", &sym));
+	PetscCall(PetscDLSym(LbtSymHandle, "lbt_get_config", &sym));
 	if(!sym) PetscFunctionReturn(0);
 
+#if !defined(_WIN32)
 #if defined(PETSC_HAVE_DLADDR)
 	Dl_info info;
 	if(!dladdr(sym, &info) || !info.dli_fname ||
@@ -148,6 +195,7 @@ static PetscErrorCode DylibPluginSnapshotLbt(void)
 	}
 #else
 	PetscFunctionReturn(0);
+#endif
 #endif
 
 	const LbtConfig *cfg = ((LbtGetConfigFn)sym)();
@@ -175,7 +223,7 @@ static PetscErrorCode DylibPluginRestoreLbt(int32_t nthreadsBefore)
 
 	PetscFunctionBeginUser;
 
-	PetscCall(PetscDLSym(NULL, "lbt_forward", &fwdSym));
+	PetscCall(PetscDLSym(LbtSymHandle, "lbt_forward", &fwdSym));
 
 	if(fwdSym && lbtSnapCount > 0)
 	{
@@ -201,8 +249,8 @@ static PetscErrorCode DylibPluginRestoreLbt(int32_t nthreadsBefore)
 		PetscPrintf(PETSC_COMM_WORLD, "Dylib plugin  : no libblastrampoline found; PETSc's BLAS/LAPACK forwarding was not touched\n");
 	}
 
-	PetscCall(PetscDLSym(NULL, "lbt_get_num_threads", &getSym));
-	PetscCall(PetscDLSym(NULL, "lbt_set_num_threads", &setSym));
+	PetscCall(PetscDLSym(LbtSymHandle, "lbt_get_num_threads", &getSym));
+	PetscCall(PetscDLSym(LbtSymHandle, "lbt_set_num_threads", &setSym));
 	if(getSym && setSym && nthreadsBefore > 0) ((LbtSetNumThreadsFn)setSym)(nthreadsBefore);
 
 	PetscFunctionReturn(0);
@@ -224,10 +272,6 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 	PetscCall(getStringParam(fb, _OPTIONAL_, "dylib_plugin", lib, NULL));
 	if(!strlen(lib)) PetscFunctionReturn(0); // later calls with the option set are still honoured
 
-#if defined(_WIN32)
-	SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "dylib plugins are not supported on Windows yet");
-#endif
-
 	if(initTried)
 	{
 		if(active && strcmp(lib, loadedPath) != 0)
@@ -246,8 +290,17 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 	// PETSC_DL_NOW -> dlopen(RTLD_NOW|RTLD_GLOBAL), pulling in libjulia as
 	// the plugin's own dependency; LaMEM never links libjulia itself
 	PetscCall(PetscDLOpen(lib, PETSC_DL_NOW, &handle));
+	if(!handle) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_FILE_OPEN, "dylib_plugin: could not open %s", lib);
 
+#if defined(_WIN32)
+	// RTLD_GLOBAL has no Windows equivalent: libjulia's own exports (jl_parse_opts
+	// among them) are not visible via the plugin DLL's handle. See
+	// DylibPluginOpenWinDeps above.
+	PetscCall(DylibPluginOpenWinDeps(lib));
+	PetscCall(PetscDLSym(libjuliaHandle, "jl_parse_opts", &sym));
+#else
 	PetscCall(PetscDLSym(handle, "jl_parse_opts", &sym));
+#endif
 	if(!sym) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "dylib_plugin: jl_parse_opts not found in %s", lib);
 
 	// --handle-signals=no keeps PETSc's SIGSEGV/SIGBUS handler in charge;
@@ -264,11 +317,15 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 	PetscCall(DylibPluginSnapshotLbt());
 	{
 		void *getSym = NULL;
-		PetscCall(PetscDLSym(NULL, "lbt_get_num_threads", &getSym));
+		PetscCall(PetscDLSym(LbtSymHandle, "lbt_get_num_threads", &getSym));
 		if(getSym) nthreadsBefore = ((LbtGetNumThreadsFn)getSym)();
 	}
 
+#if defined(_WIN32)
+	PetscCall(PetscDLSym(libjuliaHandle, "jl_init_with_image_handle", &sym));
+#else
 	PetscCall(PetscDLSym(handle, "jl_init_with_image_handle", &sym));
+#endif
 	if(!sym) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "dylib_plugin: jl_init_with_image_handle not found in %s", lib);
 	((JlInitWithImageHandleFn)sym)((void*)handle);
 

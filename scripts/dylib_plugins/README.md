@@ -18,5 +18,4 @@ Build: `julia --project=@juliac build_plugin.jl <rule.jl> [output_dir]`
 Only one plugin library loads per LaMEM process. It embeds its own Julia
 runtime and only works as a standalone LaMEM run - it cannot be `ccall`ed
 from inside an already-running Julia process. CI builds/tests with
-Julia 1.13 + JuliaC.jl. Windows is not yet supported (dylib_plugin fails
-with a clear error there).
+Julia 1.13 + JuliaC.jl, including on Windows.

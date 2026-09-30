@@ -114,6 +114,77 @@ jobs:
         cd ..
         julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit 
         
+  windows_dylib_plugin:
+    # Verifies the dylib_plugin loader's Windows-specific code path (see
+    # src/dylib_plugins.cpp's #if defined(_WIN32) branches). Narrower than the
+    # Linux job: it compiles LaMEM and runs one plugin test, not the full test
+    # suite - LaMEM's general correctness on Windows is not otherwise in doubt,
+    # only whether the plugin loader itself works there, which nothing else in
+    # this workflow exercises.
+    name: 'Windows (dylib_plugin)'
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+
+    - name: 'Checkout LaMEM'
+      uses: actions/checkout@v4
+
+    - name: 'Set up MSYS2'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: mingw64
+        update: true
+        # julia-actions/setup-julia adds julia to the Windows PATH (via $GITHUB_PATH);
+        # the default path-type=minimal would hide that from this MSYS2 shell.
+        path-type: inherit
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-make
+          make
+
+    - name: 'Install julia'
+      uses: julia-actions/setup-julia@v3
+      with:
+        version: '1.13'
+        arch: x64
+
+    - run: julia -e 'using InteractiveUtils; versioninfo(verbose=true)'
+
+    - name: 'Install PETSc & LaMEM'
+      env:
+        LAMEM_CI_DESTDIR: ${{ github.workspace }}\lamem_destdir
+      run: |
+        cd test
+        julia --project=. setup_packages.jl
+        cd ..
+
+    - name: 'Compile LaMEM | Int64'
+      env:
+        LAMEM_CI_DESTDIR: ${{ github.workspace }}\lamem_destdir
+      run: |
+        cd test
+        julia --project=. compile_lamem.jl int64
+        cd ..
+        ls bin/opt/
+
+    - name: 'Build dylib plugin bundle'
+      run: |
+        julia --project=@juliac -e 'using Pkg; Pkg.add("JuliaC")'
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_constant.jl test/t40_PhaseTransitionPlugin
+        test -f test/t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.dll
+
+    - name: 'Run LaMEM with the dylib plugin'
+      run: |
+        cd test/t40_PhaseTransitionPlugin
+        ../../bin/opt/LaMEM.exe -ParamFile PT0_only_plugin.dat \
+          -dylib_plugin build_constant/lib/libptlib_constant.dll \
+          | tee dylib_plugin_windows.log
+        grep -q "Dylib plugin" dylib_plugin_windows.log
+        grep -q "27512 marker(s) changed phase" dylib_plugin_windows.log
+        grep -q "SOLUTION IS DONE" dylib_plugin_windows.log
+
   build_docs:
     runs-on: ubuntu-latest
     steps:
