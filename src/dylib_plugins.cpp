@@ -55,11 +55,11 @@ char          loadedPath[_str_len_] = "";
 PetscInt      bufcap = 0;
 PetscScalar  *bx = NULL, *by = NULL, *bz = NULL, *bT = NULL, *bp = NULL, *bT_out = NULL;
 PetscScalar  *bsxx = NULL, *bsyy = NULL, *bszz = NULL, *bsxy = NULL, *bsxz = NULL, *bsyz = NULL;
-PetscScalar  *bj2s = NULL, *bj2e = NULL, *beta = NULL, *baps = NULL;
+PetscScalar  *bj2s = NULL, *bj2e = NULL, *bvisc = NULL, *baps = NULL;
 int32_t      *bphase_in = NULL, *bphase_out = NULL;
 
 PetscScalar **markerBufs[] = { &bx, &by, &bz, &bT, &bp, &bT_out,
-                               &bsxx, &bsyy, &bszz, &bsxy, &bsxz, &bsyz, &bj2s, &bj2e, &beta, &baps
+                               &bsxx, &bsyy, &bszz, &bsxy, &bsxz, &bsyz, &bj2s, &bj2e, &bvisc, &baps
                              };
 const int nMarkerBufs = sizeof(markerBufs)/sizeof(markerBufs[0]);
 
@@ -471,7 +471,7 @@ PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx)
 
 		bj2s[i] = cellJ2Stress[ID];
 		bj2e[i] = cellJ2StrainRate[ID];
-		beta[i] = jr->svCell[ID].svDev.eta;
+		bvisc[i] = jr->svCell[ID].svDev.eta;
 		baps[i] = jr->svCell[ID].svDev.APS;
 
 		bphase_in[i]  = (int32_t)P->phase;
@@ -483,7 +483,7 @@ PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx)
 	rc = fn((size_t)n,
 	        bx, by, bz, bT, bp, (double)jr->bc->ts->time,
 	        bsxx, bsyy, bszz, bsxy, bsxz, bsyz,
-	        bj2s, bj2e, beta, baps,
+	        bj2s, bj2e, bvisc, baps,
 	        bphase_in, bphase_out, bT_out,
 	        &scaling);
 
