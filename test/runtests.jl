@@ -1720,7 +1720,14 @@ if should_run_test("t40_PhaseTransitionPlugin")
         # Same cross-comparison, but for the Box transition (constant T
         # inside a region) instead of Constant: exercises a plugin rule
         # that resets T on markers whose phase is unchanged (H1 - T-only
-        # changes must still reach ADVInterpMarkToCell/svBulk.Tn).
+        # changes must still reach ADVInterpMarkToCell/svBulk.Tn). This pair
+        # also exercises the dylib_plugin=<path> .dat-file route (PT0_only
+        # above tests the -dylib_plugin command-line override instead):
+        # Box_only_plugin.dat carries a __DYLIB_PLUGIN_PATH__ placeholder,
+        # substituted with the built bundle's actual path just before the
+        # run (the path is only known once the bundle is built, so it can't
+        # be hardcoded in the checked-in .dat, which is also platform-
+        # independent: .dylib on macOS, .so on Linux).
         box_bundle_name = Sys.isapple() ? "libptlib_box.dylib" : "libptlib_box.so"
         box_bundle_path = joinpath(test_dir, dir, "build_box", "lib", box_bundle_name)
 
@@ -1732,10 +1739,16 @@ if should_run_test("t40_PhaseTransitionPlugin")
                                     keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
                                     create_expected_file=update_expected, clean_dir=false)
 
-            @test perform_lamem_test(dir, "Box_only_plugin.dat", "Box_only_plugin",
-                                    args="-dylib_plugin $box_bundle_path",
+            box_plugin_dat_template = joinpath(dir, "Box_only_plugin.dat")
+            box_plugin_dat          = joinpath(dir, "Box_only_plugin_resolved.dat")
+            write(box_plugin_dat, replace(read(box_plugin_dat_template, String),
+                                           "__DYLIB_PLUGIN_PATH__" => box_bundle_path))
+
+            @test perform_lamem_test(dir, "Box_only_plugin_resolved.dat", "Box_only_plugin",
                                     keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
                                     create_expected_file=update_expected, clean_dir=false)
+
+            rm(box_plugin_dat, force=true)
 
             box_builtin_out = joinpath(dir, "Box_only_builtin.out")
             box_plugin_out  = joinpath(dir, "Box_only_plugin.out")

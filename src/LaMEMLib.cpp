@@ -182,6 +182,9 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param, FB *fb)
 	// create advection context
 	PetscCall(ADVCreate(&lm->actx, fb));
 
+	// load user-defined dylib plugin (no-op unless dylib_plugin is given)
+	PetscCall(DylibPluginLoad(&lm->actx, fb));
+
 	// create passive tracers
 	PetscCall(ADVPtrPassive_Tracer_create(&lm->actx,fb));
 
@@ -593,9 +596,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		PetscCall(PetscOptionsHasName(NULL, NULL, "-snes_track_stages", &flag)); if(flag) { track_stages = 1; }
 	}
-
-	// load user-defined dylib plugin (no-op unless -dylib_plugin is given)
-	PetscCall(DylibPluginLoad(&lm->actx));
 
 	if(track_stages)
 	{

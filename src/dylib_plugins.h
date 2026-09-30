@@ -10,7 +10,9 @@
 //---------------------------------------------------------------------------
 //..............   USER-DEFINED DYLIB PLUGINS (Julia)   .....................
 //---------------------------------------------------------------------------
-// Loads a juliac-built shared library (-dylib_plugin <path>). This is the
+// Loads a juliac-built shared library (dylib_plugin = <path> in the .dat
+// file, or -dylib_plugin <path> on the command line, which overrides the
+// .dat value). This is the
 // plugin ABI: the LaMEMPluginScaling struct it shares with every hook below,
 // plus the hooks themselves. Current hooks:
 //   lamem_phase_transition() - called once per time step, per MPI rank. ABI v2:
@@ -54,8 +56,9 @@ typedef int (*DylibPluginFn)(
 	const LaMEMPluginScaling *scaling);
 
 struct AdvCtx;
+struct FB;
 
-PetscErrorCode DylibPluginLoad(AdvCtx *actx);
+PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb);
 PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx);
 PetscBool      DylibPluginIsActive(void);
 

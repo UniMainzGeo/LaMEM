@@ -19,6 +19,7 @@
 #include "bc.h"
 #include "tssolve.h"
 #include "phase.h"
+#include "parsing.h"
 #include "dylib_plugins.h"
 #include <cstddef>
 #include <cstdint>
@@ -186,10 +187,9 @@ static PetscErrorCode DylibPluginRestoreLbt(int32_t nthreadsBefore)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode DylibPluginLoad(AdvCtx *actx)
+PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 {
 	char      lib[_str_len_];
-	PetscBool found;
 	void     *sym;
 	int32_t   nthreadsBefore = -1;
 
@@ -197,8 +197,11 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx)
 
 	(void)actx;
 
-	PetscCall(PetscOptionsGetString(NULL, NULL, "-dylib_plugin", lib, _str_len_, &found));
-	if(!found) PetscFunctionReturn(0); // later calls with the option set are still honoured
+	// dylib_plugin = <path> in the .dat file; -dylib_plugin <path> on the
+	// command line takes precedence (same override rule getStringParam
+	// uses for every other top-level parameter, e.g. msetup in ADVCreate)
+	PetscCall(getStringParam(fb, _OPTIONAL_, "dylib_plugin", lib, NULL));
+	if(!strlen(lib)) PetscFunctionReturn(0); // later calls with the option set are still honoured
 
 	if(initTried)
 	{

@@ -17,3 +17,7 @@
 # in this directory (the plugin sources have no package deps of their own).
 /Project.toml
 /Manifest.toml
+
+# Box_only_plugin.dat with __DYLIB_PLUGIN_PATH__ substituted by the actual
+# built bundle path, written just before that run and removed after.
+/Box_only_plugin_resolved.dat

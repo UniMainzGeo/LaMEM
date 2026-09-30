@@ -35,7 +35,7 @@ Total number of options added: 0
 #End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Sep 30 2026 - Time: 09:23:24 	    
+     Compiled: Date: Sep 30 2026 - Time: 09:32:30 	    
      Version : 3.3.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -153,7 +153,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.666667 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00377679 sec)
+Reading geometric primitives ... done (0.00386079 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Plume_PhaseTransitions 
@@ -185,17 +185,17 @@ Preconditioner parameters:
    Picard operator type          : assembled
    Preconditioner type           : user-defined
    Penalty parameter (pgamma)    : 1.000000e+02
-Initializing pressure with lithostatic pressure ... done (0.000613583 sec)
+Initializing pressure with lithostatic pressure ... done (0.000636125 sec)
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
-Saving output ... done (0.0842314 sec)
+Saving output ... done (0.0822728 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.01000000 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00231967 sec)
+Phase_Transition ... done (0.00229721 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 2.892666218787e+02
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -209,7 +209,7 @@ Phase_Transition ... done (0.00231967 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 0.270591 (sec)
+SNES solution time      : 0.264545 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -221,16 +221,16 @@ Residual summary:
 Actual time step : 0.01100 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 193 markers and merged 190 markers in 2.5625e-03 s
+Marker control [0]: (subgrid) cloned 193 markers and merged 190 markers in 2.5440e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0887595 sec)
+Saving output ... done (0.0825506 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.01100000 [Myr] 
 Tentative time step : 0.01100000 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00231604 sec)
+Phase_Transition ... done (0.00230625 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 2.640303061869e+00
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -242,7 +242,7 @@ Phase_Transition ... done (0.00231604 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.115753 (sec)
+SNES solution time      : 0.112577 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -254,16 +254,16 @@ Residual summary:
 Actual time step : 0.01210 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 4 markers and merged 4 markers in 2.5788e-03 s
+Marker control [0]: (subgrid) cloned 4 markers and merged 4 markers in 2.7640e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0793837 sec)
+Saving output ... done (0.078574 sec)
 --------------------------------------------------------------------------
 ================================= STEP 3 =================================
 --------------------------------------------------------------------------
 Current time        : 0.02310000 [Myr] 
 Tentative time step : 0.01210000 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00228433 sec)
+Phase_Transition ... done (0.00228412 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 9.845606010654e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -278,7 +278,7 @@ Phase_Transition ... done (0.00228433 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.114315 (sec)
+SNES solution time      : 0.111767 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -290,14 +290,14 @@ Residual summary:
 Actual time step : 0.01331 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5570e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5432e-03 s
 --------------------------------------------------------------------------
 ================================= STEP 4 =================================
 --------------------------------------------------------------------------
 Current time        : 0.03641000 [Myr] 
 Tentative time step : 0.01331000 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00237608 sec)
+Phase_Transition ... done (0.00227258 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 3.928386968824e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -309,7 +309,7 @@ Phase_Transition ... done (0.00237608 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.104962 (sec)
+SNES solution time      : 0.100622 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -321,16 +321,16 @@ Residual summary:
 Actual time step : 0.01464 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.6462e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5078e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0786719 sec)
+Saving output ... done (0.0784982 sec)
 --------------------------------------------------------------------------
 ================================= STEP 5 =================================
 --------------------------------------------------------------------------
 Current time        : 0.05105100 [Myr] 
 Tentative time step : 0.01464100 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00231346 sec)
+Phase_Transition ... done (0.00231058 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 4.651355364503e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -342,7 +342,7 @@ Phase_Transition ... done (0.00231346 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.104583 (sec)
+SNES solution time      : 0.103198 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -354,14 +354,14 @@ Residual summary:
 Actual time step : 0.01611 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.6205e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.3973e-03 s
 --------------------------------------------------------------------------
 ================================= STEP 6 =================================
 --------------------------------------------------------------------------
 Current time        : 0.06715610 [Myr] 
 Tentative time step : 0.01610510 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00228525 sec)
+Phase_Transition ... done (0.00218042 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 4.742001468397e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -373,7 +373,7 @@ Phase_Transition ... done (0.00228525 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.103032 (sec)
+SNES solution time      : 0.102989 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -385,16 +385,16 @@ Residual summary:
 Actual time step : 0.01772 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.6240e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5418e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0776805 sec)
+Saving output ... done (0.0785601 sec)
 --------------------------------------------------------------------------
 ================================= STEP 7 =================================
 --------------------------------------------------------------------------
 Current time        : 0.08487171 [Myr] 
 Tentative time step : 0.01771561 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.0023265 sec)
+Phase_Transition ... done (0.00227433 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 5.209298904335e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -406,7 +406,7 @@ Phase_Transition ... done (0.0023265 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.102655 (sec)
+SNES solution time      : 0.10125 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -418,14 +418,14 @@ Residual summary:
 Actual time step : 0.01949 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.6866e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.4450e-03 s
 --------------------------------------------------------------------------
 ================================= STEP 8 =================================
 --------------------------------------------------------------------------
 Current time        : 0.10435888 [Myr] 
 Tentative time step : 0.01948717 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00236375 sec)
+Phase_Transition ... done (0.00218421 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 5.721904836124e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -437,7 +437,7 @@ Phase_Transition ... done (0.00236375 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.104721 (sec)
+SNES solution time      : 0.0990383 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -449,16 +449,16 @@ Residual summary:
 Actual time step : 0.02144 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.6289e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.6594e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0783777 sec)
+Saving output ... done (0.0785523 sec)
 --------------------------------------------------------------------------
 ================================= STEP 9 =================================
 --------------------------------------------------------------------------
 Current time        : 0.12579477 [Myr] 
 Tentative time step : 0.02143589 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00229875 sec)
+Phase_Transition ... done (0.00219987 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 6.284055961853e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -470,7 +470,7 @@ Phase_Transition ... done (0.00229875 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.105038 (sec)
+SNES solution time      : 0.101639 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -482,14 +482,14 @@ Residual summary:
 Actual time step : 0.02358 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5429e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5255e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 10 =================================
 --------------------------------------------------------------------------
 Current time        : 0.14937425 [Myr] 
 Tentative time step : 0.02357948 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00230821 sec)
+Phase_Transition ... done (0.00334783 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 6.900356984593e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -501,7 +501,7 @@ Phase_Transition ... done (0.00230821 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.102452 (sec)
+SNES solution time      : 0.101098 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -513,16 +513,16 @@ Residual summary:
 Actual time step : 0.02594 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.4506e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5786e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0796461 sec)
+Saving output ... done (0.0801068 sec)
 --------------------------------------------------------------------------
 ================================ STEP 11 =================================
 --------------------------------------------------------------------------
 Current time        : 0.17531167 [Myr] 
 Tentative time step : 0.02593742 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00232008 sec)
+Phase_Transition ... done (0.00226292 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 7.735577219564e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -534,7 +534,7 @@ Phase_Transition ... done (0.00232008 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.102309 (sec)
+SNES solution time      : 0.103869 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -546,14 +546,14 @@ Residual summary:
 Actual time step : 0.02853 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5522e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.6015e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 12 =================================
 --------------------------------------------------------------------------
 Current time        : 0.20384284 [Myr] 
 Tentative time step : 0.02853117 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00224787 sec)
+Phase_Transition ... done (0.00225562 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 8.315796459502e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -565,7 +565,7 @@ Phase_Transition ... done (0.00224787 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.103443 (sec)
+SNES solution time      : 0.103941 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -577,16 +577,16 @@ Residual summary:
 Actual time step : 0.03138 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 3.1024e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5598e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.079197 sec)
+Saving output ... done (0.0803312 sec)
 --------------------------------------------------------------------------
 ================================ STEP 13 =================================
 --------------------------------------------------------------------------
 Current time        : 0.23522712 [Myr] 
 Tentative time step : 0.03138428 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00225325 sec)
+Phase_Transition ... done (0.00229013 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 9.126205782308e-06
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -598,7 +598,7 @@ Phase_Transition ... done (0.00225325 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.102053 (sec)
+SNES solution time      : 0.100528 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -610,14 +610,14 @@ Residual summary:
 Actual time step : 0.03452 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5963e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5285e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 14 =================================
 --------------------------------------------------------------------------
 Current time        : 0.26974983 [Myr] 
 Tentative time step : 0.03452271 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00225163 sec)
+Phase_Transition ... done (0.00248321 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 1.001334128077e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -629,7 +629,7 @@ Phase_Transition ... done (0.00225163 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.10165 (sec)
+SNES solution time      : 0.104274 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -641,16 +641,16 @@ Residual summary:
 Actual time step : 0.03797 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.4735e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.6247e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0790729 sec)
+Saving output ... done (0.0791085 sec)
 --------------------------------------------------------------------------
 ================================ STEP 15 =================================
 --------------------------------------------------------------------------
 Current time        : 0.30772482 [Myr] 
 Tentative time step : 0.03797498 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00219838 sec)
+Phase_Transition ... done (0.00231229 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 1.098401130922e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -662,7 +662,7 @@ Phase_Transition ... done (0.00219838 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.104291 (sec)
+SNES solution time      : 0.104369 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -674,14 +674,14 @@ Residual summary:
 Actual time step : 0.04177 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5314e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.4755e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 16 =================================
 --------------------------------------------------------------------------
 Current time        : 0.34949730 [Myr] 
 Tentative time step : 0.04177248 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00227058 sec)
+Phase_Transition ... done (0.002326 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 1.204553676688e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -693,7 +693,7 @@ Phase_Transition ... done (0.00227058 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.102134 (sec)
+SNES solution time      : 0.104871 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -705,16 +705,16 @@ Residual summary:
 Actual time step : 0.04595 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5119e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5659e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0782434 sec)
+Saving output ... done (0.078144 sec)
 --------------------------------------------------------------------------
 ================================ STEP 17 =================================
 --------------------------------------------------------------------------
 Current time        : 0.39544703 [Myr] 
 Tentative time step : 0.04594973 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00234871 sec)
+Phase_Transition ... done (0.00230742 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 1.320577109039e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -726,7 +726,7 @@ Phase_Transition ... done (0.00234871 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.103072 (sec)
+SNES solution time      : 0.105706 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -738,14 +738,14 @@ Residual summary:
 Actual time step : 0.05054 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5532e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5019e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 18 =================================
 --------------------------------------------------------------------------
 Current time        : 0.44599173 [Myr] 
 Tentative time step : 0.05054470 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.0022545 sec)
+Phase_Transition ... done (0.00223196 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 1.447311690729e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -757,7 +757,7 @@ Phase_Transition ... done (0.0022545 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.103738 (sec)
+SNES solution time      : 0.100033 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -769,16 +769,16 @@ Residual summary:
 Actual time step : 0.05560 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 4 markers and merged 4 markers in 2.6207e-03 s
+Marker control [0]: (subgrid) cloned 4 markers and merged 4 markers in 2.6458e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0780349 sec)
+Saving output ... done (0.0790322 sec)
 --------------------------------------------------------------------------
 ================================ STEP 19 =================================
 --------------------------------------------------------------------------
 Current time        : 0.50159090 [Myr] 
 Tentative time step : 0.05559917 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00230012 sec)
+Phase_Transition ... done (0.00229363 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 2.215230432664e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -790,7 +790,7 @@ Phase_Transition ... done (0.00230012 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.102703 (sec)
+SNES solution time      : 0.102194 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -802,14 +802,14 @@ Residual summary:
 Actual time step : 0.06116 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.4986e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.4770e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 20 =================================
 --------------------------------------------------------------------------
 Current time        : 0.56274999 [Myr] 
 Tentative time step : 0.06115909 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00234563 sec)
+Phase_Transition ... done (0.00224167 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 1.736562585114e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -821,7 +821,7 @@ Phase_Transition ... done (0.00234563 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.103927 (sec)
+SNES solution time      : 0.102693 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -833,16 +833,16 @@ Residual summary:
 Actual time step : 0.06727 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 3 markers and merged 2 markers in 2.6799e-03 s
+Marker control [0]: (subgrid) cloned 3 markers and merged 2 markers in 2.5615e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0789065 sec)
+Saving output ... done (0.0794563 sec)
 --------------------------------------------------------------------------
 ================================ STEP 21 =================================
 --------------------------------------------------------------------------
 Current time        : 0.63002499 [Myr] 
 Tentative time step : 0.06727500 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00230775 sec)
+Phase_Transition ... done (0.00226025 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 1.052552371339e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -854,7 +854,7 @@ Phase_Transition ... done (0.00230775 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.104975 (sec)
+SNES solution time      : 0.100451 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -866,14 +866,14 @@ Residual summary:
 Actual time step : 0.07400 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.6861e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.4194e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 22 =================================
 --------------------------------------------------------------------------
 Current time        : 0.70402749 [Myr] 
 Tentative time step : 0.07400250 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00240067 sec)
+Phase_Transition ... done (0.00219208 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 2.192008414291e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -886,7 +886,7 @@ Phase_Transition ... done (0.00240067 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.112733 (sec)
+SNES solution time      : 0.105362 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -898,16 +898,16 @@ Residual summary:
 Actual time step : 0.08140 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 4 markers and merged 4 markers in 2.6296e-03 s
+Marker control [0]: (subgrid) cloned 4 markers and merged 4 markers in 2.5452e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0830952 sec)
+Saving output ... done (0.0772934 sec)
 --------------------------------------------------------------------------
 ================================ STEP 23 =================================
 --------------------------------------------------------------------------
 Current time        : 0.78543024 [Myr] 
 Tentative time step : 0.08140275 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00231788 sec)
+Phase_Transition ... done (0.00226496 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 4.581543588554e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -919,7 +919,7 @@ Phase_Transition ... done (0.00231788 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.104064 (sec)
+SNES solution time      : 0.101723 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -931,14 +931,14 @@ Residual summary:
 Actual time step : 0.08954 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5740e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.4930e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 24 =================================
 --------------------------------------------------------------------------
 Current time        : 0.87497327 [Myr] 
 Tentative time step : 0.08954302 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00227 sec)
+Phase_Transition ... done (0.00225854 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 3.347554225929e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -950,7 +950,7 @@ Phase_Transition ... done (0.00227 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.104169 (sec)
+SNES solution time      : 0.103179 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -962,16 +962,16 @@ Residual summary:
 Actual time step : 0.09850 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 3 markers and merged 3 markers in 2.5845e-03 s
+Marker control [0]: (subgrid) cloned 3 markers and merged 3 markers in 2.4933e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0819047 sec)
+Saving output ... done (0.0788682 sec)
 --------------------------------------------------------------------------
 ================================ STEP 25 =================================
 --------------------------------------------------------------------------
 Current time        : 0.97347059 [Myr] 
 Tentative time step : 0.09849733 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00231225 sec)
+Phase_Transition ... done (0.00229279 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 2.871343915873e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -983,7 +983,7 @@ Phase_Transition ... done (0.00231225 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.103669 (sec)
+SNES solution time      : 0.105017 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -995,14 +995,14 @@ Residual summary:
 Actual time step : 0.10835 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.6517e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5839e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 26 =================================
 --------------------------------------------------------------------------
 Current time        : 1.08181765 [Myr] 
 Tentative time step : 0.10834706 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00222529 sec)
+Phase_Transition ... done (0.0023335 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 3.140910341064e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -1014,7 +1014,7 @@ Phase_Transition ... done (0.00222529 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.10234 (sec)
+SNES solution time      : 0.10297 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1026,16 +1026,16 @@ Residual summary:
 Actual time step : 0.11918 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5597e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5530e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0790538 sec)
+Saving output ... done (0.0787224 sec)
 --------------------------------------------------------------------------
 ================================ STEP 27 =================================
 --------------------------------------------------------------------------
 Current time        : 1.20099942 [Myr] 
 Tentative time step : 0.11918177 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00230775 sec)
+Phase_Transition ... done (0.00222879 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 3.403758267320e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -1047,7 +1047,7 @@ Phase_Transition ... done (0.00230775 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.103804 (sec)
+SNES solution time      : 0.103065 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1059,14 +1059,14 @@ Residual summary:
 Actual time step : 0.13110 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.5024e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 1 markers in 2.4412e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 28 =================================
 --------------------------------------------------------------------------
 Current time        : 1.33209936 [Myr] 
 Tentative time step : 0.13109994 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00227658 sec)
+Phase_Transition ... done (0.00223738 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 3.710925388065e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -1078,7 +1078,7 @@ Phase_Transition ... done (0.00227658 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.103067 (sec)
+SNES solution time      : 0.102243 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1090,16 +1090,16 @@ Residual summary:
 Actual time step : 0.14421 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.6109e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.6551e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0783622 sec)
+Saving output ... done (0.077765 sec)
 --------------------------------------------------------------------------
 ================================ STEP 29 =================================
 --------------------------------------------------------------------------
 Current time        : 1.47630930 [Myr] 
 Tentative time step : 0.14420994 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00230608 sec)
+Phase_Transition ... done (0.00228421 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 4.042610975103e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -1111,7 +1111,7 @@ Phase_Transition ... done (0.00230608 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.105984 (sec)
+SNES solution time      : 0.102714 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1123,14 +1123,14 @@ Residual summary:
 Actual time step : 0.15863 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 3 markers and merged 3 markers in 2.5461e-03 s
+Marker control [0]: (subgrid) cloned 3 markers and merged 3 markers in 2.5338e-03 s
 --------------------------------------------------------------------------
 ================================ STEP 30 =================================
 --------------------------------------------------------------------------
 Current time        : 1.63494023 [Myr] 
 Tentative time step : 0.15863093 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00223471 sec)
+Phase_Transition ... done (0.00223512 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 4.400189751204e-05
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -1142,7 +1142,7 @@ Phase_Transition ... done (0.00223471 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.102492 (sec)
+SNES solution time      : 0.100444 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1154,13 +1154,13 @@ Residual summary:
 Actual time step : 0.17449 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 3 markers and merged 3 markers in 2.5396e-03 s
+Marker control [0]: (subgrid) cloned 3 markers and merged 3 markers in 2.5825e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0779838 sec)
+Saving output ... done (0.0794526 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 5.93474 (sec) 
+Total solution time : 5.86995 (sec) 
 --------------------------------------------------------------------------
 WARNING! There are options you set that were not used!
 WARNING! could be spelling mistake, etc!

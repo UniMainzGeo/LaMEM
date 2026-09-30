@@ -80,6 +80,7 @@
     init_lith_pres = 1
 	DII_ref        = 1e-15          # background (reference) strain-rate
 	Phasetrans     = 1	
+	dylib_plugin   = __DYLIB_PLUGIN_PATH__   # substituted by runtests.jl; exercises the .dat-file route (PT0_only_plugin.dat tests the -dylib_plugin CLI override instead)
 
 #===============================================================================
 # Model setup & advection
