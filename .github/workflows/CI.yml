@@ -166,9 +166,6 @@ jobs:
         D="$(cygpath -u '${{ github.workspace }}\lamem_destdir')"
         mkdir -p "$D"
         echo "$D /workspace/destdir none bind 0 0" >> /etc/fstab
-        cat /etc/fstab
-        mount
-        ls /workspace/destdir || true
 
     - name: 'Install PETSc & LaMEM'
       env:
@@ -177,20 +174,6 @@ jobs:
         cd test
         julia --project=. setup_packages.jl
         cd ..
-
-    - name: 'Debug: find the libs the linker cannot locate'
-      run: |
-        echo "--- HYPRE64 ---"
-        find /workspace/destdir -iname '*hypre*' 2>/dev/null
-        echo "--- mumps/pord ---"
-        find /workspace/destdir -iname '*mumps*' -o -iname '*pord*' 2>/dev/null
-        echo "--- tet/triangle ---"
-        find /workspace/destdir -iname '*tet*' -o -iname '*triangle*' 2>/dev/null
-        echo "--- gfortran ---"
-        find /workspace/destdir -iname '*gfortran*' 2>/dev/null
-        find / -maxdepth 6 -iname 'libgfortran*' 2>/dev/null
-        echo "--- dl (libdl equivalent on mingw, if any) ---"
-        find / -maxdepth 6 -iname 'libdl*' 2>/dev/null
 
     - name: 'Compile LaMEM | Int64'
       env:

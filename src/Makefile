@@ -121,6 +121,17 @@ endif
 UNAME := $(shell uname)
 ifneq ($(filter MSYS%,$(UNAME)),)
    CLIB_FLAGS = -lssp
+   # PETSc_jll's Windows petscvariables bakes PETSC_LIB's -L search path in
+   # as ${PETSC_DIR}/lib only (matching this platform's own -L flag, see
+   # PETSC_LIB_DIR in lib/petsc/conf/variables) but several of its own
+   # dependency libraries (HYPRE64, MUMPS, tet, triangle, gfortran, ...)
+   # actually live one level up, directly under destdir/lib (where
+   # setup_packages.jl's generic per-JLL-artifact copy loop puts them) -
+   # add that as a further search path. -ldl is also listed, but dlopen
+   # isn't used on Windows (PetscDLOpen uses LoadLibrary there) and no
+   # libdl exists to link against, so drop it.
+   PETSC_LIB := $(filter-out -ldl, $(PETSC_LIB))
+   PETSC_LIB += -L$(PETSC_DIR)/../../..
 endif
 
 #==============================================================================
