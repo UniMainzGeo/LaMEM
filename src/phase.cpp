@@ -102,6 +102,18 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	PetscCall(FBFreeBlocks(fb));
 
+	// phase_transitions = builtin (default) | dylib: also call lamem_phase_transition
+	// from the dylib_plugin library, after the built-in blocks below, every step
+	{
+		char phaseTr[_str_len_];
+
+		PetscCall(getStringParam(fb, _OPTIONAL_, "phase_transitions", phaseTr, "builtin"));
+
+		if     (!strcmp(phaseTr, "builtin")) dbm->dylibPhaseTr = PETSC_FALSE;
+		else if(!strcmp(phaseTr, "dylib"))    dbm->dylibPhaseTr = PETSC_TRUE;
+		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "phase_transitions: unknown value \"%s\" (valid: builtin, dylib)", phaseTr);
+	}
+
 	// setup block access mode
 	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<PhaseTransitionStart>", "<PhaseTransitionEnd>"));
 

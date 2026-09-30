@@ -80,6 +80,7 @@
     init_lith_pres = 1
 	DII_ref        = 1e-15          # background (reference) strain-rate
 	Phasetrans     = 1	
+	phase_transitions = dylib   # also call lamem_phase_transition from -dylib_plugin, after the built-in blocks (none defined here)
 
 #===============================================================================
 # Model setup & advection

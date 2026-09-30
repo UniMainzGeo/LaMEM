@@ -58,10 +58,12 @@ typedef int (*DylibPluginFn)(
 
 struct AdvCtx;
 struct FB;
+struct DBMat;
 
 PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb);
 PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx);
 PetscBool      DylibPluginIsActive(void);
+PetscErrorCode DylibPluginCheckPhaseTr(DBMat *dbm);
 
 //---------------------------------------------------------------------------
 #endif

@@ -438,6 +438,7 @@
     adiabatic_gradient = 1.0         # activate adiabatic gradient in dike region
     Compute_velocity_gradient = 1    # compute the velocity gradient tensor 1: active, 0: not active. If active, it automatically activates the output in the .pvd file
     Phasetrans      = 0              # take phase transitions on particles into account (see  <PhaseTransitionStart>/ <PhaseTransitionEnd> below)
+    # dylib_plugin = ./my_plugin.dylib   # optional: path to a juliac-built plugin library, loaded once at startup; -dylib_plugin on the command line overrides this; see src/dylib_plugins.h and "phase_transitions" below
     Passive_Tracer  = 0              # take passive tracers into account (see below for definition)
 
 # Groundwater level type specification:
@@ -720,13 +721,9 @@
         healTau2     =   1e-3    # healing timescale parameter [Myr]  starting at APS=APSheal2
     <SofteningEnd>
     
-# Load a compiled dylib plugin (see src/dylib_plugins.h). lamem_phase_transition
-# in that library runs after the built-in <PhaseTransition> blocks each step, so
-# to use ONLY the plugin, simply define no built-in <PhaseTransitionStart> blocks.
-
-    # dylib_plugin = ./my_plugin.dylib   # optional: path to a juliac-built plugin library; -dylib_plugin on the command line overrides this
-
 # Define Phase Transition laws (maximum 10)
+
+    # phase_transitions = builtin   # builtin (default) | dylib: also call lamem_phase_transition from the dylib_plugin library, after the built-in <PhaseTransitionStart> blocks below, every step
     
     <PhaseTransitionStart>
         ID                      =   0         #     Phase_transition law ID

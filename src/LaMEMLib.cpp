@@ -120,6 +120,9 @@ PetscErrorCode LaMEMLibMain(void *param, FB *fb)
 		PetscCall(LaMEMLibLoadRestart(&lm, fb));
 	}
 
+	// phase_transitions = dylib without a loaded plugin fails here, not at step 1
+	PetscCall(DylibPluginCheckPhaseTr(&lm.dbm));
+
 	//======
 	// SOLVE
 	//======

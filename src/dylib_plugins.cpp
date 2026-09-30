@@ -72,6 +72,23 @@ namespace
 //---------------------------------------------------------------------------
 PetscBool DylibPluginIsActive(void) { return active; }
 //---------------------------------------------------------------------------
+// phase_transitions = dylib requires a loaded plugin (lamem_phase_transition
+// is mandatory in any library DylibPluginLoad accepts) - checked once at
+// startup so a missing/failed dylib_plugin fails immediately, not silently
+// at the first step.
+PetscErrorCode DylibPluginCheckPhaseTr(DBMat *dbm)
+{
+	PetscFunctionBeginUser;
+
+	if(dbm->dylibPhaseTr && !active)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,
+			"phase_transitions = dylib requires a loaded plugin (dylib_plugin = <path> in the .dat file, or -dylib_plugin on the command line)");
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 static PetscErrorCode DylibPluginFreeBuffers(void)
 {
 	int i;
@@ -417,7 +434,7 @@ PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx)
 
 	PetscFunctionBeginUser;
 
-	if(!active) PetscFunctionReturn(0);
+	if(!active || !actx->dbm->dylibPhaseTr) PetscFunctionReturn(0);
 
 	PetscCall(DylibPluginEnsureMarkerCapacity(n));
 	PetscCall(DylibPluginComputeJ2(actx));
