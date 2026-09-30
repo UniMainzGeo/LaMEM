@@ -178,34 +178,6 @@ jobs:
         julia --project=. setup_packages.jl
         cd ..
 
-    - name: 'Debug: verify /workspace/destdir mount and CXX resolution'
-      run: |
-        echo "--- mount table in this fresh shell ---"
-        mount
-        echo "--- /workspace/destdir/lib/petsc ---"
-        ls /workspace/destdir/lib/petsc || true
-        echo "--- CXX/CC lines in petscvariables via the mount ---"
-        grep -E '^(CXX|CC|MPICXX|MPICC) *=' /workspace/destdir/lib/petsc/double_real_Int64/lib/petsc/conf/petscvariables || true
-
-    - name: 'Debug: trace make prerequisite order for lamemlib'
-      env:
-        LAMEM_CI_DESTDIR: ${{ github.workspace }}\lamem_destdir
-      run: |
-        set +e
-        D="$(cygpath -u '${{ github.workspace }}\lamem_destdir')"
-        cd src
-        make mode=opt \
-          PETSC_OPT=/workspace/destdir/lib/petsc/double_real_Int64 \
-          PETSC_DEB=/workspace/destdir/lib/petsc/double_real_Int64_deb \
-          FASTSCAPE_LIB=/workspace/destdir/lib/fastscape \
-          -d lamemlib > /tmp/make_debug.log 2>&1
-        echo "exit code: $?"
-        echo "--- lines around adjoint.o and any error ---"
-        grep -n "adjoint" /tmp/make_debug.log | tail -5
-        echo "--- last 80 lines of the debug log (where the real failure is) ---"
-        tail -80 /tmp/make_debug.log
-        cd ..
-
     - name: 'Compile LaMEM | Int64'
       env:
         LAMEM_CI_DESTDIR: ${{ github.workspace }}\lamem_destdir
