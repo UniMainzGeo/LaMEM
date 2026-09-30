@@ -18,32 +18,13 @@
 #include <stdio.h>
 #include <stdint.h>
 
-// Mirrors src/phase_transition_plugin.h's `struct LaMEMPluginScaling`
-// field-for-field (NOT guessed - copied from that header).
+// Mirrors src/phase_transition_plugin.h's `struct LaMEMPluginScaling`.
 struct LaMEMPluginScaling
 {
-	int32_t     abi_version;
-	int32_t     utype;
-	double      length;
-	double      time;
-	double      stress;
-	double      temperature;
-	double      viscosity;
-	double      strain_rate;
-	double      velocity;
-	double      density;
-	double      Tshift;
-	double      pShift;
-	double      dt;
-	int64_t     step;
-	const char *lbl_length;
-	const char *lbl_time;
-	const char *lbl_stress;
-	const char *lbl_temperature;
-	const char *lbl_viscosity;
-	const char *lbl_strain_rate;
-	const char *lbl_velocity;
-	const char *lbl_density;
+	int32_t abi_version, utype;
+	double  length, time, stress, temperature, viscosity, strain_rate, velocity, density;
+	double  Tshift, pShift, dt;
+	int64_t step;
 };
 
 typedef int (*pt_fn)(size_t,
@@ -81,8 +62,7 @@ int main(int argc, char **argv)
 	struct LaMEMPluginScaling good = {
 		2, 2,
 		1.0, 1.0, 1.0, 1000.0, 1.0, 1.0, 1.0, 1.0,
-		273.15, 0.0, 0.01, 5,
-		0, 0, 0, 0, 0, 0, 0, 0
+		273.15, 0.0, 0.01, 5
 	};
 	int c1 = f(1, x, x, x, T, o, 0.0, o, o, o, o, o, o, o, o, o, o, pin, pout, Tout, &good);
 	printf("good struct: rc=%d\n", c1);
