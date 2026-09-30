@@ -224,6 +224,10 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 	PetscCall(getStringParam(fb, _OPTIONAL_, "dylib_plugin", lib, NULL));
 	if(!strlen(lib)) PetscFunctionReturn(0); // later calls with the option set are still honoured
 
+#if defined(_WIN32)
+	SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP, "dylib plugins are not supported on Windows yet");
+#endif
+
 	if(initTried)
 	{
 		if(active && strcmp(lib, loadedPath) != 0)
