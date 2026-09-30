@@ -165,10 +165,8 @@ jobs:
       run: |
         D="$(cygpath -u '${{ github.workspace }}\lamem_destdir')"
         mkdir -p "$D"
-        mkdir -p /workspace/destdir
         echo "$D /workspace/destdir none bind 0 0" >> /etc/fstab
         cat /etc/fstab
-        mount "$D" /workspace/destdir
         mount
         ls /workspace/destdir || true
 
