@@ -191,9 +191,10 @@ jobs:
       env:
         LAMEM_CI_DESTDIR: ${{ github.workspace }}\lamem_destdir
       run: |
+        set +e
         cd test
-        julia --project=. compile_lamem.jl int64 2>&1 | tee /tmp/compile.log
-        echo "julia exit status: ${PIPESTATUS[0]}"
+        julia --project=. compile_lamem.jl int64
+        echo "julia exit status: $?"
         cd ..
         echo "--- lib/opt after failure ---"
         ls lib/opt || true
@@ -203,6 +204,7 @@ jobs:
         echo "retry exit code: $?"
         cd ..
         ls bin/opt/ || true
+        exit 1
 
     - name: 'Build dylib plugin bundle'
       run: |
