@@ -164,7 +164,13 @@ jobs:
       run: |
         D="${{ github.workspace }}\lamem_destdir"
         D="$(cygpath -u "$D")"
-        echo "--- CXX/CC/MPI lines in petsc/conf/variables ---"
+        echo "--- destdir/lib top level ---"
+        ls "$D/lib" || true
+        echo "--- destdir/lib/petsc (if any) ---"
+        ls "$D/lib/petsc" || true
+        echo "--- find petscvariables/variables anywhere under destdir ---"
+        find "$D" -iname 'variables' -o -iname 'petscvariables' 2>/dev/null || true
+        echo "--- CXX/CC/MPI lines in petsc/conf/variables (if found above) ---"
         grep -E '^(CXX|CC|MPICXX|MPICC|CXX_LINKER|MPI_INCLUDE|MPI_LIB) *=' "$D/lib/petsc/double_real_Int64/lib/petsc/conf/variables" || true
         echo "--- mpi* executables under destdir ---"
         find "$D" -iname 'mpi*' 2>/dev/null || true
