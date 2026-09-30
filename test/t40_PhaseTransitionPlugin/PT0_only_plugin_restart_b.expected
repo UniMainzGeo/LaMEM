@@ -37,7 +37,7 @@ Total number of options added: 0
 #End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Sep 30 2026 - Time: 15:23:49 	    
+     Compiled: Date: Sep 30 2026 - Time: 09:58:47 	    
      Version : 3.3.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -94,14 +94,14 @@ Material parameters:
    (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
 
 --------------------------------------------------------------------------
-done (0.0504806 sec)
+done (0.0370297 sec)
 --------------------------------------------------------------------------
 Preconditioner parameters: 
    Picard operator type          : assembled
    Preconditioner type           : user-defined
    Penalty parameter (pgamma)    : 1.000000e+02
 --------------------------------------------------------------------------
-Saving output ... done (0.101131 sec)
+Saving output ... done (0.0811363 sec)
 --------------------------------------------------------------------------
 ================================= STEP 3 =================================
 --------------------------------------------------------------------------
@@ -120,7 +120,7 @@ Dylib plugin  : 0 marker(s) changed phase, 0 marker(s) changed temperature
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.332091 (sec)
+SNES solution time      : 0.264258 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -132,13 +132,13 @@ Residual summary:
 Actual time step : 0.01331 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 9948 markers and merged 9923 markers in 9.2126e-03 s
+Marker control [0]: (subgrid) cloned 9948 markers and merged 9923 markers in 7.1625e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.103531 sec)
+Saving output ... done (0.0788462 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.671229 (sec) 
+Total solution time : 0.528283 (sec) 
 --------------------------------------------------------------------------
 WARNING! There are options you set that were not used!
 WARNING! could be spelling mistake, etc!

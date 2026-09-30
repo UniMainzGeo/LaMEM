@@ -723,7 +723,7 @@
     
 # Define Phase Transition laws (maximum 10)
 
-    # phase_transitions = builtin   # builtin (default) | dylib: also call lamem_phase_transition from the dylib_plugin library, after the built-in <PhaseTransitionStart> blocks below, every step
+    # phase_transitions = builtin   # builtin (default) | dylib: also call lamem_phase_transition from the dylib_plugin library, after the built-in <PhaseTransitionStart> blocks below, every step; -phase_transitions on the command line overrides this
     
     <PhaseTransitionStart>
         ID                      =   0         #     Phase_transition law ID

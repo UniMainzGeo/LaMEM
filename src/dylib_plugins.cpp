@@ -46,28 +46,29 @@ struct LbtSnapshot { char *libname, *suffix; }; // PetscStrallocpy'd, freed afte
 //---------------------------------------------------------------------------
 namespace
 {
-	PetscBool     initTried = PETSC_FALSE, active = PETSC_FALSE;
-	PetscDLHandle handle    = NULL;
-	DylibPluginFn  fn        = NULL;
-	JlAtexitHookFn atexitFn = NULL;
-	char          loadedPath[_str_len_] = "";
+PetscBool     initTried = PETSC_FALSE, active = PETSC_FALSE;
+PetscDLHandle handle    = NULL;
+DylibPluginFn  fn        = NULL;
+JlAtexitHookFn atexitFn = NULL;
+char          loadedPath[_str_len_] = "";
 
-	PetscInt      bufcap = 0;
-	PetscScalar  *bx = NULL, *by = NULL, *bz = NULL, *bT = NULL, *bp = NULL, *bT_out = NULL;
-	PetscScalar  *bsxx = NULL, *bsyy = NULL, *bszz = NULL, *bsxy = NULL, *bsxz = NULL, *bsyz = NULL;
-	PetscScalar  *bj2s = NULL, *bj2e = NULL, *beta = NULL, *baps = NULL;
-	int32_t      *bphase_in = NULL, *bphase_out = NULL;
+PetscInt      bufcap = 0;
+PetscScalar  *bx = NULL, *by = NULL, *bz = NULL, *bT = NULL, *bp = NULL, *bT_out = NULL;
+PetscScalar  *bsxx = NULL, *bsyy = NULL, *bszz = NULL, *bsxy = NULL, *bsxz = NULL, *bsyz = NULL;
+PetscScalar  *bj2s = NULL, *bj2e = NULL, *beta = NULL, *baps = NULL;
+int32_t      *bphase_in = NULL, *bphase_out = NULL;
 
-	PetscScalar **markerBufs[] = { &bx, &by, &bz, &bT, &bp, &bT_out,
-		&bsxx, &bsyy, &bszz, &bsxy, &bsxz, &bsyz, &bj2s, &bj2e, &beta, &baps };
-	const int nMarkerBufs = sizeof(markerBufs)/sizeof(markerBufs[0]);
+PetscScalar **markerBufs[] = { &bx, &by, &bz, &bT, &bp, &bT_out,
+                               &bsxx, &bsyy, &bszz, &bsxy, &bsxz, &bsyz, &bj2s, &bj2e, &beta, &baps
+                             };
+const int nMarkerBufs = sizeof(markerBufs)/sizeof(markerBufs[0]);
 
-	PetscInt      cellcap = 0;
-	PetscScalar  *cellJ2Stress = NULL, *cellJ2StrainRate = NULL;
+PetscInt      cellcap = 0;
+PetscScalar  *cellJ2Stress = NULL, *cellJ2StrainRate = NULL;
 
-	enum { LBT_MAX_SNAPSHOT = 16 };
-	LbtSnapshot lbtSnap[LBT_MAX_SNAPSHOT];
-	int         lbtSnapCount = 0;
+enum { LBT_MAX_SNAPSHOT = 16 };
+LbtSnapshot lbtSnap[LBT_MAX_SNAPSHOT];
+int         lbtSnapCount = 0;
 }
 //---------------------------------------------------------------------------
 PetscBool DylibPluginIsActive(void) { return active; }
@@ -83,8 +84,9 @@ PetscErrorCode DylibPluginCheckPhaseTr(DBMat *dbm)
 	if(dbm->dylibPhaseTr && !active)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,
-			"phase_transitions = dylib requires a loaded plugin (dylib_plugin = <path> in the .dat file, or -dylib_plugin on the command line)");
+		        "phase_transitions = dylib requires a loaded plugin (dylib_plugin = <path> in the .dat file, or -dylib_plugin on the command line)");
 	}
+	if(active && !dbm->dylibPhaseTr) PetscPrintf(PETSC_COMM_WORLD, "Dylib plugin  : loaded, but phase_transitions = builtin; lamem_phase_transition will not be called\n");
 
 	PetscFunctionReturn(0);
 }
@@ -140,7 +142,7 @@ static PetscErrorCode DylibPluginSnapshotLbt(void)
 #if defined(PETSC_HAVE_DLADDR)
 	Dl_info info;
 	if(!dladdr(sym, &info) || !info.dli_fname ||
-		(!strstr(info.dli_fname, "libblastrampoline.5") && !strstr(info.dli_fname, "libblastrampoline.so.5")))
+	   (!strstr(info.dli_fname, "libblastrampoline.5") && !strstr(info.dli_fname, "libblastrampoline.so.5")))
 	{
 		PetscFunctionReturn(0);
 	}
@@ -184,8 +186,8 @@ static PetscErrorCode DylibPluginRestoreLbt(int32_t nthreadsBefore)
 			if(rc <= 0)
 			{
 				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB,
-					"dylib_plugin: failed to re-forward BLAS/LAPACK library '%s' after Julia init",
-					lbtSnap[i].libname);
+				        "dylib_plugin: failed to re-forward BLAS/LAPACK library '%s' after Julia init",
+				        lbtSnap[i].libname);
 			}
 
 			PetscCall(PetscFree(lbtSnap[i].libname));
@@ -227,8 +229,8 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 		if(active && strcmp(lib, loadedPath) != 0)
 		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SUP,
-				"dylib_plugin: a different plugin ('%s') was already loaded in this process ('%s')",
-				lib, loadedPath);
+			        "dylib_plugin: a different plugin ('%s') was already loaded in this process ('%s')",
+			        lib, loadedPath);
 		}
 		PetscFunctionReturn(0);
 	}
@@ -275,7 +277,7 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 		if(v != DYLIB_PLUGIN_ABI_VERSION)
 		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB,
-				"dylib_plugin: %s reports ABI v%d, expected v%d", lib, v, DYLIB_PLUGIN_ABI_VERSION);
+			        "dylib_plugin: %s reports ABI v%d, expected v%d", lib, v, DYLIB_PLUGIN_ABI_VERSION);
 		}
 	}
 
@@ -479,11 +481,11 @@ PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx)
 
 	// every rank calls fn() and joins every collective below, even if n==0
 	rc = fn((size_t)n,
-		bx, by, bz, bT, bp, (double)jr->bc->ts->time,
-		bsxx, bsyy, bszz, bsxy, bsxz, bsyz,
-		bj2s, bj2e, beta, baps,
-		bphase_in, bphase_out, bT_out,
-		&scaling);
+	        bx, by, bz, bT, bp, (double)jr->bc->ts->time,
+	        bsxx, bsyy, bszz, bsxy, bsxz, bsyz,
+	        bj2s, bj2e, beta, baps,
+	        bphase_in, bphase_out, bT_out,
+	        &scaling);
 
 	// validate before any write-back, so a per-rank failure cannot desync
 	// the collectives below (all ranks must reach the same MPI_Allreduce)
@@ -492,16 +494,16 @@ PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx)
 		errFlagLoc = 1;
 	}
 	else for(i = 0; i < n; i++)
-	{
-		if(bphase_out[i] != bphase_in[i] && (bphase_out[i] < 0 || bphase_out[i] >= numPhases))
 		{
-			errFlagLoc = 1; badIdx = i; badPhase = bphase_out[i]; break;
+			if(bphase_out[i] != bphase_in[i] && (bphase_out[i] < 0 || bphase_out[i] >= numPhases))
+			{
+				errFlagLoc = 1; badIdx = i; badPhase = bphase_out[i]; break;
+			}
+			if(!std::isfinite((double)bT_out[i]))
+			{
+				errFlagLoc = 1; badIdx = i; badT = PETSC_TRUE; break;
+			}
 		}
-		if(!std::isfinite((double)bT_out[i]))
-		{
-			errFlagLoc = 1; badIdx = i; badT = PETSC_TRUE; break;
-		}
-	}
 
 	PetscCallMPI(MPI_Allreduce(&errFlagLoc, &glob2[0], 1, MPIU_INT, MPI_MAX, PETSC_COMM_WORLD));
 
@@ -538,7 +540,7 @@ PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx)
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD, "Dylib plugin  : %" PetscInt_FMT " marker(s) changed phase, "
-		"%" PetscInt_FMT " marker(s) changed temperature\n", glob2[0], glob2[1]);
+	            "%" PetscInt_FMT " marker(s) changed temperature\n", glob2[0], glob2[1]);
 
 	PetscFunctionReturn(0);
 }

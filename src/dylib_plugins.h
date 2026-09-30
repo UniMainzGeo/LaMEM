@@ -44,17 +44,17 @@ struct LaMEMPluginScaling
 };
 
 typedef int (*DylibPluginFn)(
-	size_t n,
-	double *x,  double *y,  double *z,
-	double *T,  double *p,
-	double  time,
-	double *sxx, double *syy, double *szz,
-	double *sxy, double *sxz, double *syz,
-	double *j2_stress_cell, double *j2_strainrate_cell,
-	double *eta_cell,       double *aps_cell,
-	int    *phase_in, int *phase_out,
-	double *T_out,
-	const LaMEMPluginScaling *scaling);
+    size_t n,
+    double *x,  double *y,  double *z,
+    double *T,  double *p,
+    double  time,
+    double *sxx, double *syy, double *szz,
+    double *sxy, double *sxz, double *syz,
+    double *j2_stress_cell, double *j2_strainrate_cell,
+    double *eta_cell,       double *aps_cell,
+    int    *phase_in, int *phase_out,
+    double *T_out,
+    const LaMEMPluginScaling *scaling);
 
 struct AdvCtx;
 struct FB;

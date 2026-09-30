@@ -1739,21 +1739,6 @@ if should_run_test("t40_PhaseTransitionPlugin")
             clean_test_directory(dir)
         end
 
-        # Negative check: phase_transitions = dylib (baked into PT0_only_plugin.dat)
-        # without a loaded library must fail at startup, not the first step.
-        # SETERRQ prints to stderr, so run_lamem_local_test's stdout-only
-        # capture can't see it - redirect both streams into one file instead.
-        cd(dir)
-        neg_out = "no_plugin_loaded.out"
-        neg_cmd = add_dylibs(`../../bin/opt/LaMEM -ParamFile PT0_only_plugin.dat`, get_dylibs()[1])
-        try
-            run(pipeline(neg_cmd, stdout=neg_out, stderr=neg_out))
-        catch
-        end
-        @test occursin("phase_transitions = dylib requires a loaded plugin", read(neg_out, String))
-        rm(neg_out, force=true)
-        cd(test_dir)
-
         # Same cross-comparison, but for the Box transition (constant T
         # inside a region) instead of Constant: exercises a plugin rule
         # that resets T on markers whose phase is unchanged (H1 - T-only
@@ -1831,6 +1816,23 @@ if should_run_test("t40_PhaseTransitionPlugin")
                 isfile(guard_bin) && rm(guard_bin, force=true)
             end
         end
+    end
+
+    # Negative check: phase_transitions = dylib (baked into PT0_only_plugin.dat)
+    # without a loaded library must fail at startup, not the first step. Needs
+    # no compiled bundle (deliberately doesn't pass -dylib_plugin), so it runs
+    # unconditionally, exercising the startup check even without juliac.
+    # SETERRQ prints to stderr, so run_lamem_local_test's stdout-only capture
+    # can't see it - redirect both streams into one file instead.
+    cd(dir) do
+        neg_out = "no_plugin_loaded.out"
+        neg_cmd = add_dylibs(`../../bin/opt/LaMEM -ParamFile PT0_only_plugin.dat`, get_dylibs()[1])
+        try
+            run(pipeline(neg_cmd, stdout=neg_out, stderr=neg_out))
+        catch
+        end
+        @test occursin("phase_transitions = dylib requires a loaded plugin", read(neg_out, String))
+        rm(neg_out, force=true)
     end
 end
 end
