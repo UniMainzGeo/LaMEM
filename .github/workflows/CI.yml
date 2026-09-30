@@ -160,6 +160,18 @@ jobs:
         julia --project=. setup_packages.jl
         cd ..
 
+    - name: 'Debug: inspect PETSc MPI compiler config'
+      run: |
+        D="${{ github.workspace }}\lamem_destdir"
+        D="$(cygpath -u "$D")"
+        echo "--- CXX/CC/MPI lines in petsc/conf/variables ---"
+        grep -E '^(CXX|CC|MPICXX|MPICC|CXX_LINKER|MPI_INCLUDE|MPI_LIB) *=' "$D/lib/petsc/double_real_Int64/lib/petsc/conf/variables" || true
+        echo "--- mpi* executables under destdir ---"
+        find "$D" -iname 'mpi*' 2>/dev/null || true
+        echo "--- g++ on PATH ---"
+        which g++ || true
+        g++ --version || true
+
     - name: 'Compile LaMEM | Int64'
       env:
         LAMEM_CI_DESTDIR: ${{ github.workspace }}\lamem_destdir
