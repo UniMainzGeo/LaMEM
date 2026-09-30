@@ -724,7 +724,7 @@
 # in that library runs after the built-in <PhaseTransition> blocks each step, so
 # to use ONLY the plugin, simply define no built-in <PhaseTransitionStart> blocks.
 
-    dylib_plugin = ./my_plugin.dylib   # optional: path to a juliac-built plugin library; -dylib_plugin on the command line overrides this
+    # dylib_plugin = ./my_plugin.dylib   # optional: path to a juliac-built plugin library; -dylib_plugin on the command line overrides this
 
 # Define Phase Transition laws (maximum 10)
     

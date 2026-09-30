@@ -273,6 +273,9 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm, FB *fb)
 	// markers
 	PetscCall(ADVReadRestart(&lm->actx, fp));
 
+	// load user-defined dylib plugin (no-op unless dylib_plugin is given)
+	PetscCall(DylibPluginLoad(&lm->actx, fb));
+
 	// passive tracers read restart
 	PetscCall(ReadPassive_Tracers(&lm->actx,fp));
 

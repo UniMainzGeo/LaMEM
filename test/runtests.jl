@@ -1717,6 +1717,28 @@ if should_run_test("t40_PhaseTransitionPlugin")
             clean_test_directory(dir)
         end
 
+        # H1: DylibPluginLoad must also run on a restart (LaMEMLibLoadRestart,
+        # not just LaMEMLibCreate). -mode restart ignores CLI overrides of
+        # restored fields (nstep_max/nstep_rdb come back from the restart db
+        # itself), so nstep_max=3, nstep_rdb=2 leaves the last save at step 2
+        # (3 is not a multiple of 2): restarting from it still has step 3 left
+        # to run, and the plugin's "Dylib plugin :" log line must reappear.
+        restart_args = "-dylib_plugin $bundle_path -nstep_max 3 -nstep_rdb 2"
+        @test perform_lamem_test(dir, "PT0_only_plugin.dat", "PT0_only_plugin_restart_a",
+                                args=restart_args, keywords=keywords, accuracy=acc,
+                                cores=1, mpiexec=mpiexec,
+                                create_expected_file=update_expected, clean_dir=false)
+        @test perform_lamem_test(dir, "PT0_only_plugin.dat", "PT0_only_plugin_restart_b",
+                                args="-dylib_plugin $bundle_path -mode restart", keywords=keywords, accuracy=acc,
+                                cores=1, mpiexec=mpiexec,
+                                create_expected_file=update_expected, clean_dir=false)
+        restart_b_out = joinpath(dir, "PT0_only_plugin_restart_b.out")
+        @test isfile(restart_b_out) && occursin("Dylib plugin  :", read(restart_b_out, String))
+
+        if clean_files
+            clean_test_directory(dir)
+        end
+
         # Same cross-comparison, but for the Box transition (constant T
         # inside a region) instead of Constant: exercises a plugin rule
         # that resets T on markers whose phase is unchanged (H1 - T-only
@@ -1744,11 +1766,13 @@ if should_run_test("t40_PhaseTransitionPlugin")
             write(box_plugin_dat, replace(read(box_plugin_dat_template, String),
                                            "__DYLIB_PLUGIN_PATH__" => box_bundle_path))
 
-            @test perform_lamem_test(dir, "Box_only_plugin_resolved.dat", "Box_only_plugin",
-                                    keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
-                                    create_expected_file=update_expected, clean_dir=false)
-
-            rm(box_plugin_dat, force=true)
+            try
+                @test perform_lamem_test(dir, "Box_only_plugin_resolved.dat", "Box_only_plugin",
+                                        keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
+                                        create_expected_file=update_expected, clean_dir=false)
+            finally
+                rm(box_plugin_dat, force=true)
+            end
 
             box_builtin_out = joinpath(dir, "Box_only_builtin.out")
             box_plugin_out  = joinpath(dir, "Box_only_plugin.out")

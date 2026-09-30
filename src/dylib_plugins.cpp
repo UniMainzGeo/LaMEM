@@ -107,7 +107,8 @@ static PetscErrorCode DylibPluginFinalize(void)
 // overwrites the table and frees the strings behind any earlier snapshot, so
 // they must be copied out first. lbt_get_config's struct layout is not
 // versioned; trust it only if the resolved symbol lives in a
-// "libblastrampoline.5" image (dladdr), else skip silently.
+// "libblastrampoline.5" (macOS) or "libblastrampoline.so.5" (Linux) image
+// (dladdr), else skip silently.
 static PetscErrorCode DylibPluginSnapshotLbt(void)
 {
 	void *sym = NULL;
@@ -121,7 +122,8 @@ static PetscErrorCode DylibPluginSnapshotLbt(void)
 
 #if defined(PETSC_HAVE_DLADDR)
 	Dl_info info;
-	if(!dladdr(sym, &info) || !info.dli_fname || !strstr(info.dli_fname, "libblastrampoline.5"))
+	if(!dladdr(sym, &info) || !info.dli_fname ||
+		(!strstr(info.dli_fname, "libblastrampoline.5") && !strstr(info.dli_fname, "libblastrampoline.so.5")))
 	{
 		PetscFunctionReturn(0);
 	}
@@ -253,10 +255,10 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 	if(sym)
 	{
 		int v = ((DylibPluginAbiVersionFn)sym)();
-		if(v != PHASE_TRANSITION_PLUGIN_ABI_VERSION)
+		if(v != DYLIB_PLUGIN_ABI_VERSION)
 		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB,
-				"dylib_plugin: %s reports ABI v%d, expected v%d", lib, v, PHASE_TRANSITION_PLUGIN_ABI_VERSION);
+				"dylib_plugin: %s reports ABI v%d, expected v%d", lib, v, DYLIB_PLUGIN_ABI_VERSION);
 		}
 	}
 
@@ -420,7 +422,7 @@ PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx)
 	PetscCall(DylibPluginEnsureMarkerCapacity(n));
 	PetscCall(DylibPluginComputeJ2(actx));
 
-	scaling.abi_version = PHASE_TRANSITION_PLUGIN_ABI_VERSION;
+	scaling.abi_version = DYLIB_PLUGIN_ABI_VERSION;
 	scaling.utype       = (int32_t)scal->utype;
 	scaling.length      = (double)scal->length;
 	scaling.time        = (double)scal->time;
