@@ -98,6 +98,11 @@ else ifeq ($(findstring icpx, $(CXX_COMPILER)), icpx)
                   -Wno-float-conversion -Wno-deprecated-declarations -Wno-vla-cxx-extension
 else ifeq ($(findstring g++, $(CXX_COMPILER)), g++)
    LAMEM_FLAGS += -Wduplicated-cond -Wlogical-op -Wnull-dereference
+else ifeq ($(findstring c++, $(CXX_COMPILER)), c++)
+   # GCC's c++ frontend (e.g. MinGW's /mingw64/bin/c++, used when CXX has no
+   # MPI wrapper and falls back to the raw compiler - see CXX_COMMAND above)
+   # is the same compiler as g++, just under its other standard name.
+   LAMEM_FLAGS += -Wduplicated-cond -Wlogical-op -Wnull-dereference
 else
     $(error Unsupported compiler: $(CXX_COMPILER))
 endif
