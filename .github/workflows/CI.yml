@@ -152,6 +152,24 @@ jobs:
 
     - run: julia -e 'using InteractiveUtils; versioninfo(verbose=true)'
 
+    - name: 'Mount /workspace/destdir over the real destdir'
+      # PETSc_jll's lib/petsc/.../conf/variables file has an absolute
+      # `include /workspace/destdir/.../petscvariables` line baked in at
+      # Yggdrasil build time (BinaryBuilder's own sandbox path) - not
+      # relocatable. Linux CI works today only because it also stages
+      # everything under that exact literal path. Windows has no such
+      # root, so give MSYS2 an /etc/fstab entry mapping the POSIX path
+      # /workspace/destdir to our real, writable destdir - this is a
+      # msys-2.0.dll-level mount, so it's honored by any MSYS2 binary
+      # (make, mpicxx, ...) in later steps too, not just this shell.
+      run: |
+        D="$(cygpath -u '${{ github.workspace }}\lamem_destdir')"
+        mkdir -p "$D"
+        mkdir -p /workspace
+        echo "$D /workspace/destdir" >> /etc/fstab
+        cat /etc/fstab
+        ls /workspace/destdir || true
+
     - name: 'Install PETSc & LaMEM'
       env:
         LAMEM_CI_DESTDIR: ${{ github.workspace }}\lamem_destdir
@@ -160,23 +178,12 @@ jobs:
         julia --project=. setup_packages.jl
         cd ..
 
-    - name: 'Debug: inspect PETSc MPI compiler config'
+    - name: 'Debug: verify /workspace/destdir mount and CXX resolution'
       run: |
-        D="${{ github.workspace }}\lamem_destdir"
-        D="$(cygpath -u "$D")"
-        echo "--- destdir/lib top level ---"
-        ls "$D/lib" || true
-        echo "--- destdir/lib/petsc (if any) ---"
-        ls "$D/lib/petsc" || true
-        echo "--- find petscvariables/variables anywhere under destdir ---"
-        find "$D" -iname 'variables' -o -iname 'petscvariables' 2>/dev/null || true
-        echo "--- full petsc/conf/variables ---"
-        cat "$D/lib/petsc/double_real_Int64/lib/petsc/conf/variables" || true
-        echo "--- mpi* executables under destdir ---"
-        find "$D" -iname 'mpi*' 2>/dev/null || true
-        echo "--- g++ on PATH ---"
-        which g++ || true
-        g++ --version || true
+        echo "--- /workspace/destdir/lib/petsc ---"
+        ls /workspace/destdir/lib/petsc || true
+        echo "--- CXX/CC lines in petscvariables via the mount ---"
+        grep -E '^(CXX|CC|MPICXX|MPICC) *=' /workspace/destdir/lib/petsc/double_real_Int64/lib/petsc/conf/petscvariables || true
 
     - name: 'Compile LaMEM | Int64'
       env:

@@ -15,36 +15,43 @@ do_check = any(contains.(ARGS, "check"))
 destdir = get(ENV, "LAMEM_CI_DESTDIR", "/workspace/destdir")
 
 # src/Makefile reads PETSC_OPT/PETSC_DEB/FASTSCAPE_LIB itself (`include
-# ${PETSC_DIR}/lib/petsc/conf/variables` and friends) and, on Windows, runs under
-# MSYS2's `make` in a POSIX-like shell that expects forward slashes and drive
-# letters as /c/... rather than backslashes and "C:\" - so these three env vars,
-# unlike every other path in these two scripts, need the MSYS2 form there.
+# ${PETSC_DIR}/lib/petsc/conf/variables` and friends), which on Windows runs under
+# MSYS2's `make` and needs a POSIX-style path - but PETSc_jll's own
+# lib/petsc/.../conf/variables has a further `include
+# /workspace/destdir/.../petscvariables` line baked in absolutely at Yggdrasil
+# build time (BinaryBuilder's own sandbox path, not relocatable). The Windows CI
+# job's "Mount /workspace/destdir..." step gives MSYS2 an /etc/fstab entry so that
+# POSIX path resolves to the real destdir - so PETSC_OPT/PETSC_DEB/FASTSCAPE_LIB
+# must use literal /workspace/destdir on Windows too (matching Linux, where
+# destdir already *is* /workspace/destdir), not a drive-letter-derived path.
 function msys2_path(p::AbstractString)
     Sys.iswindows() || return p
+    p == "/workspace/destdir" && return p
     p = replace(p, "\\" => "/")
     m = match(r"^([A-Za-z]):(.*)$", p)
     isnothing(m) && return p
     return "/" * lowercase(m.captures[1]) * m.captures[2]
 end
 psep(parts...) = msys2_path(join(parts, "/"))
+petsc_destdir = Sys.iswindows() ? "/workspace/destdir" : destdir
 
 # Take the environment (dynamic libraries etc.) from the PETSc
 if is64bit
     println("Using PETSc that has 64bit integers")
     cmd = addenv(PETSc_jll.ex42(),
-                    "PETSC_OPT"=>psep(destdir, "lib", "petsc", "double_real_Int64"),
-                    "PETSC_DEB"=>psep(destdir, "lib", "petsc", "double_real_Int64_deb"),
+                    "PETSC_OPT"=>psep(petsc_destdir, "lib", "petsc", "double_real_Int64"),
+                    "PETSC_DEB"=>psep(petsc_destdir, "lib", "petsc", "double_real_Int64_deb"),
                 )
 
 else
     println("Using PETSc that has 32bit integers")
     cmd = addenv(PETSc_jll.ex42(),
-                    "PETSC_OPT"=>psep(destdir, "lib", "petsc", "double_real_Int32"),
-                    "PETSC_DEB"=>psep(destdir, "lib", "petsc", "double_real_Int32"),
+                    "PETSC_OPT"=>psep(petsc_destdir, "lib", "petsc", "double_real_Int32"),
+                    "PETSC_DEB"=>psep(petsc_destdir, "lib", "petsc", "double_real_Int32"),
                 )
 end
 
-cmd = addenv(cmd, "FASTSCAPE_LIB"=>psep(destdir, "lib", "fastscape"))
+cmd = addenv(cmd, "FASTSCAPE_LIB"=>psep(petsc_destdir, "lib", "fastscape"))
 
 @show pkgversion(PETSc_jll)
 #@show pkgversion(MPICH_jll)
