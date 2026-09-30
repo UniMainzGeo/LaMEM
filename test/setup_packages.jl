@@ -33,6 +33,17 @@ for path in PETSc_jll.PATH_list
             run(maybe_sudo(`cp -rf $(joinpath(cur_dir, d)) $destdir/`))
         end
     end
+
+    # On Windows, PETSc_jll nests each precision/index variant's own tree
+    # (lib/petsc/conf/variables and friends, read directly by LaMEM's
+    # Makefile) under bin/petsc/<variant>/ instead of lib/petsc/<variant>/
+    # like on Unix - so the generic copy above lands it at
+    # destdir/bin/petsc/... instead of the destdir/lib/petsc/... path
+    # compile_lamem.jl's PETSC_OPT/PETSC_DEB point at. Mirror it there too.
+    if Sys.iswindows() && isdir(joinpath(cur_dir, "bin", "petsc"))
+        mkpath(joinpath(destdir, "lib"))
+        run(maybe_sudo(`cp -rf $(joinpath(cur_dir, "bin", "petsc")) $(joinpath(destdir, "lib"))/`))
+    end
 end
 
 """
