@@ -166,8 +166,10 @@ jobs:
         D="$(cygpath -u '${{ github.workspace }}\lamem_destdir')"
         mkdir -p "$D"
         mkdir -p /workspace
-        echo "$D /workspace/destdir" >> /etc/fstab
+        echo "$D /workspace/destdir none bind 0 0" >> /etc/fstab
         cat /etc/fstab
+        mount "$D" /workspace/destdir
+        mount
         ls /workspace/destdir || true
 
     - name: 'Install PETSc & LaMEM'
@@ -180,6 +182,8 @@ jobs:
 
     - name: 'Debug: verify /workspace/destdir mount and CXX resolution'
       run: |
+        echo "--- mount table in this fresh shell ---"
+        mount
         echo "--- /workspace/destdir/lib/petsc ---"
         ls /workspace/destdir/lib/petsc || true
         echo "--- CXX/CC lines in petscvariables via the mount ---"
