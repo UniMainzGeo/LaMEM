@@ -52,7 +52,7 @@ DylibPluginFn  fn        = NULL;
 JlAtexitHookFn atexitFn = NULL;
 char          loadedPath[_str_len_] = "";
 #if defined(_WIN32)
-PetscDLHandle libjuliaHandle = NULL, lbtHandle = NULL; // sibling DLLs, see DylibPluginOpenWinDeps
+PetscDLHandle libjuliaHandle = NULL, lbtHandle = NULL; // sibling DLLs, see DylibPluginOpenWinJulia/DylibPluginOpenWinLbt
 #define LbtSymHandle lbtHandle // GetProcAddress needs the specific DLL's own handle
 #else
 #define LbtSymHandle NULL // dlsym(NULL, ...) searches the whole process (RTLD_GLOBAL)
@@ -138,9 +138,9 @@ static PetscErrorCode DylibPluginFinalize(void)
 // --bundle places next to the plugin (all flat in one directory - see JuliaC's
 // own docs, "Windows: everything under <output_dir>/bin") must be opened
 // explicitly, by name, to get a handle PetscDLSym can search.
-static PetscErrorCode DylibPluginOpenWinDeps(const char *pluginPath)
+// Derives the plugin's own directory, used by both Win-deps openers below.
+static PetscErrorCode DylibPluginDir(const char *pluginPath, char dir[_str_len_])
 {
-	char  dir[_str_len_], path[_str_len_];
 	char *slash;
 
 	PetscFunctionBeginUser;
@@ -150,13 +150,47 @@ static PetscErrorCode DylibPluginOpenWinDeps(const char *pluginPath)
 	if(!slash) slash = strrchr(dir, '/');
 	if(slash) *slash = '\0'; else dir[0] = '\0'; // plugin given without a directory: current dir
 
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// libjulia.dll must be loaded from the plugin's own directory BEFORE the
+// plugin itself (see the call site in DylibPluginLoad for why: otherwise
+// Windows may bind the plugin's own libjulia/libjulia-internal imports to
+// an unrelated Julia installation found via the normal search order, and
+// jl_init_with_image_handle then fails with "Image file failed consistency
+// check" against that mismatched runtime).
+static PetscErrorCode DylibPluginOpenWinJulia(const char *pluginPath)
+{
+	char dir[_str_len_], path[_str_len_];
+
+	PetscFunctionBeginUser;
+
+	PetscCall(DylibPluginDir(pluginPath, dir));
 	PetscCall(PetscSNPrintf(path, _str_len_, "%s%slibjulia.dll", dir, dir[0] ? "\\" : ""));
 	PetscCall(PetscDLOpen(path, PETSC_DL_NOW, &libjuliaHandle));
 	if(!libjuliaHandle) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "dylib_plugin: %s not found next to %s", path, pluginPath);
 
-	// libblastrampoline's versioned name (libblastrampoline-5.dll); optional, a
-	// missing one is handled the same way as "no LBT" on POSIX (see
-	// DylibPluginSnapshotLbt/DylibPluginRestoreLbt below)
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// libblastrampoline-5.dll, by contrast, must NOT be opened before the
+// plugin: PETSc's own BLAS/LAPACK calls (idamax_, dgemm_, ...) are already
+// bound to libblastrampoline-5.dll by base name at PETSc's own load time.
+// Opening the plugin's bundled copy of the same DLL name first would make
+// Windows bind PETSc's calls to the plugin's LBT instance instead of
+// PETSc's own - which has no BLAS implementation registered yet - leaving
+// PETSc's own BLAS calls unresolved ("no BLAS/LAPACK library loaded").
+// Opening it after the plugin (whose own PE imports already resolved it,
+// one way or another) just gives us the handle to use for the snapshot/
+// restore dance in DylibPluginSnapshotLbt/DylibPluginRestoreLbt, matching
+// the original call order.
+static PetscErrorCode DylibPluginOpenWinLbt(const char *pluginPath)
+{
+	char dir[_str_len_], path[_str_len_];
+
+	PetscFunctionBeginUser;
+
+	PetscCall(DylibPluginDir(pluginPath, dir));
 	PetscCall(PetscSNPrintf(path, _str_len_, "%s%slibblastrampoline-5.dll", dir, dir[0] ? "\\" : ""));
 	PetscCall(PetscDLOpen(path, PETSC_DL_NOW, &lbtHandle)); // lbtHandle left NULL on failure, not an error
 
@@ -171,7 +205,7 @@ static PetscErrorCode DylibPluginOpenWinDeps(const char *pluginPath)
 // versioned; trust it only if the resolved symbol lives in a
 // "libblastrampoline.5" (macOS) or "libblastrampoline.so.5" (Linux) image
 // (dladdr), else skip silently. On Windows lbtHandle already IS the specific
-// "libblastrampoline-5.dll" DylibPluginOpenWinDeps opened by that exact name (or
+// "libblastrampoline-5.dll" DylibPluginOpenWinLbt opened by that exact name (or
 // NULL if it was not found next to the plugin), so there is no address to
 // verify - the explicit filename is the check.
 static PetscErrorCode DylibPluginSnapshotLbt(void)
@@ -288,18 +322,19 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 	PetscCall(PetscRegisterFinalize(DylibPluginFinalize));
 
 #if defined(_WIN32)
-	// Load libjulia.dll/libblastrampoline-5.dll from the plugin's own
-	// directory BEFORE opening the plugin itself. Windows matches DLLs by
-	// base name with no privatization: if the plugin's imports (libjulia.dll,
+	// Load libjulia.dll from the plugin's own directory BEFORE opening the
+	// plugin itself. Windows matches DLLs by base name with no
+	// privatization: if the plugin's imports (libjulia.dll,
 	// libjulia-internal.dll) were resolved first - e.g. picking up an
 	// unrelated Julia installation's copy from PATH, such as the one
 	// julia-actions/setup-julia adds in CI - jl_init_with_image_handle later
 	// runs against a second, different runtime copy than the one actually
 	// bound to the plugin's own image, and fails with "Image file failed
 	// consistency check" even though both files individually look correct.
-	// Loading our copies first by full path makes Windows bind the plugin's
-	// same-named imports to them instead.
-	PetscCall(DylibPluginOpenWinDeps(lib));
+	// Loading our copy first by full path makes Windows bind the plugin's
+	// same-named imports to it instead. libblastrampoline-5.dll is
+	// deliberately NOT opened here - see DylibPluginOpenWinLbt.
+	PetscCall(DylibPluginOpenWinJulia(lib));
 #endif
 
 	// PETSC_DL_NOW -> dlopen(RTLD_NOW|RTLD_GLOBAL), pulling in libjulia as
@@ -310,7 +345,7 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 #if defined(_WIN32)
 	// RTLD_GLOBAL has no Windows equivalent: libjulia's own exports (jl_parse_opts
 	// among them) are not visible via the plugin DLL's handle. See
-	// DylibPluginOpenWinDeps above.
+	// DylibPluginOpenWinJulia above.
 	PetscCall(PetscDLSym(libjuliaHandle, "jl_parse_opts", &sym));
 #else
 	PetscCall(PetscDLSym(handle, "jl_parse_opts", &sym));
@@ -327,6 +362,12 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 
 		((JlParseOptsFn)sym)(&jlargc, &jlargvp);
 	}
+
+#if defined(_WIN32)
+	// Opened here, AFTER the plugin - see DylibPluginOpenWinLbt for why this
+	// one must not be opened early the way libjulia.dll is.
+	PetscCall(DylibPluginOpenWinLbt(lib));
+#endif
 
 	PetscCall(DylibPluginSnapshotLbt());
 	{
