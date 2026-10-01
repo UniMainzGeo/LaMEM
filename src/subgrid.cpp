@@ -416,6 +416,9 @@ PetscErrorCode ADVCollectGarbageVec(AdvCtx *actx, vector <Marker> &recvbuf, vect
 	nrecv   = (PetscInt)recvbuf.size();
 	ndel    = (PetscInt)idel.size();
 
+	// sort deleted indices (garbage collection below requires ascending order)
+	sort(idel.begin(), idel.end());
+
 	// close holes in marker storage
 	while(nrecv && ndel)
 	{
