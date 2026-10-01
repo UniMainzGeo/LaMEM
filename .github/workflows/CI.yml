@@ -188,6 +188,8 @@ jobs:
       run: |
         julia --project=@juliac -e 'using Pkg; Pkg.add("JuliaC")'
         julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_constant.jl test/t40_PhaseTransitionPlugin
+        echo "--- build_constant tree ---"
+        find test/t40_PhaseTransitionPlugin/build_constant -type f
         test -f test/t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.dll
 
     - name: 'Run LaMEM with the dylib plugin'
