@@ -53,6 +53,19 @@ end
 
 cmd = addenv(cmd, "FASTSCAPE_LIB"=>psep(petsc_destdir, "lib", "fastscape"))
 
+# PETSc_jll.ex42() carries its own baked-in PATH (just its own JLL artifact
+# bin dirs), which addenv's additions above don't touch - on Windows that
+# means it has no entry for MSYS2's /mingw64/bin, where make/c++/g++ actually
+# live, so `make` (itself found via the real shell PATH) cannot find/exec a
+# working c++ for its child processes. Merge this process's own inherited
+# PATH (which does include /mingw64/bin, since this script itself only runs
+# from inside the MSYS2 shell set up by the CI job) in front of it.
+if Sys.iswindows()
+    existing_path_entry = findfirst(e -> startswith(e, "PATH="), cmd.env)
+    existing_path = isnothing(existing_path_entry) ? "" : cmd.env[existing_path_entry][6:end]
+    cmd = addenv(cmd, "PATH"=>ENV["PATH"] * ";" * existing_path)
+end
+
 @show pkgversion(PETSc_jll)
 #@show pkgversion(MPICH_jll)
 
