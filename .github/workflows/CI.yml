@@ -214,13 +214,10 @@ jobs:
         # PE import table references - compare that literal name against
         # what's actually on disk (case/exact-name mismatches are possible).
         objdump -p ../../bin/opt/LaMEM.exe | grep -i "DLL Name" | sort -u
-        echo "--- msmpi.dll's own dependencies ---"
-        objdump -p ../../bin/opt/msmpi.dll | grep -i "DLL Name"
-        echo "--- are those dependencies present next to LaMEM.exe? ---"
-        for d in $(objdump -p ../../bin/opt/msmpi.dll | grep -i "DLL Name" | awk '{print $3}'); do
-          echo -n "$d: "
-          ls "../../bin/opt/$d" 2>&1 || ls "/c/Windows/System32/$d" 2>&1 || echo "NOT FOUND anywhere checked"
-        done
+        echo "--- try launching LaMEM.exe via native cmd.exe instead of MSYS2's own exec path ---"
+        cmd //c "..\\..\\bin\\opt\\LaMEM.exe -ParamFile PT0_only_plugin.dat -dylib_plugin build_constant\\bin\\libptlib_constant.dll" > /tmp/cmd_run.log 2>&1
+        echo "cmd.exe launch exit code: $?"
+        cat /tmp/cmd_run.log
         echo "PATH: $PATH"
         ../../bin/opt/LaMEM.exe -ParamFile PT0_only_plugin.dat -dylib_plugin build_constant/bin/libptlib_constant.dll > dylib_plugin_windows.log 2>&1
         echo "LaMEM.exe exit code: $?"
