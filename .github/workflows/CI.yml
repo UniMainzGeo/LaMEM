@@ -204,7 +204,8 @@ jobs:
         cp /workspace/destdir/bin/*.dll bin/opt/ 2>/dev/null || true
         cp /workspace/destdir/bin/petsc/double_real_Int64/lib/*.dll bin/opt/ 2>/dev/null || true
         cp /workspace/destdir/lib/*.dll bin/opt/ 2>/dev/null || true
-        ls bin/opt/msmpi.dll
+        cp /workspace/destdir/lib/fastscape/*.dll bin/opt/ 2>/dev/null || true
+        ls bin/opt/msmpi.dll bin/opt/libfastscapelib_fortran.dll
 
     - name: 'Run LaMEM with the dylib plugin'
       # MSYS2's own exec path cannot launch native Windows executables in
