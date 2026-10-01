@@ -287,6 +287,21 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 	PetscCall(PetscStrncpy(loadedPath, lib, _str_len_));
 	PetscCall(PetscRegisterFinalize(DylibPluginFinalize));
 
+#if defined(_WIN32)
+	// Load libjulia.dll/libblastrampoline-5.dll from the plugin's own
+	// directory BEFORE opening the plugin itself. Windows matches DLLs by
+	// base name with no privatization: if the plugin's imports (libjulia.dll,
+	// libjulia-internal.dll) were resolved first - e.g. picking up an
+	// unrelated Julia installation's copy from PATH, such as the one
+	// julia-actions/setup-julia adds in CI - jl_init_with_image_handle later
+	// runs against a second, different runtime copy than the one actually
+	// bound to the plugin's own image, and fails with "Image file failed
+	// consistency check" even though both files individually look correct.
+	// Loading our copies first by full path makes Windows bind the plugin's
+	// same-named imports to them instead.
+	PetscCall(DylibPluginOpenWinDeps(lib));
+#endif
+
 	// PETSC_DL_NOW -> dlopen(RTLD_NOW|RTLD_GLOBAL), pulling in libjulia as
 	// the plugin's own dependency; LaMEM never links libjulia itself
 	PetscCall(PetscDLOpen(lib, PETSC_DL_NOW, &handle));
@@ -296,7 +311,6 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 	// RTLD_GLOBAL has no Windows equivalent: libjulia's own exports (jl_parse_opts
 	// among them) are not visible via the plugin DLL's handle. See
 	// DylibPluginOpenWinDeps above.
-	PetscCall(DylibPluginOpenWinDeps(lib));
 	PetscCall(PetscDLSym(libjuliaHandle, "jl_parse_opts", &sym));
 #else
 	PetscCall(PetscDLSym(handle, "jl_parse_opts", &sym));
