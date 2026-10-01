@@ -137,6 +137,20 @@ ifneq ($(filter MSYS% MINGW%,$(UNAME)),)
    # link against, so drop it.
    PETSC_LIB := $(filter-out -ldl, $(PETSC_LIB))
    PETSC_LIB := -L$(PETSC_DIR)/../../.. $(PETSC_LIB)
+   # These JLL-provided dependencies ship only a bare runtime .dll, with no
+   # accompanying .dll.a import library - plain -lNAME can't resolve them.
+   # ld can still link directly against a DLL by its exact filename, so
+   # swap -lNAME for -l:libNAME.dll for exactly these (every other -lNAME
+   # here does have a normal .dll.a and keeps working via -L above). A
+   # $(foreach ...$(patsubst...$(PETSC_LIB))) here would apply each
+   # substitution to the ORIGINAL PETSC_LIB independently and concatenate
+   # all the results, rather than chaining them - use $(eval) to fold each
+   # substitution into PETSC_LIB sequentially instead.
+   DLL_ONLY_LIBS = HYPRE64 dmumpspar mumps_commonpar pordpar tet triangle gfortran
+   define swap_dll_only_lib
+   PETSC_LIB := $$(patsubst -l$(1),-l:lib$(1).dll,$$(PETSC_LIB))
+   endef
+   $(foreach l,$(DLL_ONLY_LIBS),$(eval $(call swap_dll_only_lib,$(l))))
 endif
 
 #==============================================================================
