@@ -196,9 +196,13 @@ jobs:
     - name: 'Run LaMEM with the dylib plugin'
       run: |
         cd test/t40_PhaseTransitionPlugin
-        ../../bin/opt/LaMEM.exe -ParamFile PT0_only_plugin.dat \
-          -dylib_plugin build_constant/bin/libptlib_constant.dll \
-          | tee dylib_plugin_windows.log
+        which tee
+        ls -la ../../bin/opt/LaMEM.exe
+        set +e
+        ../../bin/opt/LaMEM.exe -ParamFile PT0_only_plugin.dat -dylib_plugin build_constant/bin/libptlib_constant.dll > dylib_plugin_windows.log 2>&1
+        echo "LaMEM.exe exit code: $?"
+        cat dylib_plugin_windows.log
+        set -e
         grep -q "Dylib plugin" dylib_plugin_windows.log
         grep -q "27512 marker(s) changed phase" dylib_plugin_windows.log
         grep -q "SOLUTION IS DONE" dylib_plugin_windows.log
