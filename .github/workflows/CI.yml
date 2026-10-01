@@ -205,18 +205,27 @@ jobs:
         cp /workspace/destdir/bin/petsc/double_real_Int64/lib/*.dll bin/opt/ 2>/dev/null || true
         cp /workspace/destdir/lib/*.dll bin/opt/ 2>/dev/null || true
         cp /workspace/destdir/lib/fastscape/*.dll bin/opt/ 2>/dev/null || true
-        # Do NOT stage libjulia*.dll or other Julia-runtime DLLs here: the
-        # dylib_plugin loader (DylibPluginOpenWinDeps) explicitly opens its
-        # OWN libjulia.dll from the plugin DLL's own directory
-        # (test/t40_PhaseTransitionPlugin/build_constant/bin/), which is a
-        # different Julia build/version than PETSc_jll's bundled one. A
-        # second, different libjulia.dll sitting next to LaMEM.exe caused
-        # "Image file failed consistency check" - remove it and its
-        # LLVM/Julia-internal siblings so only the plugin's own copy exists.
-        rm -f bin/opt/libjulia*.dll bin/opt/libLLVM*.dll bin/opt/libllvmcalltest.dll \
-              bin/opt/libLTO.dll bin/opt/libccall*.dll bin/opt/libmlir_*.dll \
-              bin/opt/libload_time_mpi_constants.dll bin/opt/libRemarks.dll
+        # Do NOT stage libjulia*.dll, libblastrampoline*.dll, or other
+        # Julia-runtime DLLs here: the dylib_plugin loader explicitly opens
+        # its OWN copies of these from the plugin DLL's own directory
+        # (test/t40_PhaseTransitionPlugin/build_constant/bin/), a different
+        # Julia build/version than PETSc_jll's bundled one. A second,
+        # different libjulia.dll sitting next to LaMEM.exe caused "Image
+        # file failed consistency check"; a second, different
+        # libblastrampoline-5.dll (confirmed via process module enumeration:
+        # two distinct instances, one in bin/opt/ from this staging step,
+        # one in the plugin's own directory) meant PETSc's own BLAS calls -
+        # already bound to ITS libblastrampoline-5.dll at PETSc's own load
+        # time - never got the forwarding Julia's init sets up on the
+        # plugin's separate instance, leaving them unresolved ("no
+        # BLAS/LAPACK library loaded"). Remove both and their
+        # LLVM/Julia-internal siblings so only the plugin's own copies exist.
+        rm -f bin/opt/libjulia*.dll bin/opt/libblastrampoline*.dll bin/opt/libLLVM*.dll \
+              bin/opt/libllvmcalltest.dll bin/opt/libLTO.dll bin/opt/libccall*.dll \
+              bin/opt/libmlir_*.dll bin/opt/libload_time_mpi_constants.dll bin/opt/libRemarks.dll
         ls bin/opt/msmpi.dll bin/opt/libfastscapelib_fortran.dll
+        echo "--- LaMEM.exe's own PE imports (confirm libblastrampoline isn't one) ---"
+        objdump -p bin/opt/LaMEM.exe | grep -i "DLL Name"
 
     - name: 'Run LaMEM with the dylib plugin'
       # MSYS2's own exec path cannot launch native Windows executables in
