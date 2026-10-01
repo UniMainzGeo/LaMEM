@@ -28,6 +28,13 @@
 #include <dlfcn.h>
 #endif
 #if defined(_WIN32)
+// WIN32_LEAN_AND_MEAN skips windows.h's COM/OLE headers (objidl.h,
+// oaidl.h, ...), which otherwise declare a global `byte` typedef that
+// collides with C++17's std::byte under this file's `using namespace std`
+// (from LaMEM.h) - and those headers are not needed for GetModuleHandleA.
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h> // GetModuleHandleA, see DylibPluginOpenWinLbt
 #endif
 //---------------------------------------------------------------------------
