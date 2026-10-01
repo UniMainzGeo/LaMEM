@@ -61,21 +61,41 @@ cmd = addenv(cmd, "FASTSCAPE_LIB"=>psep(petsc_destdir, "lib", "fastscape"))
 # shell (see the CI workflow's Windows job), which provides a real `make` and the
 # rest of the POSIX toolchain the Makefile needs - Julia's own `run` still just
 # execs the `make` found on PATH, whichever one that is.
+# On Windows, the very first child process make spawns through this Cmd
+# occasionally fails with no diagnostic output at all (confirmed on CI: the
+# identical `make ... all` invocation run directly in a shell, outside
+# Julia, always succeeds - so this is some one-off Julia/MSYS2 subprocess
+# quirk on the first spawn, not a real compile or link problem). A bare
+# rerun of the same make command picks up again where the first one left
+# off (make only rebuilds what's missing) and succeeds, so retry once.
+function run_with_retry(c::Cmd)
+    try
+        run(c)
+    catch e
+        if Sys.iswindows()
+            @warn "make failed with no diagnostic output (known Windows/MSYS2 first-spawn quirk) - retrying once" exception = e
+            run(c)
+        else
+            rethrow()
+        end
+    end
+end
+
 if do_check
     # only check source formatting, don't compile
     println("---- Checking LaMEM source formatting ----")
     check_format = Cmd(`make mode=opt check`, env = cmd.env)
-    run(check_format)
+    run_with_retry(check_format)
 else
     println("Compiling LaMEM")
 
     println("---- Compiling LaMEM opt version ----")
     compile_lamem = Cmd(`make mode=opt surf=scape all`, env = cmd.env)
-    run(compile_lamem)
+    run_with_retry(compile_lamem)
 
     println("---- Compiling LaMEM deb version ----")
     compile_lamem = Cmd(`make mode=deb surf=scape all`, env = cmd.env)
-    run(compile_lamem)
+    run_with_retry(compile_lamem)
 
 
 end
