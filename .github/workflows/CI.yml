@@ -238,6 +238,18 @@ jobs:
       # running the already-built native .exe doesn't need MSYS2 at all.
       shell: pwsh
       run: |
+        # julia-actions/setup-julia put its own Julia install's bin/ (with
+        # its own libblastrampoline-5.dll/libjulia*.dll) on PATH. PETSc's
+        # own DLL transitively imports libblastrampoline-5.dll, resolved at
+        # LaMEM.exe's OWN load time via the normal Windows search order
+        # (including PATH) - before any plugin code runs - so it picks up
+        # that unrelated copy instead of a copy consistent with what the
+        # plugin bundle uses, producing a second coexisting instance (same
+        # cross-instance problem as the libjulia.dll/libblastrampoline.dll
+        # staging issue, just one step earlier in the process lifetime, and
+        # not something dylib_plugins.cpp's own load-order can prevent).
+        # Strip it so PETSc's own import resolves to nothing from PATH.
+        $env:PATH = ($env:PATH -split ';' | Where-Object { $_ -notlike '*\julia\*\bin' }) -join ';'
         cd test/t40_PhaseTransitionPlugin
         $proc = Start-Process -FilePath "..\..\bin\opt\LaMEM.exe" -ArgumentList "-ParamFile","PT0_only_plugin.dat","-dylib_plugin","build_constant\bin\libptlib_constant.dll" -RedirectStandardOutput dylib_plugin_windows.log -RedirectStandardError dylib_plugin_windows.err.log -PassThru
         Start-Sleep -Seconds 3
