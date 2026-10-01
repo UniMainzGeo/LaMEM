@@ -146,9 +146,11 @@ ifneq ($(filter MSYS% MINGW%,$(UNAME)),)
    # substitution to the ORIGINAL PETSC_LIB independently and concatenate
    # all the results, rather than chaining them - use $(eval) to fold each
    # substitution into PETSC_LIB sequentially instead.
-   DLL_ONLY_LIBS = HYPRE64 dmumpspar mumps_commonpar pordpar tet triangle gfortran
+   DLL_ONLY_LIBS = HYPRE64:libHYPRE64.dll dmumpspar:libdmumpspar.dll \
+                   mumps_commonpar:libmumps_commonpar.dll pordpar:libpordpar.dll \
+                   tet:libtet.dll triangle:libtriangle.dll gfortran:libgfortran-5.dll
    define swap_dll_only_lib
-   PETSC_LIB := $$(patsubst -l$(1),-l:lib$(1).dll,$$(PETSC_LIB))
+   PETSC_LIB := $$(patsubst -l$(word 1,$(subst :, ,$(1))),-l:$(word 2,$(subst :, ,$(1))),$$(PETSC_LIB))
    endef
    $(foreach l,$(DLL_ONLY_LIBS),$(eval $(call swap_dll_only_lib,$(l))))
 endif
