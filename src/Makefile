@@ -129,11 +129,14 @@ ifneq ($(filter MSYS% MINGW%,$(UNAME)),)
    # dependency libraries (HYPRE64, MUMPS, tet, triangle, gfortran, ...)
    # actually live one level up, directly under destdir/lib (where
    # setup_packages.jl's generic per-JLL-artifact copy loop puts them) -
-   # add that as a further search path. -ldl is also listed, but dlopen
-   # isn't used on Windows (PetscDLOpen uses LoadLibrary there) and no
-   # libdl exists to link against, so drop it.
+   # add that as a further search path. ld/gcc only resolve -l flags
+   # against -L paths already seen earlier on the command line, so this
+   # must be PREPENDED, not appended, to come before the -l flags it's
+   # meant to satisfy. -ldl is also listed, but dlopen isn't used on
+   # Windows (PetscDLOpen uses LoadLibrary there) and no libdl exists to
+   # link against, so drop it.
    PETSC_LIB := $(filter-out -ldl, $(PETSC_LIB))
-   PETSC_LIB += -L$(PETSC_DIR)/../../..
+   PETSC_LIB := -L$(PETSC_DIR)/../../.. $(PETSC_LIB)
 endif
 
 #==============================================================================
