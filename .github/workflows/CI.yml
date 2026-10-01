@@ -188,15 +188,16 @@ jobs:
       run: |
         julia --project=@juliac -e 'using Pkg; Pkg.add("JuliaC")'
         julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_constant.jl test/t40_PhaseTransitionPlugin
-        echo "--- build_constant tree ---"
-        find test/t40_PhaseTransitionPlugin/build_constant -type f
-        test -f test/t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.dll
+        # JuliaC's Windows bundles are flat under <output_dir>/bin (no bin+lib
+        # split like Unix), so the plugin DLL lands at build_constant/bin/,
+        # not build_constant/lib/.
+        test -f test/t40_PhaseTransitionPlugin/build_constant/bin/libptlib_constant.dll
 
     - name: 'Run LaMEM with the dylib plugin'
       run: |
         cd test/t40_PhaseTransitionPlugin
         ../../bin/opt/LaMEM.exe -ParamFile PT0_only_plugin.dat \
-          -dylib_plugin build_constant/lib/libptlib_constant.dll \
+          -dylib_plugin build_constant/bin/libptlib_constant.dll \
           | tee dylib_plugin_windows.log
         grep -q "Dylib plugin" dylib_plugin_windows.log
         grep -q "27512 marker(s) changed phase" dylib_plugin_windows.log
