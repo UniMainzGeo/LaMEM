@@ -251,16 +251,7 @@ jobs:
         $destdir = "${{ github.workspace }}\lamem_destdir"
         $env:LBT_DEFAULT_LIBS = "$destdir\lib\libopenblas.dll;$destdir\lib\libopenblas64_.dll"
         cd test/t40_PhaseTransitionPlugin
-        $proc = Start-Process -FilePath "..\..\bin\opt\LaMEM.exe" -ArgumentList "-ParamFile","PT0_only_plugin.dat","-dylib_plugin","build_constant\bin\libptlib_constant.dll" -RedirectStandardOutput dylib_plugin_windows.log -RedirectStandardError dylib_plugin_windows.err.log -PassThru
-        Start-Sleep -Seconds 3
-        Write-Host "--- all libblastrampoline-5.dll modules loaded in the LaMEM.exe process ---"
-        try {
-            $modules = $proc.Modules | Where-Object { $_.ModuleName -ieq "libblastrampoline-5.dll" }
-            foreach ($m in $modules) { Write-Host "$($m.FileName)  base=0x$($m.BaseAddress.ToString('X'))" }
-            Write-Host "count: $($modules.Count)"
-        } catch { Write-Host "could not enumerate modules: $_" }
-        Wait-Process -Id $proc.Id -Timeout 300 -ErrorAction SilentlyContinue
-        if (-not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
+        $proc = Start-Process -FilePath "..\..\bin\opt\LaMEM.exe" -ArgumentList "-ParamFile","PT0_only_plugin.dat","-dylib_plugin","build_constant\bin\libptlib_constant.dll" -RedirectStandardOutput dylib_plugin_windows.log -RedirectStandardError dylib_plugin_windows.err.log -Wait -PassThru
         Get-Content dylib_plugin_windows.log
         Get-Content dylib_plugin_windows.err.log
         if ($proc.ExitCode -ne 0) { throw "LaMEM.exe exited with code $($proc.ExitCode)" }
