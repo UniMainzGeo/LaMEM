@@ -252,21 +252,15 @@ static PetscErrorCode DylibPluginSnapshotLbt(void)
 	const LbtConfig *cfg = ((LbtGetConfigFn)sym)();
 	int              i;
 
-	PetscCall(PetscPrintf(PETSC_COMM_WORLD, "DEBUG lbt snapshot: cfg=%p loaded_libs=%p\n",
-	                       (void*)cfg, (void*)(cfg ? cfg->loaded_libs : NULL)));
-
 	if(!cfg || !cfg->loaded_libs) PetscFunctionReturn(0);
 
 	for(i = 0; i < LBT_MAX_SNAPSHOT && cfg->loaded_libs[i] != NULL; i++)
 	{
-		PetscCall(PetscPrintf(PETSC_COMM_WORLD, "DEBUG lbt snapshot[%d]: libname=%s suffix=%s\n",
-		                       i, cfg->loaded_libs[i]->libname, cfg->loaded_libs[i]->suffix));
 		PetscCall(PetscStrallocpy(cfg->loaded_libs[i]->libname, &lbtSnap[i].libname));
 		PetscCall(PetscStrallocpy(cfg->loaded_libs[i]->suffix,  &lbtSnap[i].suffix));
 	}
 
 	lbtSnapCount = i;
-	PetscCall(PetscPrintf(PETSC_COMM_WORLD, "DEBUG lbt snapshot: count=%d\n", lbtSnapCount));
 
 	PetscFunctionReturn(0);
 }
@@ -281,7 +275,6 @@ static PetscErrorCode DylibPluginRestoreLbt(int32_t nthreadsBefore)
 	PetscFunctionBeginUser;
 
 	PetscCall(PetscDLSym(LbtSymHandle, "lbt_forward", &fwdSym));
-	PetscCall(PetscPrintf(PETSC_COMM_WORLD, "DEBUG lbt restore: fwdSym=%p lbtSnapCount=%d\n", fwdSym, lbtSnapCount));
 
 	if(fwdSym && lbtSnapCount > 0)
 	{

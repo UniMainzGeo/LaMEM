@@ -235,6 +235,21 @@ jobs:
       # running the already-built native .exe doesn't need MSYS2 at all.
       shell: pwsh
       run: |
+        # Yggdrasil's Windows PETSc recipe links libopenblas64_.dll directly
+        # (not through libblastrampoline - "LBT has historically been flaky"
+        # on that platform), so there is nothing of PETSc's own to snapshot
+        # before Julia's init and restore after. MUMPS_jll/SuperLU_DIST_jll,
+        # however, DO link libblastrampoline-5.dll, with the LP64 interface
+        # (unsuffixed dgemm_/idamax_/...) - and nothing populates LBT's
+        # table with an LP64 OpenBLAS on Windows by default, so those calls
+        # have nowhere to forward to once Julia's init (or anything else)
+        # looks at the table. Setting LBT_DEFAULT_LIBS makes
+        # libblastrampoline register both the LP64 and ILP64 OpenBLAS at
+        # its own load time (same requirement as running any other
+        # PETSc_jll-built executable standalone outside Julia - LBT_DEFAULT_LIBS
+        # needs both forwarded).
+        $destdir = "${{ github.workspace }}\lamem_destdir"
+        $env:LBT_DEFAULT_LIBS = "$destdir\lib\libopenblas.dll;$destdir\lib\libopenblas64_.dll"
         cd test/t40_PhaseTransitionPlugin
         $proc = Start-Process -FilePath "..\..\bin\opt\LaMEM.exe" -ArgumentList "-ParamFile","PT0_only_plugin.dat","-dylib_plugin","build_constant\bin\libptlib_constant.dll" -RedirectStandardOutput dylib_plugin_windows.log -RedirectStandardError dylib_plugin_windows.err.log -PassThru
         Start-Sleep -Seconds 3
