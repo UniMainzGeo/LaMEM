@@ -214,6 +214,11 @@ jobs:
         # PE import table references - compare that literal name against
         # what's actually on disk (case/exact-name mismatches are possible).
         objdump -p ../../bin/opt/LaMEM.exe | grep -i "DLL Name" | sort -u
+        echo "--- architecture (machine type) of LaMEM.exe vs msmpi.dll ---"
+        objdump -f ../../bin/opt/LaMEM.exe | grep -i architecture
+        objdump -f ../../bin/opt/msmpi.dll | grep -i architecture
+        echo "--- file(1) on both, for a second opinion ---"
+        file ../../bin/opt/LaMEM.exe ../../bin/opt/msmpi.dll
         echo "PATH: $PATH"
         ../../bin/opt/LaMEM.exe -ParamFile PT0_only_plugin.dat -dylib_plugin build_constant/bin/libptlib_constant.dll > dylib_plugin_windows.log 2>&1
         echo "LaMEM.exe exit code: $?"
