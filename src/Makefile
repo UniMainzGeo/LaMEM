@@ -136,7 +136,7 @@ ifneq ($(filter MSYS% MINGW%,$(UNAME)),)
    # Windows (PetscDLOpen uses LoadLibrary there) and no libdl exists to
    # link against, so drop it.
    PETSC_LIB := $(filter-out -ldl, $(PETSC_LIB))
-   PETSC_LIB := -L$(PETSC_DIR)/../../.. $(PETSC_LIB)
+   PETSC_LIB := -L$(PETSC_DIR)/../../../lib $(PETSC_LIB)
    # These JLL-provided dependencies ship only a bare runtime .dll, with no
    # accompanying .dll.a import library - plain -lNAME can't resolve them.
    # ld can still link directly against a DLL by its exact filename, so
