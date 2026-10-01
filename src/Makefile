@@ -119,7 +119,9 @@ endif
 
 # Windows requires this linker flag
 UNAME := $(shell uname)
-ifneq ($(filter MSYS%,$(UNAME)),)
+# MSYS2's mingw64 environment (used by LaMEM's Windows CI) reports uname as
+# MINGW64_NT-..., not MSYS_NT-... - match both.
+ifneq ($(filter MSYS% MINGW%,$(UNAME)),)
    CLIB_FLAGS = -lssp
    # PETSc_jll's Windows petscvariables bakes PETSC_LIB's -L search path in
    # as ${PETSC_DIR}/lib only (matching this platform's own -L flag, see

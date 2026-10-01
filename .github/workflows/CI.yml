@@ -175,17 +175,6 @@ jobs:
         julia --project=. setup_packages.jl
         cd ..
 
-    - name: 'Debug: print PETSC_LIB and UNAME as the Makefile sees them'
-      run: |
-        cd src
-        echo "uname: $(uname)"
-        make mode=opt \
-          PETSC_OPT=/workspace/destdir/lib/petsc/double_real_Int64 \
-          PETSC_DEB=/workspace/destdir/lib/petsc/double_real_Int64_deb \
-          FASTSCAPE_LIB=/workspace/destdir/lib/fastscape \
-          print
-        cd ..
-
     - name: 'Compile LaMEM | Int64'
       env:
         LAMEM_CI_DESTDIR: ${{ github.workspace }}\lamem_destdir
