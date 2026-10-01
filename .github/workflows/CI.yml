@@ -205,27 +205,24 @@ jobs:
         cp /workspace/destdir/bin/petsc/double_real_Int64/lib/*.dll bin/opt/ 2>/dev/null || true
         cp /workspace/destdir/lib/*.dll bin/opt/ 2>/dev/null || true
         cp /workspace/destdir/lib/fastscape/*.dll bin/opt/ 2>/dev/null || true
-        # Do NOT stage libjulia*.dll, libblastrampoline*.dll, or other
-        # Julia-runtime DLLs here: the dylib_plugin loader explicitly opens
-        # its OWN copies of these from the plugin DLL's own directory
+        # Do NOT stage libjulia*.dll here: the dylib_plugin loader
+        # explicitly opens its OWN copy from the plugin DLL's own directory
         # (test/t40_PhaseTransitionPlugin/build_constant/bin/), a different
         # Julia build/version than PETSc_jll's bundled one. A second,
         # different libjulia.dll sitting next to LaMEM.exe caused "Image
-        # file failed consistency check"; a second, different
-        # libblastrampoline-5.dll (confirmed via process module enumeration:
-        # two distinct instances, one in bin/opt/ from this staging step,
-        # one in the plugin's own directory) meant PETSc's own BLAS calls -
-        # already bound to ITS libblastrampoline-5.dll at PETSc's own load
-        # time - never got the forwarding Julia's init sets up on the
-        # plugin's separate instance, leaving them unresolved ("no
-        # BLAS/LAPACK library loaded"). Remove both and their
-        # LLVM/Julia-internal siblings so only the plugin's own copies exist.
-        rm -f bin/opt/libjulia*.dll bin/opt/libblastrampoline*.dll bin/opt/libLLVM*.dll \
-              bin/opt/libllvmcalltest.dll bin/opt/libLTO.dll bin/opt/libccall*.dll \
-              bin/opt/libmlir_*.dll bin/opt/libload_time_mpi_constants.dll bin/opt/libRemarks.dll
-        ls bin/opt/msmpi.dll bin/opt/libfastscapelib_fortran.dll
-        echo "--- LaMEM.exe's own PE imports (confirm libblastrampoline isn't one) ---"
-        objdump -p bin/opt/LaMEM.exe | grep -i "DLL Name"
+        # file failed consistency check" - remove it and its LLVM/
+        # Julia-internal siblings so only the plugin's own copy exists.
+        #
+        # libblastrampoline-5.dll, unlike libjulia, IS kept here: PETSc's
+        # own DLL transitively imports it and needs a copy resolvable at
+        # LaMEM.exe's own load time. The plugin loader (DylibPluginOpenWinLbt
+        # in dylib_plugins.cpp) looks up this same already-loaded instance
+        # by name (GetModuleHandle-style) rather than opening a second one
+        # by path, so there is exactly one instance for both to share.
+        rm -f bin/opt/libjulia*.dll bin/opt/libLLVM*.dll bin/opt/libllvmcalltest.dll \
+              bin/opt/libLTO.dll bin/opt/libccall*.dll bin/opt/libmlir_*.dll \
+              bin/opt/libload_time_mpi_constants.dll bin/opt/libRemarks.dll
+        ls bin/opt/msmpi.dll bin/opt/libfastscapelib_fortran.dll bin/opt/libblastrampoline-5.dll
 
     - name: 'Run LaMEM with the dylib plugin'
       # MSYS2's own exec path cannot launch native Windows executables in
@@ -238,18 +235,6 @@ jobs:
       # running the already-built native .exe doesn't need MSYS2 at all.
       shell: pwsh
       run: |
-        # julia-actions/setup-julia put its own Julia install's bin/ (with
-        # its own libblastrampoline-5.dll/libjulia*.dll) on PATH. PETSc's
-        # own DLL transitively imports libblastrampoline-5.dll, resolved at
-        # LaMEM.exe's OWN load time via the normal Windows search order
-        # (including PATH) - before any plugin code runs - so it picks up
-        # that unrelated copy instead of a copy consistent with what the
-        # plugin bundle uses, producing a second coexisting instance (same
-        # cross-instance problem as the libjulia.dll/libblastrampoline.dll
-        # staging issue, just one step earlier in the process lifetime, and
-        # not something dylib_plugins.cpp's own load-order can prevent).
-        # Strip it so PETSc's own import resolves to nothing from PATH.
-        $env:PATH = ($env:PATH -split ';' | Where-Object { $_ -notlike '*\julia\*\bin' }) -join ';'
         cd test/t40_PhaseTransitionPlugin
         $proc = Start-Process -FilePath "..\..\bin\opt\LaMEM.exe" -ArgumentList "-ParamFile","PT0_only_plugin.dat","-dylib_plugin","build_constant\bin\libptlib_constant.dll" -RedirectStandardOutput dylib_plugin_windows.log -RedirectStandardError dylib_plugin_windows.err.log -PassThru
         Start-Sleep -Seconds 3

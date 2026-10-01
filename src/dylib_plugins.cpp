@@ -27,6 +27,9 @@
 #if defined(PETSC_HAVE_DLADDR) && !defined(_WIN32)
 #include <dlfcn.h>
 #endif
+#if defined(_WIN32)
+#include <windows.h> // GetModuleHandleA, see DylibPluginOpenWinLbt
+#endif
 //---------------------------------------------------------------------------
 typedef int      (*DylibPluginAbiVersionFn)(void);
 typedef void      (*JlParseOptsFn)(int *argc, char ***argv);
@@ -173,26 +176,33 @@ static PetscErrorCode DylibPluginOpenWinJulia(const char *pluginPath)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-// libblastrampoline-5.dll, by contrast, must NOT be opened before the
-// plugin: PETSc's own BLAS/LAPACK calls (idamax_, dgemm_, ...) are already
-// bound to libblastrampoline-5.dll by base name at PETSc's own load time.
-// Opening the plugin's bundled copy of the same DLL name first would make
-// Windows bind PETSc's calls to the plugin's LBT instance instead of
-// PETSc's own - which has no BLAS implementation registered yet - leaving
-// PETSc's own BLAS calls unresolved ("no BLAS/LAPACK library loaded").
-// Opening it after the plugin (whose own PE imports already resolved it,
-// one way or another) just gives us the handle to use for the snapshot/
-// restore dance in DylibPluginSnapshotLbt/DylibPluginRestoreLbt, matching
-// the original call order.
+// libblastrampoline-5.dll, unlike libjulia.dll, must NOT be opened as a
+// second instance at all: PETSc's own BLAS/LAPACK calls (idamax_, dgemm_,
+// ...) are already bound, via PETSc's own PE imports, to whichever
+// libblastrampoline-5.dll is resolved at LaMEM.exe's own load time (it must
+// be kept staged next to LaMEM.exe for this to succeed in the first place).
+// PetscDLOpen()'ing a second copy by full path from the plugin's directory
+// - as DylibPluginOpenWinJulia does for libjulia.dll - would load a
+// genuinely separate module (Windows has no DLL privatization, but a
+// different path string for the same base name does still produce a
+// distinct instance). Julia's init would then set up BLAS forwarding on
+// that second instance while PETSc's calls remain bound to the first,
+// unconfigured one ("no BLAS/LAPACK library loaded").
+//
+// Since PETSc's copy is already loaded into the process by the time this
+// runs (LaMEM.exe's own PE imports are resolved before any of its own code,
+// including this function, executes), look it up by bare name instead of
+// opening a new one - GetModuleHandleA returns the handle of an
+// already-loaded module without incrementing its reference count or
+// loading a second copy, and PetscDLHandle is just void* on this platform
+// (same value PetscDLOpen's own Windows backend would have produced via
+// LoadLibrary), so it can be used directly as lbtHandle.
 static PetscErrorCode DylibPluginOpenWinLbt(const char *pluginPath)
 {
-	char dir[_str_len_], path[_str_len_];
-
 	PetscFunctionBeginUser;
+	(void)pluginPath; // unused: looked up by name, not by the plugin's directory
 
-	PetscCall(DylibPluginDir(pluginPath, dir));
-	PetscCall(PetscSNPrintf(path, _str_len_, "%s%slibblastrampoline-5.dll", dir, dir[0] ? "\\" : ""));
-	PetscCall(PetscDLOpen(path, PETSC_DL_NOW, &lbtHandle)); // lbtHandle left NULL on failure, not an error
+	lbtHandle = (PetscDLHandle)GetModuleHandleA("libblastrampoline-5.dll"); // NULL if not loaded, not an error
 
 	PetscFunctionReturn(0);
 }
@@ -205,9 +215,9 @@ static PetscErrorCode DylibPluginOpenWinLbt(const char *pluginPath)
 // versioned; trust it only if the resolved symbol lives in a
 // "libblastrampoline.5" (macOS) or "libblastrampoline.so.5" (Linux) image
 // (dladdr), else skip silently. On Windows lbtHandle already IS the specific
-// "libblastrampoline-5.dll" DylibPluginOpenWinLbt opened by that exact name (or
-// NULL if it was not found next to the plugin), so there is no address to
-// verify - the explicit filename is the check.
+// "libblastrampoline-5.dll" module DylibPluginOpenWinLbt looked up by that
+// exact name (or NULL if none is loaded), so there is no address to verify
+// - the explicit name lookup is the check.
 static PetscErrorCode DylibPluginSnapshotLbt(void)
 {
 	void *sym = NULL;
@@ -364,8 +374,8 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 	}
 
 #if defined(_WIN32)
-	// Opened here, AFTER the plugin - see DylibPluginOpenWinLbt for why this
-	// one must not be opened early the way libjulia.dll is.
+	// Looked up here (not opened early like libjulia.dll) - see
+	// DylibPluginOpenWinLbt for why.
 	PetscCall(DylibPluginOpenWinLbt(lib));
 #endif
 
