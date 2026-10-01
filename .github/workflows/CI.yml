@@ -201,8 +201,15 @@ jobs:
         # but Windows PE binaries don't honor rpath the way ELF does - DLLs
         # are found via the exe's own directory or PATH only. msmpi.dll and
         # PETSc's own shared libs live under /workspace/destdir/{bin,lib,...}
-        # (not next to LaMEM.exe), so put those on PATH for this run.
-        export PATH="/workspace/destdir/bin:/workspace/destdir/bin/petsc/double_real_Int64/lib:/workspace/destdir/lib:$PATH"
+        # (not next to LaMEM.exe); MSYS2 translates POSIX PATH entries to
+        # Windows form when exec'ing a native child, so the POSIX form
+        # should suffice - but it didn't on the previous run, so also copy
+        # the dependency DLLs directly next to LaMEM.exe as a fallback,
+        # which the Windows loader always checks first regardless of PATH.
+        cp /workspace/destdir/bin/*.dll ../../bin/opt/ 2>/dev/null || true
+        cp /workspace/destdir/bin/petsc/double_real_Int64/lib/*.dll ../../bin/opt/ 2>/dev/null || true
+        cp /workspace/destdir/lib/*.dll ../../bin/opt/ 2>/dev/null || true
+        ls ../../bin/opt/*.dll | wc -l
         echo "PATH: $PATH"
         ../../bin/opt/LaMEM.exe -ParamFile PT0_only_plugin.dat -dylib_plugin build_constant/bin/libptlib_constant.dll > dylib_plugin_windows.log 2>&1
         echo "LaMEM.exe exit code: $?"
