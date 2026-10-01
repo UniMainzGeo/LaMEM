@@ -205,6 +205,17 @@ jobs:
         cp /workspace/destdir/bin/petsc/double_real_Int64/lib/*.dll bin/opt/ 2>/dev/null || true
         cp /workspace/destdir/lib/*.dll bin/opt/ 2>/dev/null || true
         cp /workspace/destdir/lib/fastscape/*.dll bin/opt/ 2>/dev/null || true
+        # Do NOT stage libjulia*.dll or other Julia-runtime DLLs here: the
+        # dylib_plugin loader (DylibPluginOpenWinDeps) explicitly opens its
+        # OWN libjulia.dll from the plugin DLL's own directory
+        # (test/t40_PhaseTransitionPlugin/build_constant/bin/), which is a
+        # different Julia build/version than PETSc_jll's bundled one. A
+        # second, different libjulia.dll sitting next to LaMEM.exe caused
+        # "Image file failed consistency check" - remove it and its
+        # LLVM/Julia-internal siblings so only the plugin's own copy exists.
+        rm -f bin/opt/libjulia*.dll bin/opt/libLLVM*.dll bin/opt/libllvmcalltest.dll \
+              bin/opt/libLTO.dll bin/opt/libccall*.dll bin/opt/libmlir_*.dll \
+              bin/opt/libload_time_mpi_constants.dll bin/opt/libRemarks.dll
         ls bin/opt/msmpi.dll bin/opt/libfastscapelib_fortran.dll
 
     - name: 'Run LaMEM with the dylib plugin'
