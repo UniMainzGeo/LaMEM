@@ -193,39 +193,37 @@ jobs:
         # not build_constant/lib/.
         test -f test/t40_PhaseTransitionPlugin/build_constant/bin/libptlib_constant.dll
 
-    - name: 'Run LaMEM with the dylib plugin'
+    - name: 'Stage runtime DLLs next to LaMEM.exe'
       run: |
-        set +e
-        cd test/t40_PhaseTransitionPlugin
         # LaMEM.exe is linked with -Wl,-rpath for its runtime library dirs,
         # but Windows PE binaries don't honor rpath the way ELF does - DLLs
         # are found via the exe's own directory or PATH only. msmpi.dll and
-        # PETSc's own shared libs live under /workspace/destdir/{bin,lib,...}
-        # (not next to LaMEM.exe); MSYS2 translates POSIX PATH entries to
-        # Windows form when exec'ing a native child, so the POSIX form
-        # should suffice - but it didn't on the previous run, so also copy
-        # the dependency DLLs directly next to LaMEM.exe as a fallback,
-        # which the Windows loader always checks first regardless of PATH.
-        cp /workspace/destdir/bin/*.dll ../../bin/opt/ 2>/dev/null || true
-        cp /workspace/destdir/bin/petsc/double_real_Int64/lib/*.dll ../../bin/opt/ 2>/dev/null || true
-        cp /workspace/destdir/lib/*.dll ../../bin/opt/ 2>/dev/null || true
-        ls ../../bin/opt/msmpi.dll
-        # dumpbin/objdump -p on LaMEM.exe shows exactly which DLL names the
-        # PE import table references - compare that literal name against
-        # what's actually on disk (case/exact-name mismatches are possible).
-        objdump -p ../../bin/opt/LaMEM.exe | grep -i "DLL Name" | sort -u
-        echo "--- try launching LaMEM.exe via native cmd.exe instead of MSYS2's own exec path ---"
-        cmd //c "..\\..\\bin\\opt\\LaMEM.exe -ParamFile PT0_only_plugin.dat -dylib_plugin build_constant\\bin\\libptlib_constant.dll" > /tmp/cmd_run.log 2>&1
-        echo "cmd.exe launch exit code: $?"
-        cat /tmp/cmd_run.log
-        echo "PATH: $PATH"
-        ../../bin/opt/LaMEM.exe -ParamFile PT0_only_plugin.dat -dylib_plugin build_constant/bin/libptlib_constant.dll > dylib_plugin_windows.log 2>&1
-        echo "LaMEM.exe exit code: $?"
-        cat dylib_plugin_windows.log
-        set -e
-        grep -q "Dylib plugin" dylib_plugin_windows.log
-        grep -q "27512 marker(s) changed phase" dylib_plugin_windows.log
-        grep -q "SOLUTION IS DONE" dylib_plugin_windows.log
+        # PETSc's own shared libs live under /workspace/destdir/{bin,lib,...},
+        # not next to LaMEM.exe, so copy them there (the Windows loader
+        # always checks the exe's own directory first).
+        cp /workspace/destdir/bin/*.dll bin/opt/ 2>/dev/null || true
+        cp /workspace/destdir/bin/petsc/double_real_Int64/lib/*.dll bin/opt/ 2>/dev/null || true
+        cp /workspace/destdir/lib/*.dll bin/opt/ 2>/dev/null || true
+        ls bin/opt/msmpi.dll
+
+    - name: 'Run LaMEM with the dylib plugin'
+      # MSYS2's own exec path cannot launch native Windows executables in
+      # this runner context at all - even cmd.exe itself fails the same way
+      # under it (confirmed: "error while loading shared libraries:
+      # api-ms-win-core-delayload-l1-1-0.dll", a virtual API Set DLL that
+      # isn't a real file, resolved by the Windows kernel - not something
+      # any file copy or PATH entry can fix). Run this one step through
+      # PowerShell instead, overriding the job's msys2 shell default, since
+      # running the already-built native .exe doesn't need MSYS2 at all.
+      shell: pwsh
+      run: |
+        cd test/t40_PhaseTransitionPlugin
+        ..\..\bin\opt\LaMEM.exe -ParamFile PT0_only_plugin.dat -dylib_plugin build_constant\bin\libptlib_constant.dll | Tee-Object -FilePath dylib_plugin_windows.log
+        if ($LASTEXITCODE -ne 0) { throw "LaMEM.exe exited with code $LASTEXITCODE" }
+        $log = Get-Content dylib_plugin_windows.log -Raw
+        if ($log -notmatch "Dylib plugin") { throw "missing 'Dylib plugin' in output" }
+        if ($log -notmatch "27512 marker\(s\) changed phase") { throw "missing '27512 marker(s) changed phase' in output" }
+        if ($log -notmatch "SOLUTION IS DONE") { throw "missing 'SOLUTION IS DONE' in output" }
 
   build_docs:
     runs-on: ubuntu-latest
