@@ -73,8 +73,18 @@ function run_with_retry(c::Cmd)
         run(c)
     catch e
         if Sys.iswindows()
-            @warn "make failed with no diagnostic output (known Windows/MSYS2 first-spawn quirk) - retrying once" exception = e
-            run(c)
+            @warn "make failed with no diagnostic output - retrying with -d, tail of the trace will be printed" exception = e
+            logfile = tempname()
+            c_d = Cmd(Cmd([c.exec; "-d"]), env = c.env)
+            try
+                run(pipeline(c_d, stdout = logfile, stderr = logfile))
+            catch e2
+                println("---- tail of make -d output ----")
+                for line in last(readlines(logfile), 150)
+                    println(line)
+                end
+                rethrow(e2)
+            end
         else
             rethrow()
         end
