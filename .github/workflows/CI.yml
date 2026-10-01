@@ -175,6 +175,10 @@ jobs:
         julia --project=. setup_packages.jl
         cd ..
 
+    - name: 'Debug: check for .dll.a import libraries alongside the DLLs'
+      run: |
+        ls /workspace/destdir/lib/libHYPRE64* /workspace/destdir/lib/libgfortran* /workspace/destdir/lib/libtet* 2>&1 || true
+
     - name: 'Compile LaMEM | Int64'
       env:
         LAMEM_CI_DESTDIR: ${{ github.workspace }}\lamem_destdir
