@@ -114,6 +114,94 @@ jobs:
         cd ..
         julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit 
         
+  macos_arm64:
+    name: 'macOS (arm64)'
+    runs-on: macos-latest
+    steps:
+
+    - name: 'Install compilers'
+      run: |
+        set -e
+        uname -a
+        brew install make astyle
+        # GNU make, not /usr/bin/make (BSD make, no $(shell ...) etc.
+        # support LaMEM's Makefile needs) - put it ahead of the system one.
+        echo "/opt/homebrew/opt/make/libexec/gnubin" >> "$GITHUB_PATH"
+
+    - name: 'Install julia'
+      uses: julia-actions/setup-julia@v3
+      with:
+        version: '1.13'
+
+    - run: julia -e 'using InteractiveUtils; versioninfo(verbose=true)'
+
+    - run: julia -e '@show Base.BinaryPlatforms.HostPlatform()'
+
+    - name: 'Checkout LaMEM'
+      uses: actions/checkout@v4
+
+    - name: 'Install PETSc & LaMEM'
+      # No /workspace/destdir equivalent on macOS (no writable root-level
+      # directory, no sudo needed/wanted) - setup_packages.jl/compile_lamem.jl
+      # already fall back to an ordinary user-writable destdir and skip sudo
+      # whenever LAMEM_CI_DESTDIR is set to something other than the literal
+      # /workspace/destdir (see those scripts' own comments; this same
+      # LAMEM_CI_DESTDIR mechanism is what the Windows job also relies on).
+      env:
+        LAMEM_CI_DESTDIR: ${{ github.workspace }}/lamem_destdir
+      run: |
+        cd test
+        julia --project=. setup_packages.jl
+        cd ..
+
+    - name: 'Compile LaMEM | Int32'
+      env:
+        LAMEM_CI_DESTDIR: ${{ github.workspace }}/lamem_destdir
+      run: |
+        cd test
+        julia --project=. compile_lamem.jl int32
+        cd ../bin
+        mv -f opt opt32
+        mv -f deb deb32
+        cd ..
+        rm -rf lib/opt/* lib/deb/* dep/opt/* dep/deb/*
+
+    - name: 'Compile LaMEM | Int64'
+      env:
+        LAMEM_CI_DESTDIR: ${{ github.workspace }}/lamem_destdir
+      run: |
+        cd test
+        julia --project=. compile_lamem.jl int64
+        cd ../bin
+        mv -f opt opt64
+        mv -f deb deb64
+        cd ..
+
+    - name: 'Build dylib plugin bundle (t40)'
+      run: |
+        julia --project=@juliac -e 'using Pkg; Pkg.add("JuliaC")'
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_constant.jl test/t40_PhaseTransitionPlugin
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_box.jl test/t40_PhaseTransitionPlugin
+        test -f test/t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.dylib
+        test -f test/t40_PhaseTransitionPlugin/build_box/lib/libptlib_box.dylib
+
+    - name: 'Test LaMEM | Int32'
+      run: |
+        cd bin
+        cp -r opt32 opt
+        cp -r deb32 deb
+        cd ..
+        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl
+
+    - name: 'Test LaMEM | Int64'
+      run: |
+        cd bin
+        rm -rf opt deb
+        cp -r opt64 opt
+        cp -r deb64 deb
+        cd ..
+        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit
+
   windows_dylib_plugin:
     # Verifies the dylib_plugin loader's Windows-specific code path (see
     # src/dylib_plugins.cpp's #if defined(_WIN32) branches). Narrower than the
