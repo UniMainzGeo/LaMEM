@@ -171,8 +171,22 @@ jobs:
         # else from the same runtime) there instead.
         julia_depot=$(julia -e 'print(first(DEPOT_PATH))')
         echo "julia_depot=$julia_depot"
-        echo "--- searching for libgfortran/libemutls_w under the real Julia depot ---"
-        find "$julia_depot/artifacts" -iname 'libemutls_w*' -o -iname 'libgfortran*' 2>/dev/null
+        echo "--- searching the whole filesystem for libemutls_w (slow, one-off) ---"
+        sudo find / -xdev -iname 'libemutls_w*' 2>/dev/null
+        find "$julia_depot" -xdev -iname 'libemutls_w*' 2>/dev/null
+        echo "--- CompilerSupportLibraries_jll / GCC_jll artifact dirs ---"
+        julia -e '
+            using Pkg
+            Pkg.activate(; temp=true)
+            Pkg.add("CompilerSupportLibraries_jll")
+            using CompilerSupportLibraries_jll
+            println(CompilerSupportLibraries_jll.artifact_dir)
+            for (root, dirs, files) in walkdir(CompilerSupportLibraries_jll.artifact_dir)
+                for f in files
+                    occursin("emutls", f) && println(joinpath(root, f))
+                end
+            end
+        '
         gcc_lib_dir=$(find "$julia_depot/artifacts" -type d -path '*/lib/gcc/*' 2>/dev/null | head -1)
         echo "gcc_lib_dir=$gcc_lib_dir"
         export LIBRARY_PATH="$gcc_lib_dir:$LIBRARY_PATH"
