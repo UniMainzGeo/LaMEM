@@ -169,25 +169,12 @@ jobs:
         # Julia itself installed landed. Find that directory and add it to
         # LIBRARY_PATH so the linker can find libemutls_w (and anything
         # else from the same runtime) there instead.
-        julia_depot=$(julia -e 'print(first(DEPOT_PATH))')
-        echo "julia_depot=$julia_depot"
-        echo "--- searching the whole filesystem for libemutls_w (slow, one-off) ---"
-        sudo find / -xdev -iname 'libemutls_w*' 2>/dev/null
-        find "$julia_depot" -xdev -iname 'libemutls_w*' 2>/dev/null
-        echo "--- CompilerSupportLibraries_jll / GCC_jll artifact dirs ---"
-        julia -e '
-            using Pkg
-            Pkg.activate(; temp=true)
-            Pkg.add("CompilerSupportLibraries_jll")
-            using CompilerSupportLibraries_jll
-            println(CompilerSupportLibraries_jll.artifact_dir)
-            for (root, dirs, files) in walkdir(CompilerSupportLibraries_jll.artifact_dir)
-                for f in files
-                    occursin("emutls", f) && println(joinpath(root, f))
-                end
-            end
-        '
-        gcc_lib_dir=$(find "$julia_depot/artifacts" -type d -path '*/lib/gcc/*' 2>/dev/null | head -1)
+        # libemutls_w (part of a real GCC install's own runtime, not
+        # anything Julia/PETSc_jll ships) lives under this runner's
+        # pre-installed Homebrew GCC, e.g.
+        # /opt/homebrew/Cellar/gcc@13/13.4.0/lib/gcc/13/gcc/aarch64-apple-darwin25/13/ -
+        # found by searching the whole filesystem once.
+        gcc_lib_dir=$(find "$(brew --prefix)" -iname 'libemutls_w.a' 2>/dev/null | head -1 | xargs dirname)
         echo "gcc_lib_dir=$gcc_lib_dir"
         export LIBRARY_PATH="$gcc_lib_dir:$LIBRARY_PATH"
         cd test
