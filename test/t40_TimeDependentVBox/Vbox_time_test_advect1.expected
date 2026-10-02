@@ -1,0 +1,1475 @@
+--------------------------------------------------------------------------
+Parsing input file : velbox_time_test_advect1.dat 
+Finished parsing input file 
+--------------------------------------------------------------------------
+Parsing PETSc options
+Total number of options added: 0
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-jp_pc_factor_mat_solver_type mumps # (source: code)
+-jp_pc_type lu # (source: code)
+-jp_pgamma 100 # (source: code)
+-jp_type user # (source: code)
+-js_ksp_atol 1e-08 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 20 # (source: code)
+-js_ksp_rtol 0.0001 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-options_left # (source: code)
+-ParamFile velbox_time_test_advect1.dat # (source: code)
+-snes_atol 0.0001 # (source: code)
+-snes_linesearch_max_it 5 # (source: code)
+-snes_linesearch_maxstep 1.0 # (source: code)
+-snes_linesearch_minlambda 0.05 # (source: code)
+-snes_linesearch_type l2 # (source: code)
+-snes_max_funcs unlimited # (source: code)
+-snes_max_it 50 # (source: code)
+-snes_monitor # (source: code)
+-snes_newton_maxit 20 # (source: code)
+-snes_newton_rtol 1.2 # (source: code)
+-snes_picard_minit 5 # (source: code)
+-snes_picard_rtol 0.01 # (source: code)
+-snes_rtol 0.0001 # (source: code)
+-snes_stol 1e-32 # (source: code)
+#End of PETSc Option Table entries
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Oct  2 2026 - Time: 15:16:26 	    
+     Version : 3.3.0 
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Time stepping parameters:
+   Simulation end time          : 15. [ ] 
+   Maximum number of steps      : 50 
+   Time step                    : 0.25 [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 0.25 [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.8 
+   Output every [n] steps       : 5 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 4 
+   Processor grid  [nx, ny, nz]         : [1, 2, 2]
+   Fine grid cells [nx, ny, nz]         : [16, 16, 16]
+   Number of cells                      :  4096
+   Number of faces                      :  13056
+   Maximum cell aspect ratio            :  1.00000
+   Lower coordinate bounds [bx, by, bz] : [-8., -8., -8.]
+   Upper coordinate bounds [ex, ey, ez] : [8., 8., 8.]
+--------------------------------------------------------------------------
+Material parameters: 
+
+   Phase ID : 0   
+   (dens)   : rho = 1. [ ]  
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
+   Number of velocity boxes                   : 1 
+      Velocity box #                          : 0 
+      Box center                              : 4., 4., 0. [ ] 
+      Box width                               : 4., 2., 2. [ ] 
+      Advect velocity with flow               @  
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Surface stabilization (FSSA)            :  1. 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 0.01 [ ] 
+   Maximum viscosity                       : 100. [ ] 
+   Reference viscosity (initial guess)     : 1. [ ] 
+   Max. melt fraction (viscosity, density) : 1.    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Runge-Kutta 2-nd order
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : empirical STAGP (STAG + pressure points)
+   Marker control type           : subgrid 
+   Markers per cell [nx, ny, nz] : [3, 3, 3] 
+   Marker distribution type      : uniform
+   Background phase ID           : 0 
+   Interpolation constant        : 0.666667 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.00104717 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : velbox_test_adv0 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Picard operator type          : assembled
+   Preconditioner type           : user-defined
+   Penalty parameter (pgamma)    : 1.000000e+02
+--------------------------------------------------------------------------
+Saving output ... done (0.000730801 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 8.000693073595e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 2.109584560301e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.4496 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 7.713179218645e-05 
+      |Div|_2   = 2.108145536051e-04 
+   Momentum: 
+      |mRes|_2  = 7.790645601617e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 1.7167e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.000643507 sec)
+--------------------------------------------------------------------------
+================================= STEP 2 =================================
+--------------------------------------------------------------------------
+Current time        : 0.25000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 5.038886770332e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.221954220082e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.19842 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.037591487903e-05 
+      |Div|_2   = 1.221954219496e-04 
+   Momentum: 
+      |mRes|_2  = 3.785263381468e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 1.5423e-03 s
+--------------------------------------------------------------------------
+================================= STEP 3 =================================
+--------------------------------------------------------------------------
+Current time        : 0.50000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.221954220082e-04
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 7.496293612960e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.19794 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.154879691352e-09 
+      |Div|_2   = 7.496293224974e-09 
+   Momentum: 
+      |mRes|_2  = 2.411830096276e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 0 markers and merged 17 markers in 1.6242e-03 s
+--------------------------------------------------------------------------
+================================= STEP 4 =================================
+--------------------------------------------------------------------------
+Current time        : 0.75000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 7.496293612960e-09
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 0
+  1 SNES Function norm 7.496293612960e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.16803 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.154879691352e-09 
+      |Div|_2   = 7.496293224974e-09 
+   Momentum: 
+      |mRes|_2  = 2.411830096276e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 24 markers and merged 54 markers in 1.5458e-03 s
+--------------------------------------------------------------------------
+================================= STEP 5 =================================
+--------------------------------------------------------------------------
+Current time        : 1.00000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 6.942292683050e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 2.799114844854e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.21004 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 8.525043285275e-05 
+      |Div|_2   = 2.798978193598e-04 
+   Momentum: 
+      |mRes|_2  = 2.765838834467e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 1.5633e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.0236965 sec)
+--------------------------------------------------------------------------
+================================= STEP 6 =================================
+--------------------------------------------------------------------------
+Current time        : 1.25000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.799114844854e-04
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 9.766001363716e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.21492 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.239530478371e-09 
+      |Div|_2   = 9.522383696727e-09 
+   Momentum: 
+      |mRes|_2  = 2.167715702855e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 1.6919e-03 s
+--------------------------------------------------------------------------
+================================= STEP 7 =================================
+--------------------------------------------------------------------------
+Current time        : 1.50000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 9.766001363716e-09
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 0
+  1 SNES Function norm 9.766001363716e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.14277 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.239530478371e-09 
+      |Div|_2   = 9.522383696727e-09 
+   Momentum: 
+      |mRes|_2  = 2.167715702855e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 1.7401e-03 s
+--------------------------------------------------------------------------
+================================= STEP 8 =================================
+--------------------------------------------------------------------------
+Current time        : 1.75000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 9.766001363716e-09
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 0
+  1 SNES Function norm 9.766001363716e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.16046 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.239530478371e-09 
+      |Div|_2   = 9.522383696727e-09 
+   Momentum: 
+      |mRes|_2  = 2.167715702855e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 1.5650e-03 s
+--------------------------------------------------------------------------
+================================= STEP 9 =================================
+--------------------------------------------------------------------------
+Current time        : 2.00000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 7.543114097379e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 3.702959805431e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.18024 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.467392100947e-04 
+      |Div|_2   = 3.702723311129e-04 
+   Momentum: 
+      |mRes|_2  = 4.184975334062e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 46 markers and merged 24 markers in 1.5856e-03 s
+--------------------------------------------------------------------------
+================================ STEP 10 =================================
+--------------------------------------------------------------------------
+Current time        : 2.25000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.077066330306e+01
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 2.012570752084e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.18715 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 7.929141175318e-05 
+      |Div|_2   = 2.012570751195e-04 
+   Momentum: 
+      |mRes|_2  = 5.981881394392e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 8 markers and merged 0 markers in 1.6846e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.0197813 sec)
+--------------------------------------------------------------------------
+================================ STEP 11 =================================
+--------------------------------------------------------------------------
+Current time        : 2.50000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.012570752084e-04
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.166399219247e-08
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.21292 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.198510678537e-09 
+      |Div|_2   = 1.166399146271e-08 
+   Momentum: 
+      |mRes|_2  = 4.125989318906e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 1.6541e-03 s
+--------------------------------------------------------------------------
+================================ STEP 12 =================================
+--------------------------------------------------------------------------
+Current time        : 2.75000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.166399219247e-08
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+  1 SNES Function norm 1.194248034113e-10
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.19342 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.046787822036e-11 
+      |Div|_2   = 1.194247560228e-10 
+   Momentum: 
+      |mRes|_2  = 1.063894574576e-13 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 10 markers and merged 8 markers in 1.6462e-03 s
+--------------------------------------------------------------------------
+================================ STEP 13 =================================
+--------------------------------------------------------------------------
+Current time        : 3.00000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.757729153338e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.218943881813e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.17464 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.990845880470e-05 
+      |Div|_2   = 1.215888942494e-04 
+   Momentum: 
+      |mRes|_2  = 8.624538556529e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 61 markers and merged 40 markers in 1.6018e-03 s
+--------------------------------------------------------------------------
+================================ STEP 14 =================================
+--------------------------------------------------------------------------
+Current time        : 3.25000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 6.802841095039e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.543267371822e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.1891 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 6.213925519240e-05 
+      |Div|_2   = 1.543267371283e-04 
+   Momentum: 
+      |mRes|_2  = 4.079736073884e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 24 markers and merged 17 markers in 1.5698e-03 s
+--------------------------------------------------------------------------
+================================ STEP 15 =================================
+--------------------------------------------------------------------------
+Current time        : 3.50000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.543267371822e-04
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 9.403199068008e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.18947 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.664968135058e-09 
+      |Div|_2   = 9.403198703035e-09 
+   Momentum: 
+      |mRes|_2  = 2.619891434411e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 1.5662e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.000740864 sec)
+--------------------------------------------------------------------------
+================================ STEP 16 =================================
+--------------------------------------------------------------------------
+Current time        : 3.75000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 9.403199068008e-09
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 0
+  1 SNES Function norm 9.403199068008e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.17792 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.664968135058e-09 
+      |Div|_2   = 9.403198703035e-09 
+   Momentum: 
+      |mRes|_2  = 2.619891434411e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 23 markers and merged 7 markers in 1.7140e-03 s
+--------------------------------------------------------------------------
+================================ STEP 17 =================================
+--------------------------------------------------------------------------
+Current time        : 4.00000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.740566729934e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.207525955485e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.20102 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.948061600548e-05 
+      |Div|_2   = 1.204479906914e-04 
+   Momentum: 
+      |mRes|_2  = 8.571515040640e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 101 markers and merged 51 markers in 1.8259e-03 s
+--------------------------------------------------------------------------
+================================ STEP 18 =================================
+--------------------------------------------------------------------------
+Current time        : 4.25000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 5.800853828679e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.377112881644e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.22075 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.600281727048e-05 
+      |Div|_2   = 1.377112881103e-04 
+   Momentum: 
+      |mRes|_2  = 3.863532875532e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 191 markers and merged 123 markers in 1.8873e-03 s
+--------------------------------------------------------------------------
+================================ STEP 19 =================================
+--------------------------------------------------------------------------
+Current time        : 4.50000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.377112881644e-04
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 8.461818720254e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.20185 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.416932376459e-09 
+      |Div|_2   = 8.461818366832e-09 
+   Momentum: 
+      |mRes|_2  = 2.445645638358e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 218 markers and merged 154 markers in 1.9142e-03 s
+--------------------------------------------------------------------------
+================================ STEP 20 =================================
+--------------------------------------------------------------------------
+Current time        : 4.75000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 8.461818720254e-09
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 0
+  1 SNES Function norm 8.461818720254e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.17843 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.416932376459e-09 
+      |Div|_2   = 8.461818366832e-09 
+   Momentum: 
+      |mRes|_2  = 2.445645638358e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 443 markers and merged 467 markers in 1.9978e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.000776137 sec)
+--------------------------------------------------------------------------
+================================ STEP 21 =================================
+--------------------------------------------------------------------------
+Current time        : 5.00000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.734431250422e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.204831981294e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.19954 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.937226205871e-05 
+      |Div|_2   = 1.201739880565e-04 
+   Momentum: 
+      |mRes|_2  = 8.626333293629e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 964 markers and merged 1100 markers in 2.6338e-03 s
+--------------------------------------------------------------------------
+================================ STEP 22 =================================
+--------------------------------------------------------------------------
+Current time        : 5.25000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 5.386293727723e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.297547726985e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.21056 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.308512223319e-05 
+      |Div|_2   = 1.297547726452e-04 
+   Momentum: 
+      |mRes|_2  = 3.720331134161e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1453 markers and merged 1544 markers in 2.9537e-03 s
+--------------------------------------------------------------------------
+================================ STEP 23 =================================
+--------------------------------------------------------------------------
+Current time        : 5.50000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.297547726985e-04
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 7.984468722616e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.1778 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.292669026849e-09 
+      |Div|_2   = 7.984468376100e-09 
+   Momentum: 
+      |mRes|_2  = 2.352337923722e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1422 markers and merged 1449 markers in 3.3610e-03 s
+--------------------------------------------------------------------------
+================================ STEP 24 =================================
+--------------------------------------------------------------------------
+Current time        : 5.75000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 7.984468722616e-09
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 0
+  1 SNES Function norm 7.984468722616e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.10596 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.292669026849e-09 
+      |Div|_2   = 7.984468376100e-09 
+   Momentum: 
+      |mRes|_2  = 2.352337923722e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1265 markers and merged 1274 markers in 2.9678e-03 s
+--------------------------------------------------------------------------
+================================ STEP 25 =================================
+--------------------------------------------------------------------------
+Current time        : 6.00000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.738241347055e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.210131367060e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.10079 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.955242565878e-05 
+      |Div|_2   = 1.206946566752e-04 
+   Momentum: 
+      |mRes|_2  = 8.773773731013e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1442 markers and merged 1426 markers in 3.2369e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.0184671 sec)
+--------------------------------------------------------------------------
+================================ STEP 26 =================================
+--------------------------------------------------------------------------
+Current time        : 6.25000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 5.175723956873e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.253339621790e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.16942 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.148458293410e-05 
+      |Div|_2   = 1.253339621264e-04 
+   Momentum: 
+      |mRes|_2  = 3.630307868015e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1100 markers and merged 1089 markers in 3.2948e-03 s
+--------------------------------------------------------------------------
+================================ STEP 27 =================================
+--------------------------------------------------------------------------
+Current time        : 6.50000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.253339621790e-04
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 7.709569722243e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.18366 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.222083461678e-09 
+      |Div|_2   = 7.709569379244e-09 
+   Momentum: 
+      |mRes|_2  = 2.299729216799e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1077 markers and merged 1053 markers in 3.3181e-03 s
+--------------------------------------------------------------------------
+================================ STEP 28 =================================
+--------------------------------------------------------------------------
+Current time        : 6.75000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 7.709569722243e-09
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 0
+  1 SNES Function norm 7.709569722243e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.14528 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.222083461678e-09 
+      |Div|_2   = 7.709569379244e-09 
+   Momentum: 
+      |mRes|_2  = 2.299729216799e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1231 markers and merged 1211 markers in 3.3447e-03 s
+--------------------------------------------------------------------------
+================================ STEP 29 =================================
+--------------------------------------------------------------------------
+Current time        : 7.00000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.752918636958e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.224168361404e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.19492 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.004814955185e-05 
+      |Div|_2   = 1.220848281130e-04 
+   Momentum: 
+      |mRes|_2  = 9.009801066453e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1111 markers and merged 1089 markers in 3.1779e-03 s
+--------------------------------------------------------------------------
+================================ STEP 30 =================================
+--------------------------------------------------------------------------
+Current time        : 7.25000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 5.060697286333e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.227526987379e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.19032 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.056165340957e-05 
+      |Div|_2   = 1.227526986857e-04 
+   Momentum: 
+      |mRes|_2  = 3.578788488571e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1250 markers and merged 1222 markers in 3.3280e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.0216327 sec)
+--------------------------------------------------------------------------
+================================ STEP 31 =================================
+--------------------------------------------------------------------------
+Current time        : 7.50000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.227526987379e-04
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 7.544110581795e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.189 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.179588620699e-09 
+      |Div|_2   = 7.544110239631e-09 
+   Momentum: 
+      |mRes|_2  = 2.272146504887e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1051 markers and merged 1063 markers in 3.3448e-03 s
+--------------------------------------------------------------------------
+================================ STEP 32 =================================
+--------------------------------------------------------------------------
+Current time        : 7.75000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 7.544110581795e-09
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 0
+  1 SNES Function norm 7.544110581795e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.15884 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.179588620699e-09 
+      |Div|_2   = 7.544110239631e-09 
+   Momentum: 
+      |mRes|_2  = 2.272146504887e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1422 markers and merged 1438 markers in 3.7903e-03 s
+--------------------------------------------------------------------------
+================================ STEP 33 =================================
+--------------------------------------------------------------------------
+Current time        : 8.00000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.782098113641e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.249757220383e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.16689 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.096675491071e-05 
+      |Div|_2   = 1.246263069344e-04 
+   Momentum: 
+      |mRes|_2  = 9.338882100817e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1251 markers and merged 1231 markers in 3.4688e-03 s
+--------------------------------------------------------------------------
+================================ STEP 34 =================================
+--------------------------------------------------------------------------
+Current time        : 8.25000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 5.000868073174e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.213316266062e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.2012 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.005799073981e-05 
+      |Div|_2   = 1.213316265540e-04 
+   Momentum: 
+      |mRes|_2  = 3.559515401328e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1647 markers and merged 1647 markers in 4.0315e-03 s
+--------------------------------------------------------------------------
+================================ STEP 35 =================================
+--------------------------------------------------------------------------
+Current time        : 8.50000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.213316266062e-04
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 7.449910616829e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.17216 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.154675743382e-09 
+      |Div|_2   = 7.449910272360e-09 
+   Momentum: 
+      |mRes|_2  = 2.265508063220e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1470 markers and merged 1467 markers in 3.7154e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.0268149 sec)
+--------------------------------------------------------------------------
+================================ STEP 36 =================================
+--------------------------------------------------------------------------
+Current time        : 8.75000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 7.449910616829e-09
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 0
+  1 SNES Function norm 7.449910616829e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.18685 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.154675743382e-09 
+      |Div|_2   = 7.449910272360e-09 
+   Momentum: 
+      |mRes|_2  = 2.265508063220e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1890 markers and merged 1899 markers in 4.3205e-03 s
+--------------------------------------------------------------------------
+================================ STEP 37 =================================
+--------------------------------------------------------------------------
+Current time        : 9.00000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.834436028740e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.293718409762e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.19267 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.256817332714e-05 
+      |Div|_2   = 1.290024294333e-04 
+   Momentum: 
+      |mRes|_2  = 9.769669282450e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1756 markers and merged 1745 markers in 4.2170e-03 s
+--------------------------------------------------------------------------
+================================ STEP 38 =================================
+--------------------------------------------------------------------------
+Current time        : 9.25000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 4.979669779584e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.207901351839e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.20065 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.986693932411e-05 
+      |Div|_2   = 1.207901351311e-04 
+   Momentum: 
+      |mRes|_2  = 3.572416364664e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1450 markers and merged 1445 markers in 3.7359e-03 s
+--------------------------------------------------------------------------
+================================ STEP 39 =================================
+--------------------------------------------------------------------------
+Current time        : 9.50000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.207901351839e-04
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 7.411320001609e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.21291 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.142930916049e-09 
+      |Div|_2   = 7.411319651933e-09 
+   Momentum: 
+      |mRes|_2  = 2.276647755403e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1152 markers and merged 1143 markers in 3.6357e-03 s
+--------------------------------------------------------------------------
+================================ STEP 40 =================================
+--------------------------------------------------------------------------
+Current time        : 9.75000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 7.411320001609e-09
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 0
+  1 SNES Function norm 7.411320001609e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.16746 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.142930916049e-09 
+      |Div|_2   = 7.411319651933e-09 
+   Momentum: 
+      |mRes|_2  = 2.276647755403e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1508 markers and merged 1517 markers in 3.9770e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.000723147 sec)
+--------------------------------------------------------------------------
+================================ STEP 41 =================================
+--------------------------------------------------------------------------
+Current time        : 10.00000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.930870464885e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.373092465431e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.22504 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.549545085498e-05 
+      |Div|_2   = 1.369223963148e-04 
+   Momentum: 
+      |mRes|_2  = 1.029983367062e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1606 markers and merged 1610 markers in 4.4445e-03 s
+--------------------------------------------------------------------------
+================================ STEP 42 =================================
+--------------------------------------------------------------------------
+Current time        : 10.25000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 4.991763670701e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.210538163381e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.23466 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.996162992623e-05 
+      |Div|_2   = 1.210538162839e-04 
+   Momentum: 
+      |mRes|_2  = 3.625109238110e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1420 markers and merged 1428 markers in 3.7126e-03 s
+--------------------------------------------------------------------------
+================================ STEP 43 =================================
+--------------------------------------------------------------------------
+Current time        : 10.50000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.210538163381e-04
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 7.424894766472e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.19102 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.143068444926e-09 
+      |Div|_2   = 7.424894406682e-09 
+   Momentum: 
+      |mRes|_2  = 2.311451550673e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1340 markers and merged 1342 markers in 3.7512e-03 s
+--------------------------------------------------------------------------
+================================ STEP 44 =================================
+--------------------------------------------------------------------------
+Current time        : 10.75000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 7.424894766472e-09
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 0
+  1 SNES Function norm 7.424894766472e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.19592 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.143068444926e-09 
+      |Div|_2   = 7.424894406682e-09 
+   Momentum: 
+      |mRes|_2  = 2.311451550673e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1307 markers and merged 1308 markers in 3.7844e-03 s
+--------------------------------------------------------------------------
+================================ STEP 45 =================================
+--------------------------------------------------------------------------
+Current time        : 11.00000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.131501750382e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.539318978315e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.12961 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 6.165796958280e-05 
+      |Div|_2   = 1.535464055785e-04 
+   Momentum: 
+      |mRes|_2  = 1.088717152969e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1487 markers and merged 1505 markers in 3.8735e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.0242085 sec)
+--------------------------------------------------------------------------
+================================ STEP 46 =================================
+--------------------------------------------------------------------------
+Current time        : 11.25000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 5.039203912254e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.221947286081e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.16451 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.037303557994e-05 
+      |Div|_2   = 1.221947285507e-04 
+   Momentum: 
+      |mRes|_2  = 3.742596764166e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1170 markers and merged 1175 markers in 3.2828e-03 s
+--------------------------------------------------------------------------
+================================ STEP 47 =================================
+--------------------------------------------------------------------------
+Current time        : 11.50000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.221947286081e-04
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 7.497236852470e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.12041 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.155966127848e-09 
+      |Div|_2   = 7.497236473273e-09 
+   Momentum: 
+      |mRes|_2  = 2.384501518791e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1217 markers and merged 1220 markers in 3.5618e-03 s
+--------------------------------------------------------------------------
+================================ STEP 48 =================================
+--------------------------------------------------------------------------
+Current time        : 11.75000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 7.497236852470e-09
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 0
+  1 SNES Function norm 7.497236852470e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 1.10383 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.155966127848e-09 
+      |Div|_2   = 7.497236473273e-09 
+   Momentum: 
+      |mRes|_2  = 2.384501518791e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1154 markers and merged 1141 markers in 3.4088e-03 s
+--------------------------------------------------------------------------
+================================ STEP 49 =================================
+--------------------------------------------------------------------------
+Current time        : 12.00000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.255349231452e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 2.006848146502e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.14497 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 7.853501035900e-05 
+      |Div|_2   = 2.000606951900e-04 
+   Momentum: 
+      |mRes|_2  = 1.581496352470e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1061 markers and merged 1063 markers in 3.2291e-03 s
+--------------------------------------------------------------------------
+================================ STEP 50 =================================
+--------------------------------------------------------------------------
+Current time        : 12.25000000 [ ] 
+Tentative time step : 0.25000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 5.130270089543e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.244078414436e-04
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.16384 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.118123621440e-05 
+      |Div|_2   = 1.244078413788e-04 
+   Momentum: 
+      |mRes|_2  = 4.017270487891e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.25000 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 884 markers and merged 898 markers in 3.4817e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.00068717 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 60.8632 (sec) 
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-jp_pc_factor_mat_solver_type mumps # (source: code)
+-jp_pc_type lu # (source: code)
+-jp_pgamma 100 # (source: code)
+-jp_type user # (source: code)
+-js_ksp_atol 1e-08 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 20 # (source: code)
+-js_ksp_rtol 0.0001 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-options_left # (source: code)
+-ParamFile velbox_time_test_advect1.dat # (source: code)
+-snes_atol 0.0001 # (source: code)
+-snes_linesearch_max_it 5 # (source: code)
+-snes_linesearch_maxstep 1.0 # (source: code)
+-snes_linesearch_minlambda 0.05 # (source: code)
+-snes_linesearch_type l2 # (source: code)
+-snes_max_funcs unlimited # (source: code)
+-snes_max_it 50 # (source: code)
+-snes_monitor # (source: code)
+-snes_newton_maxit 20 # (source: code)
+-snes_newton_rtol 1.2 # (source: code)
+-snes_picard_minit 5 # (source: code)
+-snes_picard_rtol 0.01 # (source: code)
+-snes_rtol 0.0001 # (source: code)
+-snes_stol 1e-32 # (source: code)
+#End of PETSc Option Table entries
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+There is one unused database option. It is:
+Option left: name:-ParamFile value: velbox_time_test_advect1.dat source: code
