@@ -169,9 +169,11 @@ jobs:
         # Julia itself installed landed. Find that directory and add it to
         # LIBRARY_PATH so the linker can find libemutls_w (and anything
         # else from the same runtime) there instead.
-        echo "--- searching for libgfortran/libemutls_w under ~/.julia/artifacts ---"
-        find ~/.julia/artifacts -iname 'libemutls_w*' -o -iname 'libgfortran*' 2>/dev/null
-        gcc_lib_dir=$(find ~/.julia/artifacts -type d -path '*/lib/gcc/aarch64-apple-darwin*' 2>/dev/null | head -1)
+        julia_depot=$(julia -e 'print(first(DEPOT_PATH))')
+        echo "julia_depot=$julia_depot"
+        echo "--- searching for libgfortran/libemutls_w under the real Julia depot ---"
+        find "$julia_depot/artifacts" -iname 'libemutls_w*' -o -iname 'libgfortran*' 2>/dev/null
+        gcc_lib_dir=$(find "$julia_depot/artifacts" -type d -path '*/lib/gcc/*' 2>/dev/null | head -1)
         echo "gcc_lib_dir=$gcc_lib_dir"
         export LIBRARY_PATH="$gcc_lib_dir:$LIBRARY_PATH"
         cd test
