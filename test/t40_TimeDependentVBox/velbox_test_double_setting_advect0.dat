@@ -1,0 +1,150 @@
+# Test for time-dependent velocity box
+# Input format follows the current LaMEM master (cf. test/t16_PhaseTransitions).
+#
+# Dimensionless units (units = none): model time/length/velocity in this file
+# equal the numbers printed by the VELBOX_DEBUG line in BCApplyVelBox.
+#
+# Box 0: Vx piecewise constant: +1 for t<5, 0 for 5<=t<10, -1 for t>=10.
+#        advect = 0
+#        Expected center stays fixed at x = -4 (velocity still switches in time)
+# Box 1: plain constant vy = 0.4 (old-style input; backward-compatibility check).
+#        advect = 0
+#        Expected center stays fixed at y = -4
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = none
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	dt        = 0.25     # initial time step
+	dt_min    = 1e-5     # minimum time step
+	dt_max    = 0.25     # maximum time step (caps the step so it stays regular)
+	inc_dt    = 0.1      # time step increment per step
+	CFL       = 0.5      # CFL criterion
+	time_end  = 15.0     # end time
+	nstep_max = 20      # safety limit (lower bound: time_end/dt_max)
+	nstep_out = 1       # save output every n steps
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+	nel_x   = 16
+	nel_y   = 16
+	nel_z   = 16
+
+	coord_x = -8.0 8.0
+	coord_y = -8.0 8.0
+	coord_z = -8.0 8.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+	surf_use = 0
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+	noslip = 0 0 0 0 0 0
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity       = 0.0 0.0 0.0
+	init_guess    = 0
+	act_temp_diff = 0
+
+	# viscosity bounds in model units (units = none)
+	eta_min = 1e-2
+	eta_ref = 1.0
+	eta_max = 1e2
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup    = geom
+	nmark_x   = 3
+	nmark_y   = 3
+	nmark_z   = 3
+	bg_phase  = 0
+	advect    = rk2
+	interp    = stagp
+	mark_ctrl = subgrid
+	nmark_lim = 8 100
+	nmark_sub = 1
+
+#===============================================================================
+# Output
+#===============================================================================
+
+    out_dir       = adv_0       # output directory
+	out_file_name = velbox_test_adv0
+	out_pvd       = 1
+	out_velocity  = 1
+	out_pressure  = 1
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+<MaterialStart>
+	ID  = 0
+	rho = 1.0
+	eta = 1.0
+<MaterialEnd>
+
+#===============================================================================
+# Velocity boxes
+#===============================================================================
+
+# Box 0: time-dependent Vx (new functionality)
+<VelBoxStart>
+	cenX   =  4.0
+	cenY   =  4.0
+	cenZ   =  0.0
+	widthX =  4.0
+	widthY =  2.0
+	widthZ =  2.0
+	advect =  0
+
+	vx_num_periods = 3
+	vx_time_delims = 1.0 2.0
+	vx_values      = 1.0 0.0 -1.0
+
+	vy = -1.5
+<VelBoxEnd>
+
+# Box 1: constant Vy (old-style input, must behave as before)
+#<VelBoxStart>
+#	cenX   = -4.0
+#	cenY   = -4.0
+#	cenZ   =  0.0
+#	widthX =  4.0
+#	widthY =  2.0
+#	widthZ =  2.0
+#	advect =  0
+#
+#	vx     =  -1.0
+#<VelBoxEnd>
+
+#===============================================================================
+# Solver options
+#===============================================================================
+
+<SolverOptionsStart>
+	nonlinear_tolerances = 1e-4 1e-4 50   # rtol, atol, maxit
+	linear_tolerances    = 1e-4 1e-8 20   # rtol, atol, maxit
+	monitor_solvers      = 0
+	stokes_solver        = coupled_direct
+	direct_solver_type   = mumps          # use superlu_dist if your PETSc has no MUMPS
+	penalty              = 1e2
+<SolverOptionsEnd>

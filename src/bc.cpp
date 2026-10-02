@@ -244,6 +244,97 @@ PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cp
 //---------------------------------------------------------------------------
 // Velocity box functions
 //---------------------------------------------------------------------------
+
+// time-dependent velocity box helpers
+// read optional <comp>_num_periods / <comp>_time_delims / <comp>_values
+static PetscErrorCode VelBoxReadPeriods(FB *fb, Scaling *scal, const char *comp, VelPeriods *vp)
+{
+	char     key[64];
+	PetscInt jj;
+
+	PetscFunctionBeginUser;
+
+	vp->n = 0;
+
+	snprintf(key, sizeof(key), "%s_num_periods", comp);
+	PetscCall(getIntParam(fb, _OPTIONAL_, key, &vp->n, 1, _max_periods_));
+
+	if(vp->n < 0)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Negative number of periods for velocity box component %s", comp);
+	}
+
+	if(vp->n)
+	{
+		if(vp->n > 1)
+		{
+			snprintf(key, sizeof(key), "%s_time_delims", comp);
+			PetscCall(getScalarParam(fb, _REQUIRED_, key, vp->delims, vp->n-1, scal->time));
+		}
+
+		snprintf(key, sizeof(key), "%s_values", comp);
+		PetscCall(getScalarParam(fb, _REQUIRED_, key, vp->vals, vp->n, scal->velocity));
+
+		// delimiters must be in ascending order
+		for(jj = 1; jj < vp->n-1; jj++)
+		{
+			if(vp->delims[jj] < vp->delims[jj-1])
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Velocity box %s_time_delims must be in ascending order", comp);
+			}
+		}
+	}
+
+	PetscFunctionReturn(0);
+}
+
+// get active velocity and accumulated displacement (integral of v over [0,time])
+// for one velocity component
+static void VelBoxGetComp(
+	PetscScalar       vconst,
+	const VelPeriods *vp,
+	PetscScalar       time,
+	PetscScalar      *v,
+	PetscScalar      *disp)
+{
+	PetscInt    jj;
+	PetscScalar t0, t1;
+
+	if(!vp->n)
+	{
+		// constant velocity (or not specified): original behavior
+		*v    = vconst;
+		*disp = (vconst != DBL_MAX) ? vconst*time : 0.0;
+		return;
+	}
+
+	// active period (same rule as BCGetBGStrainRates)
+	for(jj = 0; jj < vp->n-1; jj++)
+	{
+		if(time < vp->delims[jj]) break;
+	}
+
+	*v = vp->vals[jj];
+
+	// displacement: integrate the piecewise-constant velocity over [0, time]
+	*disp = 0.0;
+	t0    = 0.0;
+
+	for(jj = 0; jj < vp->n; jj++)
+	{
+		t1 = (jj < vp->n-1 && vp->delims[jj] < time) ? vp->delims[jj] : time;
+
+		if(t1 > t0)
+		{
+			*disp += vp->vals[jj]*(t1 - t0);
+			t0     = t1;
+		}
+
+		if(t0 >= time) break;
+	}
+}
+
+
 PetscErrorCode VelBoxCreate(VelBox *velbox, Scaling *scal, FB *fb)
 {
 	PetscFunctionBeginUser;
@@ -267,13 +358,30 @@ PetscErrorCode VelBoxCreate(VelBox *velbox, Scaling *scal, FB *fb)
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "vz",     &velbox->vz,     1,  scal->velocity));
 	PetscCall(getIntParam   (fb, _REQUIRED_, "advect", &velbox->advect, 1,  1));
 
-	if(velbox->vx == DBL_MAX && velbox->vy == DBL_MAX && velbox->vz == DBL_MAX)
+	// optional time-dependent (piecewise-constant) velocities
+	PetscCall(VelBoxReadPeriods(fb, scal, "vx", &velbox->pvx));
+	PetscCall(VelBoxReadPeriods(fb, scal, "vy", &velbox->pvy));
+	PetscCall(VelBoxReadPeriods(fb, scal, "vz", &velbox->pvz));
+
+	// a component is specified by either a constant or periods, not both
+	if((velbox->vx != DBL_MAX && velbox->pvx.n) ||
+	   (velbox->vy != DBL_MAX && velbox->pvy.n) ||
+	   (velbox->vz != DBL_MAX && velbox->pvz.n))
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Velocity box component cannot have both a constant velocity and time periods");
+	}
+
+	// at least one component must be specified
+	if(velbox->vx == DBL_MAX && !velbox->pvx.n &&
+	   velbox->vy == DBL_MAX && !velbox->pvy.n &&
+	   velbox->vz == DBL_MAX && !velbox->pvz.n)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Velocity box should specify at least one velocity component");
 	}
 
 	PetscFunctionReturn(0);
 }
+
 //---------------------------------------------------------------------------
 PetscErrorCode VelBoxPrint(VelBox *velbox, Scaling *scal, PetscInt cnt)
 {
@@ -1429,15 +1537,9 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	vby = (by - Ryy)*Eyy;   vey = (ey - Ryy)*Eyy;
 	vbz = (bz - Rzz)*Ezz;   vez = (ez - Rzz)*Ezz;
 
-	// an open top only frees the top boundary: the bottom keeps its background (pure-shear) velocity,
-	// otherwise the mesh deforms with Ezz while the material at the bottom is held fixed
 	if(top_open)
 	{
 		vez = 0.0;
-	}
-	// an open (permeable) bottom only frees the bottom boundary
-	if(bc->bot_open)
-	{
 		vbz = 0.0;
 	}
 
@@ -2072,6 +2174,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+
 PetscErrorCode BCApplyVelBox(BCCtx *bc)
 {
 	FDSTAG      *fs;
@@ -2079,6 +2182,7 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
 	PetscScalar ***bcvx, ***bcvy, ***bcvz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, ib;
 	PetscScalar x, y, z, cx, cy, cz, dx, dy, dz, t, vx, vy, vz;
+	PetscScalar ux, uy, uz;   // accumulated box displacements
 	PetscScalar xmin, xmax, ymin, ymax, zmin, zmax;
 
 	PetscFunctionBeginUser;
@@ -2104,16 +2208,21 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
 		// get current box
 		velbox = bc->vboxes + ib;
 
-		vx = velbox->vx; cx = velbox->cenX; dx = velbox->widthX;
-		vy = velbox->vy; cy = velbox->cenY; dy = velbox->widthY;
-		vz = velbox->vz; cz = velbox->cenZ; dz = velbox->widthZ;
+		cx = velbox->cenX; dx = velbox->widthX;
+		cy = velbox->cenY; dy = velbox->widthY;
+		cz = velbox->cenZ; dz = velbox->widthZ;
+
+		// active velocities and accumulated displacements at current time
+		VelBoxGetComp(velbox->vx, &velbox->pvx, t, &vx, &ux);
+		VelBoxGetComp(velbox->vy, &velbox->pvy, t, &vy, &uy);
+		VelBoxGetComp(velbox->vz, &velbox->pvz, t, &vz, &uz);
 
 		// advect box (if requested)
 		if(velbox->advect)
 		{
-			if(vx != DBL_MAX) cx += vx*t;
-			if(vy != DBL_MAX) cy += vy*t;
-			if(vz != DBL_MAX) cz += vz*t;
+			if(vx != DBL_MAX) cx += ux;
+			if(vy != DBL_MAX) cy += uy;
+			if(vz != DBL_MAX) cz += uz;
 		}
 
 		// get bounds
@@ -2199,6 +2308,7 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
 
 	PetscFunctionReturn(0);
 }
+
 //---------------------------------------------------------------------------
 PetscErrorCode BCApplyVelCylinder(BCCtx *bc)
 {

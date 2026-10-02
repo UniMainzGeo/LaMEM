@@ -1627,6 +1627,31 @@ if should_run_test("t39_PhaseInjection")
         create_expected_file=update_expected, clean_dir=clean_files)
 end
 end
+
+if should_run_test("t40_TimeDependentVBox")
+@testset "t40_TimeDependentVBox" begin
+    cd(test_dir)
+    dir = "t40_TimeDependentVBox";
+
+    keywords = ("|Div|_inf", "|mRes|_2")
+    acc      = ((rtol=1e-5, atol=1e-7), (rtol=1e-3, atol=1e-4))
+
+    # Time-dependent velocity box, box fixed in space (advect = 0)
+    @test perform_lamem_test(dir,"velbox_time_test_advect0.dat","Vbox_time_test_advect0",
+                            keywords=keywords, accuracy=acc, cores=4, mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)
+
+    # Time-dependent velocity box, box advected with its velocity (advect = 1)
+    @test perform_lamem_test(dir,"velbox_time_test_advect1.dat","Vbox_time_test_advect1",
+                            keywords=keywords, accuracy=acc, cores=4, mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)
+
+    # Time-independent velocity box
+    @test perform_lamem_test(dir,"velbox_time_test_notime.dat","velbox_time_test_notime",
+                            keywords=keywords, accuracy=acc, cores=4, mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)
+end
+end
 #---------------------------------------------------------------------------
 end
 #---------------------------------------------------------------------------
