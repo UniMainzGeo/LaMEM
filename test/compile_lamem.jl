@@ -66,6 +66,18 @@ if Sys.iswindows()
     cmd = addenv(cmd, "PATH"=>ENV["PATH"] * ";" * existing_path)
 end
 
+# PETSc_jll.ex42()'s Cmd carries its own baked-in env wholesale (not merged
+# with the calling process's own ENV), so a LIBRARY_PATH set by the caller
+# (e.g. the CI workflow, pointing the linker at wherever
+# CompilerSupportLibraries_jll's gfortran runtime landed, to find
+# libemutls_w - PETSc_jll's own baked-in -L/-rpath flags point at a fixed
+# BinaryBuilder sysroot path that doesn't exist outside Yggdrasil's own
+# build sandbox) would otherwise never reach the actual link step. Forward
+# it explicitly if the caller set one.
+if haskey(ENV, "LIBRARY_PATH")
+    cmd = addenv(cmd, "LIBRARY_PATH"=>ENV["LIBRARY_PATH"])
+end
+
 @show pkgversion(PETSc_jll)
 #@show pkgversion(MPICH_jll)
 

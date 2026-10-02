@@ -161,6 +161,17 @@ jobs:
       env:
         LAMEM_CI_DESTDIR: ${{ github.workspace }}/lamem_destdir
       run: |
+        # PETSc_jll's own build bakes in -L/-rpath flags pointing at a fixed
+        # BinaryBuilder sysroot path (/opt/aarch64-apple-darwin20/...) for
+        # its GCC/gfortran runtime (libemutls_w among others) - this doesn't
+        # exist on an ordinary runner; the actual gfortran runtime instead
+        # lives wherever the CompilerSupportLibraries_jll/GCC_jll artifacts
+        # Julia itself installed landed. Find that directory and add it to
+        # LIBRARY_PATH so the linker can find libemutls_w (and anything
+        # else from the same runtime) there instead.
+        gcc_lib_dir=$(find ~/.julia/artifacts -type d -path '*/lib/gcc/aarch64-apple-darwin*' 2>/dev/null | head -1)
+        echo "gcc_lib_dir=$gcc_lib_dir"
+        export LIBRARY_PATH="$gcc_lib_dir:$LIBRARY_PATH"
         cd test
         julia --project=. compile_lamem.jl int32
         cd ../bin
