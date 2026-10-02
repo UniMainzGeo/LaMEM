@@ -84,34 +84,45 @@ for srcdir in Fastscapelib_jll.LIBPATH_list
 end
 run(`ls $fastscape_dir`)
 
-# PETSc_jll's own lib/petsc/<variant>/lib/petsc/conf/variables has a further
-# `include /workspace/destdir/.../petscvariables` line baked in absolutely at
-# Yggdrasil build time (BinaryBuilder's own cross-compilation sandbox path,
-# not relocatable). On Linux this is harmless, since destdir there already
-# IS /workspace/destdir. On the GH-hosted macOS runner, no such fixed,
-# writable root-level directory exists at all - even creating one via sudo
-# mkdir/ln -s fails there with "Read-only file system" - so that absolute
-# include can never resolve on its own; rewrite it, in our own copy of the
-# file only, to point at wherever destdir actually is. Windows is handled
-# differently (an MSYS2 /etc/fstab mount makes the literal POSIX path
-# /workspace/destdir itself resolve to the real destdir - see the CI
-# workflow's Windows job), so it must keep the original /workspace/destdir
-# string in this file, not get it rewritten to a native Windows path here.
+# PETSc_jll's own lib/petsc/<variant>/lib/petsc/conf/*.mk and friends
+# (variables, rules, and whatever else Yggdrasil's build generated) have
+# absolute `include /workspace/destdir/...` lines baked in at build time
+# (BinaryBuilder's own cross-compilation sandbox path, not relocatable) -
+# variables includes petscvariables, rules includes rules_doc.mk, and there
+# may be others; rather than enumerate them by name, scan every text file
+# under each variant's conf/ directory. On Linux this is harmless, since
+# destdir there already IS /workspace/destdir. On the GH-hosted macOS
+# runner, no such fixed, writable root-level directory exists at all - even
+# creating one via sudo mkdir/ln -s fails there with "Read-only file
+# system" - so those absolute includes can never resolve on their own;
+# rewrite them, in our own copies of the files only, to point at wherever
+# destdir actually is. Windows is handled differently (an MSYS2 /etc/fstab
+# mount makes the literal POSIX path /workspace/destdir itself resolve to
+# the real destdir - see the CI workflow's Windows job), so it must keep
+# the original /workspace/destdir string in these files, not get it
+# rewritten to a native Windows path here.
 if !Sys.iswindows() && destdir != "/workspace/destdir"
     petsc_lib_dir = joinpath(destdir, "lib", "petsc")
     if isdir(petsc_lib_dir)
         for variant in readdir(petsc_lib_dir)
-            variables_file = joinpath(petsc_lib_dir, variant, "lib", "petsc", "conf", "variables")
-            if isfile(variables_file)
-                contents = read(variables_file, String)
-                fixed = replace(contents, "/workspace/destdir" => destdir)
-                if fixed != contents
+            conf_dir = joinpath(petsc_lib_dir, variant, "lib", "petsc", "conf")
+            if isdir(conf_dir)
+                for f in readdir(conf_dir)
+                    conf_file = joinpath(conf_dir, f)
+                    isfile(conf_file) || continue
+                    contents = try
+                        read(conf_file, String)
+                    catch
+                        continue # skip anything that isn't valid text (shouldn't be any here, but be safe)
+                    end
+                    contains(contents, "/workspace/destdir") || continue
+                    fixed = replace(contents, "/workspace/destdir" => destdir)
                     # cp -rf preserves the source Julia artifact's read-only
                     # permissions (artifacts are stored read-only on disk),
                     # so our own copy under destdir is read-only too - make
                     # it writable before overwriting its contents in place.
-                    chmod(variables_file, 0o644)
-                    write(variables_file, fixed)
+                    chmod(conf_file, 0o644)
+                    write(conf_file, fixed)
                 end
             end
         end
