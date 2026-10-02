@@ -1646,6 +1646,10 @@ if should_run_test("t40_TimeDependentVBox")
                             keywords=keywords, accuracy=acc, cores=4, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 
+    # Time-independent velocity box
+    @test perform_lamem_test(dir,"velbox_time_test_notime.dat","velbox_time_test_notime",
+                            keywords=keywords, accuracy=acc, cores=4, mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)
 end
 end
 #---------------------------------------------------------------------------
