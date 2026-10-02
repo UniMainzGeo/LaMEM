@@ -86,6 +86,7 @@
 # Output
 #===============================================================================
 
+    out_dir       = adv_0       # output directory
 	out_file_name = velbox_test_adv0
 	out_pvd       = 1
 	out_velocity  = 1
@@ -118,6 +119,8 @@
 	vx_num_periods = 3
 	vx_time_delims = 1.0 2.0
 	vx_values      = 1.0 0.0 -1.0
+
+	vy = -2.0
 <VelBoxEnd>
 
 # Box 1: constant Vy (old-style input, must behave as before)
