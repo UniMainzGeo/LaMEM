@@ -127,6 +127,15 @@ jobs:
         # GNU make, not /usr/bin/make (BSD make, no $(shell ...) etc.
         # support LaMEM's Makefile needs) - put it ahead of the system one.
         echo "/opt/homebrew/opt/make/libexec/gnubin" >> "$GITHUB_PATH"
+        # PETSc_jll's own lib/petsc/conf/variables has a further
+        # `include /workspace/destdir/.../petscvariables` line baked in
+        # absolutely at Yggdrasil build time (BinaryBuilder's own sandbox
+        # path, not relocatable - same issue the Windows job works around
+        # with an MSYS2 mount). Unlike Windows, macOS has a real POSIX root,
+        # so /workspace/destdir can just exist as a literal directory here
+        # too, exactly like the Linux job already does.
+        sudo mkdir -p /workspace/destdir
+        sudo chown -R "$(whoami)" /workspace
 
     - name: 'Install julia'
       uses: julia-actions/setup-julia@v3
@@ -141,22 +150,12 @@ jobs:
       uses: actions/checkout@v4
 
     - name: 'Install PETSc & LaMEM'
-      # No /workspace/destdir equivalent on macOS (no writable root-level
-      # directory, no sudo needed/wanted) - setup_packages.jl/compile_lamem.jl
-      # already fall back to an ordinary user-writable destdir and skip sudo
-      # whenever LAMEM_CI_DESTDIR is set to something other than the literal
-      # /workspace/destdir (see those scripts' own comments; this same
-      # LAMEM_CI_DESTDIR mechanism is what the Windows job also relies on).
-      env:
-        LAMEM_CI_DESTDIR: ${{ github.workspace }}/lamem_destdir
       run: |
         cd test
         julia --project=. setup_packages.jl
         cd ..
 
     - name: 'Compile LaMEM | Int32'
-      env:
-        LAMEM_CI_DESTDIR: ${{ github.workspace }}/lamem_destdir
       run: |
         cd test
         julia --project=. compile_lamem.jl int32
@@ -167,8 +166,6 @@ jobs:
         rm -rf lib/opt/* lib/deb/* dep/opt/* dep/deb/*
 
     - name: 'Compile LaMEM | Int64'
-      env:
-        LAMEM_CI_DESTDIR: ${{ github.workspace }}/lamem_destdir
       run: |
         cd test
         julia --project=. compile_lamem.jl int64
