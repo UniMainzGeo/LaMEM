@@ -131,11 +131,17 @@ jobs:
         # `include /workspace/destdir/.../petscvariables` line baked in
         # absolutely at Yggdrasil build time (BinaryBuilder's own sandbox
         # path, not relocatable - same issue the Windows job works around
-        # with an MSYS2 mount). Unlike Windows, macOS has a real POSIX root,
-        # so /workspace/destdir can just exist as a literal directory here
-        # too, exactly like the Linux job already does.
-        sudo mkdir -p /workspace/destdir
-        sudo chown -R "$(whoami)" /workspace
+        # with an MSYS2 mount). A plain `sudo mkdir /workspace` failed on
+        # this runner ("Read-only file system") - the GH-hosted macOS
+        # image's root volume is read-only (APFS system volume protection),
+        # unlike Linux's. Try a symlink at the top level instead, pointing
+        # into a real writable area; if that also fails on a read-only root,
+        # this step's own output will show it.
+        mkdir -p /tmp/lamem_workspace
+        sudo ln -s /tmp/lamem_workspace /workspace
+        mkdir -p /workspace/destdir
+        ls -la /workspace
+        ls -la /workspace/destdir
 
     - name: 'Install julia'
       uses: julia-actions/setup-julia@v3
