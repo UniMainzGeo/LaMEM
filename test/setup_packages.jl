@@ -106,6 +106,11 @@ if !Sys.iswindows() && destdir != "/workspace/destdir"
                 contents = read(variables_file, String)
                 fixed = replace(contents, "/workspace/destdir" => destdir)
                 if fixed != contents
+                    # cp -rf preserves the source Julia artifact's read-only
+                    # permissions (artifacts are stored read-only on disk),
+                    # so our own copy under destdir is read-only too - make
+                    # it writable before overwriting its contents in place.
+                    chmod(variables_file, 0o644)
                     write(variables_file, fixed)
                 end
             end
