@@ -130,18 +130,12 @@ jobs:
         # PETSc_jll's own lib/petsc/conf/variables has a further
         # `include /workspace/destdir/.../petscvariables` line baked in
         # absolutely at Yggdrasil build time (BinaryBuilder's own sandbox
-        # path, not relocatable - same issue the Windows job works around
-        # with an MSYS2 mount). A plain `sudo mkdir /workspace` failed on
-        # this runner ("Read-only file system") - the GH-hosted macOS
-        # image's root volume is read-only (APFS system volume protection),
-        # unlike Linux's. Try a symlink at the top level instead, pointing
-        # into a real writable area; if that also fails on a read-only root,
-        # this step's own output will show it.
-        mkdir -p /tmp/lamem_workspace
-        sudo ln -s /tmp/lamem_workspace /workspace
-        mkdir -p /workspace/destdir
-        ls -la /workspace
-        ls -la /workspace/destdir
+        # path, not relocatable). Unlike Linux, the GH-hosted macOS runner's
+        # root volume is read-only (confirmed: both `sudo mkdir /workspace`
+        # and `sudo ln -s ... /workspace` fail with "Read-only file
+        # system") - there is no way to make /workspace exist at all here.
+        # setup_packages.jl instead rewrites that one absolute path in its
+        # own copy of the file to point at the real destdir once copied.
 
     - name: 'Install julia'
       uses: julia-actions/setup-julia@v3
@@ -156,12 +150,16 @@ jobs:
       uses: actions/checkout@v4
 
     - name: 'Install PETSc & LaMEM'
+      env:
+        LAMEM_CI_DESTDIR: ${{ github.workspace }}/lamem_destdir
       run: |
         cd test
         julia --project=. setup_packages.jl
         cd ..
 
     - name: 'Compile LaMEM | Int32'
+      env:
+        LAMEM_CI_DESTDIR: ${{ github.workspace }}/lamem_destdir
       run: |
         cd test
         julia --project=. compile_lamem.jl int32
@@ -172,6 +170,8 @@ jobs:
         rm -rf lib/opt/* lib/deb/* dep/opt/* dep/deb/*
 
     - name: 'Compile LaMEM | Int64'
+      env:
+        LAMEM_CI_DESTDIR: ${{ github.workspace }}/lamem_destdir
       run: |
         cd test
         julia --project=. compile_lamem.jl int64

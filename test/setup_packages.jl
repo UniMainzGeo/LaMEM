@@ -83,3 +83,32 @@ for srcdir in Fastscapelib_jll.LIBPATH_list
     cp_files(srcdir, fastscape_dir)
 end
 run(`ls $fastscape_dir`)
+
+# PETSc_jll's own lib/petsc/<variant>/lib/petsc/conf/variables has a further
+# `include /workspace/destdir/.../petscvariables` line baked in absolutely at
+# Yggdrasil build time (BinaryBuilder's own cross-compilation sandbox path,
+# not relocatable). On Linux this is harmless, since destdir there already
+# IS /workspace/destdir. On the GH-hosted macOS runner, no such fixed,
+# writable root-level directory exists at all - even creating one via sudo
+# mkdir/ln -s fails there with "Read-only file system" - so that absolute
+# include can never resolve on its own; rewrite it, in our own copy of the
+# file only, to point at wherever destdir actually is. Windows is handled
+# differently (an MSYS2 /etc/fstab mount makes the literal POSIX path
+# /workspace/destdir itself resolve to the real destdir - see the CI
+# workflow's Windows job), so it must keep the original /workspace/destdir
+# string in this file, not get it rewritten to a native Windows path here.
+if !Sys.iswindows() && destdir != "/workspace/destdir"
+    petsc_lib_dir = joinpath(destdir, "lib", "petsc")
+    if isdir(petsc_lib_dir)
+        for variant in readdir(petsc_lib_dir)
+            variables_file = joinpath(petsc_lib_dir, variant, "lib", "petsc", "conf", "variables")
+            if isfile(variables_file)
+                contents = read(variables_file, String)
+                fixed = replace(contents, "/workspace/destdir" => destdir)
+                if fixed != contents
+                    write(variables_file, fixed)
+                end
+            end
+        end
+    end
+end
