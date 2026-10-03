@@ -106,9 +106,9 @@ enum
 };
 
 PetscInt  cellcap = 0, phRatcap = 0;
-double   *cblock = NULL; // backs cb[] and cfree
+double   *cblock = NULL; // backs cb[] and cfreesurf
 double   *cb[CB_NUM];
-int32_t  *cfree  = NULL;
+int32_t  *cfreesurf = NULL;
 double   *cphRat = NULL;
 
 enum { LBT_MAX_SNAPSHOT = 16 };
@@ -496,7 +496,7 @@ static PetscErrorCode DylibPluginEnsureCellCapacity(PetscInt ncells, PetscInt nu
 		PetscCall(DylibPluginAllocBlock(ncells, CB_NUM + 1, &cblock, arr));
 
 		for(i = 0; i < CB_NUM; i++) cb[i] = arr[i];
-		cfree = (int32_t*)arr[CB_NUM];
+		cfreesurf = (int32_t*)arr[CB_NUM];
 
 		cellcap = ncells;
 	}
@@ -651,7 +651,7 @@ static PetscErrorCode DylibPluginGatherCells(AdvCtx *actx, LaMEMPluginCells *cel
 		cb[CB_DIIPL] [c] = sv->DIIpl;
 		cb[CB_YIELD] [c] = sv->yield;
 
-		cfree[c] = (int32_t)sv->FreeSurf;
+		cfreesurf[c] = (int32_t)sv->FreeSurf;
 
 		for(ph = 0; ph < numPhases; ph++) cphRat[c*numPhases + ph] = sv->phRat[ph];
 	}
@@ -672,7 +672,7 @@ static PetscErrorCode DylibPluginGatherCells(AdvCtx *actx, LaMEMPluginCells *cel
 	cells->hxx = cb[CB_HXX]; cells->hyy = cb[CB_HYY]; cells->hzz = cb[CB_HZZ];
 	cells->dxx = cb[CB_DXX]; cells->dyy = cb[CB_DYY]; cells->dzz = cb[CB_DZZ];
 
-	cells->free_surf = cfree;
+	cells->free_surf = cfreesurf;
 	cells->ux        = cb[CB_UX]; cells->uy = cb[CB_UY]; cells->uz = cb[CB_UZ];
 	cells->ats       = cb[CB_ATS];
 	cells->eta_cr    = cb[CB_ETA_CR];
