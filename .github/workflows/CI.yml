@@ -40,7 +40,7 @@ jobs:
     - name: 'Install julia'
       uses: julia-actions/setup-julia@v3
       with:
-        version: '1.12.7'
+        version: '1.13'
         
     - run: julia -e 'using InteractiveUtils; versioninfo(verbose=true)'
 
@@ -85,13 +85,23 @@ jobs:
         sudo -E mv -f deb deb64
         cd ..
 
+    - name: 'Build dylib plugin bundle (t40)'
+      run: |
+        julia --project=@juliac -e 'using Pkg; Pkg.add("JuliaC")'
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_constant.jl test/t40_PhaseTransitionPlugin
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_box.jl test/t40_PhaseTransitionPlugin
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_demo_fields.jl test/t40_PhaseTransitionPlugin
+        test -f test/t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.so
+        test -f test/t40_PhaseTransitionPlugin/build_box/lib/libptlib_box.so
+        test -f test/t40_PhaseTransitionPlugin/build_demo_fields/lib/libptlib_demo_fields.so
+
     - name: 'Test LaMEM | Int32'
       run: |
         cd bin
         sudo -E cp -r opt32 opt
         sudo -E cp -r deb32 deb
         cd ..
-        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl  
+        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl
 
     - name: 'Test LaMEM | Int64'
       run: |
@@ -106,6 +116,193 @@ jobs:
         cd ..
         julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit 
         
+  macos_arm64:
+    # The source-formatting check is Linux-only: the Makefile pins astyle 3.1,
+    # which Homebrew does not ship.
+    name: 'macOS (arm64)'
+    runs-on: macos-latest
+    env:
+      # The macOS runner's root volume is read-only, so /workspace/destdir (the
+      # path Linux uses) cannot exist here; setup_packages.jl patches PETSc's
+      # baked-in references to it instead.
+      LAMEM_CI_DESTDIR: ${{ github.workspace }}/lamem_destdir
+    steps:
+
+    - name: 'Install compilers'
+      run: |
+        set -e
+        uname -a
+        brew install make
+        # GNU make, ahead of the BSD make at /usr/bin/make
+        echo "/opt/homebrew/opt/make/libexec/gnubin" >> "$GITHUB_PATH"
+        # PETSc_jll links -lemutls_w with -L paths from its build sandbox that do
+        # not exist here. It is part of GCC's own runtime; use Homebrew's copy.
+        gcc_lib_dir=$(find "$(brew --prefix)" -iname 'libemutls_w.a' | head -1 | xargs dirname)
+        echo "LIBRARY_PATH=$gcc_lib_dir" >> "$GITHUB_ENV"
+
+    - name: 'Install julia'
+      uses: julia-actions/setup-julia@v3
+      with:
+        version: '1.13'
+
+    - run: julia -e 'using InteractiveUtils; versioninfo(verbose=true)'
+
+    - run: julia -e '@show Base.BinaryPlatforms.HostPlatform()'
+
+    - name: 'Checkout LaMEM'
+      uses: actions/checkout@v4
+
+    - name: 'Install PETSc & LaMEM'
+      run: |
+        cd test
+        julia --project=. setup_packages.jl
+        cd ..
+
+    - name: 'Compile LaMEM | Int32'
+      run: |
+        cd test
+        julia --project=. compile_lamem.jl int32
+        cd ../bin
+        mv -f opt opt32
+        mv -f deb deb32
+        cd ..
+        rm -rf lib/opt/* lib/deb/* dep/opt/* dep/deb/*
+
+    - name: 'Compile LaMEM | Int64'
+      run: |
+        cd test
+        julia --project=. compile_lamem.jl int64
+        cd ../bin
+        mv -f opt opt64
+        mv -f deb deb64
+        cd ..
+
+    - name: 'Build dylib plugin bundle (t40)'
+      run: |
+        julia --project=@juliac -e 'using Pkg; Pkg.add("JuliaC")'
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_constant.jl test/t40_PhaseTransitionPlugin
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_box.jl test/t40_PhaseTransitionPlugin
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_demo_fields.jl test/t40_PhaseTransitionPlugin
+        test -f test/t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.dylib
+        test -f test/t40_PhaseTransitionPlugin/build_box/lib/libptlib_box.dylib
+        test -f test/t40_PhaseTransitionPlugin/build_demo_fields/lib/libptlib_demo_fields.dylib
+
+    - name: 'Test LaMEM | Int32'
+      run: |
+        cd bin
+        cp -r opt32 opt
+        cp -r deb32 deb
+        cd ..
+        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl
+
+    - name: 'Test LaMEM | Int64'
+      run: |
+        cd bin
+        rm -rf opt deb
+        cp -r opt64 opt
+        cp -r deb64 deb
+        cd ..
+        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit
+
+  windows_dylib_plugin:
+    # Exercises the Windows branches of src/dylib_plugins.cpp: compiles LaMEM and
+    # runs one plugin test, not the full suite.
+    name: 'Windows (dylib_plugin)'
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    env:
+      LAMEM_CI_DESTDIR: ${{ github.workspace }}\lamem_destdir
+    steps:
+
+    - name: 'Checkout LaMEM'
+      uses: actions/checkout@v4
+
+    - name: 'Set up MSYS2'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: mingw64
+        update: true
+        # julia-actions/setup-julia adds julia to the Windows PATH (via $GITHUB_PATH);
+        # the default path-type=minimal would hide that from this MSYS2 shell.
+        path-type: inherit
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-make
+          make
+
+    - name: 'Install julia'
+      uses: julia-actions/setup-julia@v3
+      with:
+        version: '1.13'
+        arch: x64
+
+    - run: julia -e 'using InteractiveUtils; versioninfo(verbose=true)'
+
+    - name: 'Mount /workspace/destdir over the real destdir'
+      # PETSc_jll's conf files include each other by the absolute /workspace/destdir
+      # path baked in at build time. An MSYS2 fstab mount makes that path resolve to
+      # the real destdir for make and everything it spawns in later steps.
+      run: |
+        D="$(cygpath -u "$LAMEM_CI_DESTDIR")"
+        mkdir -p "$D"
+        echo "$D /workspace/destdir none bind 0 0" >> /etc/fstab
+
+    - name: 'Install PETSc & LaMEM'
+      run: |
+        cd test
+        julia --project=. setup_packages.jl
+        cd ..
+
+    - name: 'Compile LaMEM | Int64'
+      run: |
+        cd test
+        julia --project=. compile_lamem.jl int64
+        cd ..
+
+    - name: 'Build dylib plugin bundle'
+      run: |
+        julia --project=@juliac -e 'using Pkg; Pkg.add("JuliaC")'
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_constant.jl test/t40_PhaseTransitionPlugin
+        # JuliaC's Windows bundles are flat under bin/, with no lib/
+        test -f test/t40_PhaseTransitionPlugin/build_constant/bin/libptlib_constant.dll
+
+    - name: 'Stage runtime DLLs next to LaMEM.exe'
+      # Windows ignores rpath: DLLs are found via the exe's directory or PATH.
+      run: |
+        cp /workspace/destdir/bin/*.dll bin/opt/ 2>/dev/null || true
+        cp /workspace/destdir/bin/petsc/double_real_Int64/lib/*.dll bin/opt/ 2>/dev/null || true
+        cp /workspace/destdir/lib/*.dll bin/opt/ 2>/dev/null || true
+        cp /workspace/destdir/lib/fastscape/*.dll bin/opt/ 2>/dev/null || true
+        # Not the Julia runtime, though: the plugin loader must bind to the copy in
+        # the plugin's own bundle, and a second libjulia.dll here would shadow it.
+        # libblastrampoline-5.dll stays - PETSc's DLL imports it, and the loader
+        # reuses that single instance (see DylibPluginOpenWinLbt).
+        rm -f bin/opt/libjulia*.dll bin/opt/libLLVM*.dll bin/opt/libllvmcalltest.dll \
+              bin/opt/libLTO.dll bin/opt/libccall*.dll bin/opt/libmlir_*.dll \
+              bin/opt/libload_time_mpi_constants.dll bin/opt/libRemarks.dll
+        ls bin/opt/msmpi.dll bin/opt/libfastscapelib_fortran.dll bin/opt/libblastrampoline-5.dll
+
+    - name: 'Run LaMEM with the dylib plugin'
+      # Native executables cannot be launched from the MSYS2 shell on this runner
+      # (even cmd.exe fails to load API-set DLLs there), so this step uses pwsh.
+      shell: pwsh
+      run: |
+        # MUMPS resolves its (LP64) BLAS through libblastrampoline, whose table is
+        # empty unless told what to load. Same as for any standalone PETSc_jll binary.
+        $destdir = $env:LAMEM_CI_DESTDIR
+        $env:LBT_DEFAULT_LIBS = "$destdir\lib\libopenblas.dll;$destdir\lib\libopenblas64_.dll"
+        cd test/t40_PhaseTransitionPlugin
+        $proc = Start-Process -FilePath "..\..\bin\opt\LaMEM.exe" -ArgumentList "-ParamFile","PT0_only_plugin.dat","-dylib_plugin","build_constant\bin\libptlib_constant.dll" -RedirectStandardOutput dylib_plugin_windows.log -RedirectStandardError dylib_plugin_windows.err.log -Wait -PassThru
+        Get-Content dylib_plugin_windows.log
+        Get-Content dylib_plugin_windows.err.log
+        if ($proc.ExitCode -ne 0) { throw "LaMEM.exe exited with code $($proc.ExitCode)" }
+        $log = Get-Content dylib_plugin_windows.log -Raw
+        if ($log -notmatch "Dylib plugin") { throw "missing 'Dylib plugin' in output" }
+        if ($log -notmatch "27512 marker\(s\) changed phase") { throw "missing '27512 marker(s) changed phase' in output" }
+        if ($log -notmatch "SOLUTION IS DONE") { throw "missing 'SOLUTION IS DONE' in output" }
+
   build_docs:
     runs-on: ubuntu-latest
     steps:

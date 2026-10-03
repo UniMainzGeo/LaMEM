@@ -1,0 +1,18 @@
+# Compiled juliac bundles (large, machine/Julia-version-specific binary
+# artifacts) - built locally by build_plugin.jl, never checked in.
+/build_*/
+
+# Belt-and-braces: a compiled shared library must never be committed here
+# regardless of what directory or name it ends up under (e.g. if
+# build_plugin.jl is ever pointed at a different --bundle/--output-lib).
+*.dylib
+*.so
+
+# Compiled by the t40 testset itself (scaling_guard_test.c -> a throwaway
+# binary), removed again after the test runs, but ignored here too as a
+# safety net.
+/scaling_guard_test
+
+# Box_only_plugin.dat with __DYLIB_PLUGIN_PATH__ substituted by the actual
+# built bundle path, written just before that run and removed after.
+/Box_only_plugin_resolved.dat

@@ -10,6 +10,11 @@
 //---------------------------------------------------------------------------
 //..........................   SCALING ROUTINES   ...........................
 //---------------------------------------------------------------------------
+#if defined(_WIN32) && !defined(_USE_MATH_DEFINES)
+// MinGW's strict-ISO mode hides M_PI (a GNU/POSIX extension) from <math.h>/
+// <cmath> unless this is defined before the first include of either.
+#define _USE_MATH_DEFINES
+#endif
 #include "LaMEM.h"
 #include "scaling.h"
 #include "parsing.h"

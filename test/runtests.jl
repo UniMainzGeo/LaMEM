@@ -1628,6 +1628,269 @@ if should_run_test("t39_PhaseInjection")
 end
 end
 #---------------------------------------------------------------------------
+if should_run_test("t40_PhaseTransitionPlugin")
+@testset "t40_PhaseTransitionPlugin" begin
+    # Compares LaMEM's built-in Constant phase transition against a Julia
+    # re-implementation of it (ptlib_constant.jl), compiled with `juliac`
+    # into a shared library and loaded at runtime via -dylib_plugin
+    # (see src/dylib_plugins.{h,cpp}). Both .dat files here are
+    # copies of t16_PhaseTransitions/Plume_PhaseTransitions.dat stripped
+    # down to ONLY PhaseTransition ID 0 (the T-dependent Constant
+    # transition, PhaseBelow=2/PhaseAbove=3/BothWays): PT0_only_builtin.dat
+    # keeps it as a built-in <PhaseTransitionStart> block, PT0_only_plugin.dat
+    # removes it entirely so the plugin is the only source of phase
+    # changes. Comparing against a PT0-only baseline (rather than swapping
+    # only PT0 out of the full 4-transition t16 .dat) avoids a one-step
+    # ordering artefact: LaMEM's built-in Phase_Transition() applies all of
+    # a .dat's transitions in sequence within one call, so a transition
+    # that acts on a phase another transition just produced can cascade
+    # within the same step, whereas the plugin always runs strictly after
+    # Phase_Transition() returns and would only see such a change on the
+    # NEXT step.
+    #
+    # Requires a juliac-compiled bundle at
+    # t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.{dylib,so},
+    # built from scripts/dylib_plugins/ptlib_constant.jl by
+    # scripts/dylib_plugins/build_plugin.jl (juliac is not assumed to be
+    # available in ordinary CI runs that only build LaMEM's C/C++ code, so
+    # this testset skips itself, with a clear message, if the bundle is not
+    # present rather than failing).
+    cd(test_dir)
+    dir = "t40_PhaseTransitionPlugin"
+    build_script = joinpath(test_dir, "..", "scripts", "dylib_plugins", "build_plugin.jl")
+
+    bundle_name = Sys.isapple() ? "libptlib_constant.dylib" : "libptlib_constant.so"
+    bundle_path = joinpath(test_dir, dir, "build_constant", "lib", bundle_name)
+
+    if !isfile(bundle_path)
+        @info "t40_PhaseTransitionPlugin: skipped - compiled plugin bundle not found at $bundle_path. " *
+              "Build it first with: julia --project=@juliac $build_script " *
+              "scripts/dylib_plugins/ptlib_constant.jl $(joinpath(test_dir, dir))"
+    else
+        keywords = ("|Div|_inf", "|mRes|_2")
+        acc      = ((rtol=1e-5, atol=1e-7), (rtol=1e-2, atol=1e-3))
+
+        # Each run is compared against its OWN .expected file (below), which
+        # only tests for a regression against a saved snapshot, not that the
+        # two runs agree with EACH OTHER - the two .expected files could in
+        # principle drift apart (e.g. one gets regenerated and the other
+        # doesn't) while both individual comparisons still pass. Keep the
+        # first run's log file around (clean_dir=false) so it can be
+        # compared directly against the second run's log file afterwards,
+        # then clean up both manually.
+        @test perform_lamem_test(dir, "PT0_only_builtin.dat", "PT0_only_builtin",
+                                keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
+                                create_expected_file=update_expected, clean_dir=false)
+
+        @test perform_lamem_test(dir, "PT0_only_plugin.dat", "PT0_only_plugin",
+                                args="-dylib_plugin $bundle_path",
+                                keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
+                                create_expected_file=update_expected, clean_dir=false)
+
+        # Direct cross-comparison: the built-in Constant transition and the
+        # Julia plugin re-implementing it must produce matching |Div|_inf and
+        # |mRes|_2 residual sequences on these PT0-only inputs (see the
+        # ordering-artefact note above for why the .dat files are set up the
+        # way they are). NOTE: the |mRes|_2 comparison uses atol=1e-3, which
+        # given typical |mRes|_2 magnitudes of 1e-8..1e-12 here makes that
+        # particular keyword's accuracy check close to vacuous (almost any
+        # two small values satisfy isapprox at atol=1e-3); |Div|_inf (typical
+        # magnitude 1e-4..1e-9) is the keyword actually doing discriminating
+        # work at this tolerance. This mirrors the same accuracy tuple used
+        # for the .expected comparisons above and for t16, not a tuple picked
+        # specifically to make this cross-check pass.
+        builtin_out = joinpath(dir, "PT0_only_builtin.out")
+        plugin_out  = joinpath(dir, "PT0_only_plugin.out")
+
+        if isfile(builtin_out) && isfile(plugin_out)
+            builtin_vals = extract_info_logfiles(builtin_out, keywords)
+            plugin_vals  = extract_info_logfiles(plugin_out,  keywords)
+
+            for (i, kw) in enumerate(keywords)
+                rtol = haskey(acc[i], :rtol) ? acc[i].rtol : 0
+                atol = haskey(acc[i], :atol) ? acc[i].atol : 0
+                @test length(builtin_vals[i]) == length(plugin_vals[i])
+                @test isapprox(builtin_vals[i], plugin_vals[i]; rtol=rtol, atol=atol)
+            end
+        else
+            @test false # one or both runs above failed to even produce a log file
+        end
+
+        if clean_files
+            clean_test_directory(dir)
+        end
+
+        # H1: DylibPluginLoad must also run on a restart (LaMEMLibLoadRestart,
+        # not just LaMEMLibCreate). -mode restart ignores CLI overrides of
+        # restored fields (nstep_max/nstep_rdb come back from the restart db
+        # itself), so nstep_max=3, nstep_rdb=2 leaves the last save at step 2
+        # (3 is not a multiple of 2): restarting from it still has step 3 left
+        # to run, and the plugin's "Dylib plugin parameters:" block must reappear.
+        restart_args = "-dylib_plugin $bundle_path -nstep_max 3 -nstep_rdb 2"
+        @test perform_lamem_test(dir, "PT0_only_plugin.dat", "PT0_only_plugin_restart_a",
+                                args=restart_args, keywords=keywords, accuracy=acc,
+                                cores=1, mpiexec=mpiexec,
+                                create_expected_file=update_expected, clean_dir=false)
+        @test perform_lamem_test(dir, "PT0_only_plugin.dat", "PT0_only_plugin_restart_b",
+                                args="-dylib_plugin $bundle_path -mode restart", keywords=keywords, accuracy=acc,
+                                cores=1, mpiexec=mpiexec,
+                                create_expected_file=update_expected, clean_dir=false)
+        restart_b_out = joinpath(dir, "PT0_only_plugin_restart_b.out")
+        @test isfile(restart_b_out) && occursin("Dylib plugin parameters:", read(restart_b_out, String))
+
+        if clean_files
+            clean_test_directory(dir)
+        end
+
+        # Same cross-comparison, but for the Box transition (constant T
+        # inside a region) instead of Constant: exercises a plugin rule
+        # that resets T on markers whose phase is unchanged (H1 - T-only
+        # changes must still reach ADVInterpMarkToCell/svBulk.Tn). This pair
+        # also exercises the dylib_plugin=<path> .dat-file route (PT0_only
+        # above tests the -dylib_plugin command-line override instead):
+        # Box_only_plugin.dat carries a __DYLIB_PLUGIN_PATH__ placeholder,
+        # substituted with the built bundle's actual path just before the
+        # run (the path is only known once the bundle is built, so it can't
+        # be hardcoded in the checked-in .dat, which is also platform-
+        # independent: .dylib on macOS, .so on Linux).
+        box_bundle_name = Sys.isapple() ? "libptlib_box.dylib" : "libptlib_box.so"
+        box_bundle_path = joinpath(test_dir, dir, "build_box", "lib", box_bundle_name)
+
+        if !isfile(box_bundle_path)
+            @info "t40_PhaseTransitionPlugin: Box comparison skipped - compiled plugin bundle not found at $box_bundle_path. " *
+                  "Build it first with: julia --project=@juliac $build_script " *
+                  "scripts/dylib_plugins/ptlib_box.jl $(joinpath(test_dir, dir))"
+        else
+            @test perform_lamem_test(dir, "Box_only_builtin.dat", "Box_only_builtin",
+                                    keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
+                                    create_expected_file=update_expected, clean_dir=false)
+
+            box_plugin_dat_template = joinpath(dir, "Box_only_plugin.dat")
+            box_plugin_dat          = joinpath(dir, "Box_only_plugin_resolved.dat")
+            write(box_plugin_dat, replace(read(box_plugin_dat_template, String),
+                                           "__DYLIB_PLUGIN_PATH__" => box_bundle_path))
+
+            try
+                @test perform_lamem_test(dir, "Box_only_plugin_resolved.dat", "Box_only_plugin",
+                                        keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
+                                        create_expected_file=update_expected, clean_dir=false)
+            finally
+                rm(box_plugin_dat, force=true)
+            end
+
+            box_builtin_out = joinpath(dir, "Box_only_builtin.out")
+            box_plugin_out  = joinpath(dir, "Box_only_plugin.out")
+
+            if isfile(box_builtin_out) && isfile(box_plugin_out)
+                box_builtin_vals = extract_info_logfiles(box_builtin_out, keywords)
+                box_plugin_vals  = extract_info_logfiles(box_plugin_out,  keywords)
+
+                for (i, kw) in enumerate(keywords)
+                    rtol = haskey(acc[i], :rtol) ? acc[i].rtol : 0
+                    atol = haskey(acc[i], :atol) ? acc[i].atol : 0
+                    @test length(box_builtin_vals[i]) == length(box_plugin_vals[i])
+                    @test isapprox(box_builtin_vals[i], box_plugin_vals[i]; rtol=rtol, atol=atol)
+                end
+            else
+                @test false # one or both runs above failed to even produce a log file
+            end
+
+            if clean_files
+                clean_test_directory(dir)
+            end
+        end
+
+        # A rule that reads cell data and writes a non-phase/T marker field
+        # (ptlib_demo_fields.jl: APS = 1 for markers in hot plume-head cells),
+        # on 2 ranks so that the per-rank cell arrays/cell_index are exercised.
+        # There is no built-in equivalent to compare against; instead check the
+        # per-step summary LaMEM prints: the first call must change APS on some
+        # markers (and nothing else), and since the rule skips markers that are
+        # already seeded, every later step must change fewer - which only holds
+        # if the APS written in step 1 really reached the markers.
+        demo_bundle_name = Sys.isapple() ? "libptlib_demo_fields.dylib" : "libptlib_demo_fields.so"
+        demo_bundle_path = joinpath(test_dir, dir, "build_demo_fields", "lib", demo_bundle_name)
+
+        if !isfile(demo_bundle_path)
+            @info "t40_PhaseTransitionPlugin: demo_fields test skipped - compiled plugin bundle not found at $demo_bundle_path. " *
+                  "Build it first with: julia --project=@juliac $build_script " *
+                  "scripts/dylib_plugins/ptlib_demo_fields.jl $(joinpath(test_dir, dir))"
+        else
+            @test perform_lamem_test(dir, "PT0_only_plugin.dat", "Demo_fields_plugin",
+                                    args="-dylib_plugin $demo_bundle_path -nstep_max 4",
+                                    keywords=keywords, accuracy=acc, cores=2, mpiexec=mpiexec,
+                                    create_expected_file=update_expected, clean_dir=false)
+
+            demo_out = joinpath(dir, update_expected ? "Demo_fields_plugin.expected" : "Demo_fields_plugin.out")
+            summary  = r"Dylib plugin  : (\d+) marker\(s\) changed phase, (\d+) marker\(s\) changed temperature, (\d+) marker\(s\) changed other fields"
+            counts   = isfile(demo_out) ? [parse.(Int, m.captures) for m in eachmatch(summary, read(demo_out, String))] : Vector{Int}[]
+
+            @test length(counts) == 4
+            if !isempty(counts)
+                @test all(c -> c[1] == 0 && c[2] == 0, counts)  # phase and T untouched
+                @test counts[1][3] > 0                          # APS seeded in step 1 ...
+                @test all(c -> c[3] < counts[1][3], counts[2:end]) # ... and kept afterwards
+            end
+
+            if clean_files
+                clean_test_directory(dir)
+            end
+        end
+
+        # ABI checks against the built ptlib_constant plugin (abi version,
+        # struct sizes vs. src/dylib_plugins.h, and lamem_pt_wrapper's
+        # scaling-struct guards): run as a separate C process, not via ccall -
+        # a second jl_init_with_image_handle inside this already-running Julia
+        # process is unsupported.
+        guard_src = joinpath(dir, "scaling_guard_test.c")
+        guard_bin = joinpath(dir, "scaling_guard_test")
+        src_dir   = joinpath(test_dir, "..", "src")
+        cc = Sys.which("cc") !== nothing ? "cc" : Sys.which("clang")
+
+        if cc === nothing
+            @info "t40_PhaseTransitionPlugin: scaling-struct guard test skipped - no C compiler (cc/clang) found"
+        else
+            try
+                run(`$cc -O0 -I$src_dir $guard_src -o $guard_bin -ldl`)
+                guard_out = read(`$guard_bin $bundle_path`, String)
+                @test occursin("abi_version=3 (LaMEM: 3)", guard_out)
+                @test occursin(r"struct sizes: .* -> ok", guard_out)
+                @test occursin("good struct: rc=1, phase 2 -> 3", guard_out)
+                @test occursin("bad struct (length=0): rc=-2", guard_out)
+                @test occursin("bad struct (abi_version=2): rc=-3", guard_out)
+
+                # write path (APS and pressure conversion back to internal
+                # units, bit-exact pass-through of untouched entries)
+                if isfile(demo_bundle_path)
+                    demo_guard_out = read(`$guard_bin $demo_bundle_path demo`, String)
+                    @test occursin("demo: rc=1, aps ok, p ok", demo_guard_out)
+                    @test occursin("untouched ok", demo_guard_out)
+                end
+            finally
+                isfile(guard_bin) && rm(guard_bin, force=true)
+            end
+        end
+    end
+
+    # Negative check: phase_transitions = dylib (baked into PT0_only_plugin.dat)
+    # without a loaded library must fail at startup, not the first step. Needs
+    # no compiled bundle (deliberately doesn't pass -dylib_plugin), so it runs
+    # unconditionally, exercising the startup check even without juliac.
+    # SETERRQ prints to stderr, so run_lamem_local_test's stdout-only capture
+    # can't see it - redirect both streams into one file instead.
+    cd(dir) do
+        neg_out = "no_plugin_loaded.out"
+        neg_cmd = add_dylibs(`../../bin/opt/LaMEM -ParamFile PT0_only_plugin.dat`, get_dylibs()[1])
+        try
+            run(pipeline(neg_cmd, stdout=neg_out, stderr=neg_out))
+        catch
+        end
+        @test occursin("phase_transitions = dylib requires a loaded plugin", read(neg_out, String))
+        rm(neg_out, force=true)
+    end
+end
+end
+#---------------------------------------------------------------------------
 end
 #---------------------------------------------------------------------------
 

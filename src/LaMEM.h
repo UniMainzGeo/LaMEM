@@ -24,6 +24,9 @@
 #include <string.h>
 #include <math.h>
 #include <float.h>
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS       // some toolchains hide PRIu64 and friends from C++ otherwise
+#endif
 #include <inttypes.h>
 #include <sys/stat.h>
 #include <petsc.h>

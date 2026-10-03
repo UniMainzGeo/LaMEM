@@ -70,7 +70,15 @@ MPI_COMPILER_SHOW := $(shell \
 	$(MPI_COMPILER) --show 2>/dev/null || \
 	$(MPI_COMPILER) -show 2>/dev/null )
 
-CXX_COMMAND  := $(word 1, $(filter-out ccache,$(MPI_COMPILER_SHOW)))
+# CXX is not always an MPI compiler wrapper: e.g. PETSc built against
+# MicrosoftMPI has no mpicxx-style wrapper at all, so CXX is the raw
+# compiler directly and none of the --showme:command/--show/-show probes
+# above succeed. Fall back to CXX itself in that case.
+ifeq ($(strip $(MPI_COMPILER_SHOW)),)
+   CXX_COMMAND := $(CXX)
+else
+   CXX_COMMAND := $(word 1, $(filter-out ccache,$(MPI_COMPILER_SHOW)))
+endif
 CXX_COMPILER := $(shell readlink -f $$(which $(CXX_COMMAND)))
 
 # set dependency flag (should be supported by all compilers)
@@ -90,6 +98,11 @@ else ifeq ($(findstring icpx, $(CXX_COMPILER)), icpx)
                   -Wno-float-conversion -Wno-deprecated-declarations -Wno-vla-cxx-extension
 else ifeq ($(findstring g++, $(CXX_COMPILER)), g++)
    LAMEM_FLAGS += -Wduplicated-cond -Wlogical-op -Wnull-dereference
+else ifeq ($(findstring c++, $(CXX_COMPILER)), c++)
+   # GCC's c++ frontend (e.g. MinGW's /mingw64/bin/c++, used when CXX has no
+   # MPI wrapper and falls back to the raw compiler - see CXX_COMMAND above)
+   # is the same compiler as g++, just under its other standard name.
+   LAMEM_FLAGS += -Wduplicated-cond -Wlogical-op -Wnull-dereference
 else
     $(error Unsupported compiler: $(CXX_COMPILER))
 endif
@@ -106,8 +119,24 @@ endif
 
 # Windows requires this linker flag
 UNAME := $(shell uname)
-ifneq ($(filter MSYS%,$(UNAME)),)
+# MSYS2's mingw64 environment (used by LaMEM's Windows CI) reports uname as
+# MINGW64_NT-..., not MSYS_NT-... - match both.
+ifneq ($(filter MSYS% MINGW%,$(UNAME)),)
    CLIB_FLAGS = -lssp
+   # PETSc_jll's petscvariables only searches ${PETSC_DIR}/lib, but several of its
+   # dependencies live in destdir/lib. Prepend it: ld resolves each -l against the
+   # -L paths seen before it. -ldl has no Windows equivalent (PetscDLOpen uses
+   # LoadLibrary), so drop it.
+   PETSC_LIB := -L$(PETSC_DIR)/../../../lib $(filter-out -ldl, $(PETSC_LIB))
+   # These ship as bare .dll files without a .dll.a import library, so -lNAME can't
+   # find them; link them by exact filename instead.
+   PETSC_LIB := $(patsubst -lHYPRE64,-l:libHYPRE64.dll,$(PETSC_LIB))
+   PETSC_LIB := $(patsubst -ldmumpspar,-l:libdmumpspar.dll,$(PETSC_LIB))
+   PETSC_LIB := $(patsubst -lmumps_commonpar,-l:libmumps_commonpar.dll,$(PETSC_LIB))
+   PETSC_LIB := $(patsubst -lpordpar,-l:libpordpar.dll,$(PETSC_LIB))
+   PETSC_LIB := $(patsubst -ltet,-l:libtet.dll,$(PETSC_LIB))
+   PETSC_LIB := $(patsubst -ltriangle,-l:libtriangle.dll,$(PETSC_LIB))
+   PETSC_LIB := $(patsubst -lgfortran,-l:libgfortran-5.dll,$(PETSC_LIB))
 endif
 
 #==============================================================================
