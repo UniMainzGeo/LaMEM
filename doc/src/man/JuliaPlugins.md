@@ -57,7 +57,7 @@ All values are **dimensional**, in the same units as your `.dat` file. The table
 |:--|:--|:--|:--|
 | `phase` | phase ID (`Int32`) | | yes |
 | `x`, `y`, `z` | position | km | no |
-| `p` | pressure (the same pressure the rheology sees) | MPa | no |
+| `p` | pressure carried by the marker (the pressure history, see below; shifted like the pressure the rheology sees) | MPa | yes |
 | `T` | temperature | °C | yes |
 | `aps` | accumulated plastic strain | – | yes |
 | `ats` | accumulated total strain | – | yes |
@@ -107,7 +107,9 @@ The `j2_*` invariants are cell-centred: the cell's own diagonal components plus 
 
 ### What the rule may change
 
-The **phase**, the **temperature**, the **accumulated plastic and total strain** (`aps`, `ats`), the **deviatoric stress** (`sxx` ... `syz`) and the **displacement** (`ux`, `uy`, `uz`) of the marker. The position and the pressure are read-only on purpose: moving a marker is the job of advection, and the marker pressure is re-interpolated from the grid every step. Cell data is always read-only; change the markers, and LaMEM maps the changes back to the grid.
+The **phase**, the **temperature**, the **pressure**, the **accumulated plastic and total strain** (`aps`, `ats`), the **deviatoric stress** (`sxx` ... `syz`) and the **displacement** (`ux`, `uy`, `uz`) of the marker. Only the position is read-only: moving a marker is the job of advection. Cell data is always read-only; change the markers, and LaMEM maps the changes back to the grid.
+
+Writing the pressure needs some care, because the marker pressure is a *history* variable rather than the current solution. Each step, advection adds the change of the grid pressure to it; LaMEM then averages it onto the cells as the old pressure `pn` (`m.cell.pn`), which enters the next solve only through the volumetric elastic term of the continuity equation, `-(p - pn)/(K dt)`. Changing `p` therefore imposes a jump in the pressure history: for a compressible phase (bulk modulus `K` set) the next solve responds with volumetric expansion (lower `p`) or compaction (higher `p`); for an incompressible phase it has no effect. Density and the rheology use the current pressure, not this history value.
 
 A changed field is converted back to internal units only if it actually changed, so any field your rule leaves alone is passed through bit-for-bit. Always start from `m` (`return m` or `update(m; ...)`) rather than recomputing an "unchanged" value, which could perturb it by a rounding error.
 
@@ -133,7 +135,7 @@ You only need this section if you want to write a plugin in a language other tha
 * `int32_t lamem_plugin_struct_sizes(int64_t *sizes, int32_t n)` — writes the `sizeof` of the four structs below, in that order, and returns 4. LaMEM compares them with its own at load time.
 * `int32_t lamem_phase_transition(const LaMEMPluginMarkers*, const LaMEMPluginCells*, const LaMEMPluginStep*, const LaMEMPluginScaling*)` — called once per step on every MPI rank, also when the rank owns no markers. It returns the number of markers it changed, or a negative value on failure.
 
-The structs hold plain C pointers to arrays in LaMEM's internal units, together with the scaling factors to convert them (`LaMEMPluginScaling`). `LaMEMPluginMarkers` has one entry per marker of the rank: read-only `x`, `y`, `z`, `p`, the cell index `cell_index` (0-based), and an `*_in` / `*_out` array pair for every writable field. The `*_out` arrays are pre-filled with the input values, and LaMEM copies back only entries that differ from the input. `LaMEMPluginCells` holds one array per cell field for the rank's local cells, plus `phRat`, the phase ratios as one array of `ncells × numPhases` values (cell-major). `LaMEMPluginStep` holds the time, time step and step number.
+The structs hold plain C pointers to arrays in LaMEM's internal units, together with the scaling factors to convert them (`LaMEMPluginScaling`). `LaMEMPluginMarkers` has one entry per marker of the rank: read-only `x`, `y`, `z`, the cell index `cell_index` (0-based), and an `*_in` / `*_out` array pair for every writable field (the pressure `p_in` / `p_out` without `pShift`). The `*_out` arrays are pre-filled with the input values, and LaMEM copies back only entries that differ from the input. `LaMEMPluginCells` holds one array per cell field for the rank's local cells, plus `phRat`, the phase ratios as one array of `ncells × numPhases` values (cell-major). `LaMEMPluginStep` holds the time, time step and step number.
 
 ## Building the plugin
 
@@ -160,7 +162,7 @@ This compiles the rule together with the Julia runtime it needs into a *bundle* 
 !!! warning
     The library depends on the other files in its bundle directory (`libjulia` and friends). Move or copy the whole `build_<name>` directory, never the library file alone, or LaMEM will not be able to load it.
 
-The example rules in `scripts/dylib_plugins/` build the same way: `ptlib_constant.jl` and `ptlib_box.jl` reproduce the built-in `Constant` and `Box` transitions, and `ptlib_demo_fields.jl` shows a rule that reads cell data (temperature and phase ratio of the marker's cell) and writes a field other than phase and temperature (the accumulated plastic strain).
+The example rules in `scripts/dylib_plugins/` build the same way: `ptlib_constant.jl` and `ptlib_box.jl` reproduce the built-in `Constant` and `Box` transitions, and `ptlib_demo_fields.jl` shows a rule that reads cell data (temperature and phase ratio of the marker's cell) and writes fields other than phase and temperature (the accumulated plastic strain and the pressure).
 
 ## Using the plugin in a model
 
@@ -189,7 +191,7 @@ With `phase_transitions = dylib` the rule is then called every time step, **afte
 Dylib plugin  : 27512 marker(s) changed phase, 0 marker(s) changed temperature, 0 marker(s) changed other fields
 ```
 
-The last number counts markers on which the rule changed any of `aps`, `ats`, the stress or the displacement.
+The last number counts markers on which the rule changed any of `p`, `aps`, `ats`, the stress or the displacement.
 
 A few points about how this interacts with the rest of the input file:
 
@@ -199,7 +201,7 @@ A few points about how this interacts with the rest of the input file:
 
 ## Validation
 
-The test `test/t40_PhaseTransitionPlugin` compares LaMEM runs that use the `ptlib_constant` and `ptlib_box` plugins against runs that use the equivalent built-in transitions; the residual histories must agree to the tolerances used for the other phase-transition tests. It also runs `ptlib_demo_fields` on two MPI ranks and checks from the per-step summary that the plastic strain it writes persists on the markers. It is a good template for validating a new rule: implement it as a built-in transition where possible, then check that the plugin reproduces it before extending the rule beyond what the built-ins can do.
+The test `test/t40_PhaseTransitionPlugin` compares LaMEM runs that use the `ptlib_constant` and `ptlib_box` plugins against runs that use the equivalent built-in transitions; the residual histories must agree to the tolerances used for the other phase-transition tests. It also runs `ptlib_demo_fields` on two MPI ranks and checks from the per-step summary that the plastic strain it writes persists on the markers, and checks the conversion of written values (including the pressure) back to internal units on hand-made input. It is a good template for validating a new rule: implement it as a built-in transition where possible, then check that the plugin reproduces it before extending the rule beyond what the built-ins can do.
 
 ## Troubleshooting
 

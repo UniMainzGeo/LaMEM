@@ -1858,6 +1858,14 @@ if should_run_test("t40_PhaseTransitionPlugin")
                 @test occursin("good struct: rc=1, phase 2 -> 3", guard_out)
                 @test occursin("bad struct (length=0): rc=-2", guard_out)
                 @test occursin("bad struct (abi_version=2): rc=-3", guard_out)
+
+                # write path (APS and pressure conversion back to internal
+                # units, bit-exact pass-through of untouched entries)
+                if isfile(demo_bundle_path)
+                    demo_guard_out = read(`$guard_bin $demo_bundle_path demo`, String)
+                    @test occursin("demo: rc=1, aps ok, p ok", demo_guard_out)
+                    @test occursin("untouched ok", demo_guard_out)
+                end
             finally
                 isfile(guard_bin) && rm(guard_bin, force=true)
             end

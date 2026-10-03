@@ -40,7 +40,7 @@
 //---------------------------------------------------------------------------
 // the ABI structs have no implicit padding: on 64-bit platforms their sizes
 // are fixed (the plugin reports its own via lamem_plugin_struct_sizes)
-static_assert(sizeof(void*) != 8 || sizeof(LaMEMPluginMarkers) == 256, "LaMEMPluginMarkers layout changed");
+static_assert(sizeof(void*) != 8 || sizeof(LaMEMPluginMarkers) == 264, "LaMEMPluginMarkers layout changed");
 static_assert(sizeof(void*) != 8 || sizeof(LaMEMPluginCells)   == 344, "LaMEMPluginCells layout changed");
 static_assert(sizeof(LaMEMPluginStep)    == 24,  "LaMEMPluginStep layout changed");
 static_assert(sizeof(LaMEMPluginScaling) == 112, "LaMEMPluginScaling layout changed");
@@ -80,13 +80,13 @@ PetscDLHandle libjuliaHandle = NULL, lbtHandle = NULL; // sibling DLLs, see Dyli
 // input copy (*_in) and an output array (*_out), in the same order
 enum
 {
-	MB_X, MB_Y, MB_Z, MB_P,                         // read-only
+	MB_X, MB_Y, MB_Z,                               // read-only
 	MB_IN,                                          // first writable input
-	MB_OUT = MB_IN + 12,                            // first writable output
-	MB_NUM = MB_OUT + 12
+	MB_OUT = MB_IN + 13,                            // first writable output
+	MB_NUM = MB_OUT + 13
 };
 const int   nWritable = MB_OUT - MB_IN;
-const char *writableName[] = { "T", "aps", "ats", "sxx", "syy", "szz", "sxy", "sxz", "syz", "ux", "uy", "uz" };
+const char *writableName[] = { "T", "aps", "ats", "sxx", "syy", "szz", "sxy", "sxz", "syz", "ux", "uy", "uz", "p" };
 
 PetscInt  bufcap = 0;
 double   *mblock = NULL; // backs mb[] and the three int32 arrays, see DylibPluginAllocBlock
@@ -735,7 +735,7 @@ PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx)
 	// one pass over the markers: copy every field (internal units, unconverted)
 	// and pre-fill the outputs with the inputs
 	{
-		double         *x = mb[MB_X], *y = mb[MB_Y], *z = mb[MB_Z], *p = mb[MB_P];
+		double         *x = mb[MB_X], *y = mb[MB_Y], *z = mb[MB_Z];
 		double         *in[MB_OUT - MB_IN], *out[MB_OUT - MB_IN];
 		const PetscInt *cellnum = actx->cellnum;
 
@@ -746,7 +746,6 @@ PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx)
 			P = &actx->markers[i];
 
 			x[i] = P->X[0]; y[i] = P->X[1]; z[i] = P->X[2];
-			p[i] = P->p; // raw, without pShift
 
 			mcell[i]     = (int32_t)cellnum[i];
 			mphase_in[i] = mphase_out[i] = (int32_t)P->phase;
@@ -763,11 +762,12 @@ PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx)
 			in[9] [i] = out[9] [i] = P->U[0];
 			in[10][i] = out[10][i] = P->U[1];
 			in[11][i] = out[11][i] = P->U[2];
+			in[12][i] = out[12][i] = P->p; // raw, without pShift
 		}
 
 		markers.n          = (size_t)n;
 		markers.cell_index = mcell;
-		markers.x          = x; markers.y = y; markers.z = z; markers.p = p;
+		markers.x          = x; markers.y = y; markers.z = z;
 		markers.phase_in   = mphase_in;
 		markers.phase_out  = mphase_out;
 
@@ -775,11 +775,13 @@ PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx)
 		markers.sxx_in = in[3];  markers.syy_in = in[4];  markers.szz_in = in[5];
 		markers.sxy_in = in[6];  markers.sxz_in = in[7];  markers.syz_in = in[8];
 		markers.ux_in  = in[9];  markers.uy_in  = in[10]; markers.uz_in  = in[11];
+		markers.p_in   = in[12];
 
 		markers.T_out   = out[0]; markers.aps_out = out[1];  markers.ats_out = out[2];
 		markers.sxx_out = out[3]; markers.syy_out = out[4];  markers.szz_out = out[5];
 		markers.sxy_out = out[6]; markers.sxz_out = out[7];  markers.syz_out = out[8];
 		markers.ux_out  = out[9]; markers.uy_out  = out[10]; markers.uz_out  = out[11];
+		markers.p_out   = out[12];
 	}
 
 	// every rank calls fn() and joins every collective below, even if n==0
@@ -853,6 +855,7 @@ PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx)
 			if(out[9] [i] != in[9] [i]) { P->U[0] = out[9] [i]; other = 1; }
 			if(out[10][i] != in[10][i]) { P->U[1] = out[10][i]; other = 1; }
 			if(out[11][i] != in[11][i]) { P->U[2] = out[11][i]; other = 1; }
+			if(out[12][i] != in[12][i]) { P->p    = out[12][i]; other = 1; }
 
 			cnt[2] += other;
 		}
@@ -861,9 +864,9 @@ PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx)
 	PetscCallMPI(MPI_Allreduce(cnt, glob, 3, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD));
 
 	// ADVInterpMarkToCell maps every changed marker field back to the cells
-	// (phRat, svBulk.Tn - read by the next JacResInitTemp -, APS, ATS, the
-	// history stress and the displacement), so it must also run when only T
-	// or another non-phase field changed
+	// (phRat, svBulk.Tn - read by the next JacResInitTemp -, svBulk.pn, APS,
+	// ATS, the history stress and the displacement), so it must also run
+	// when only T or another non-phase field changed
 	if(glob[0] || glob[1] || glob[2])
 	{
 		PetscCall(ADVCheckMarkPhases(actx));

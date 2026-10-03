@@ -13,7 +13,7 @@ export LaMEMPluginMarkers, LaMEMPluginCells, LaMEMPluginStep, LaMEMPluginScaling
        dimensionalize_length, dimensionalize_time, dimensionalize_stress,
        dimensionalize_strain_rate, dimensionalize_viscosity,
        dimensionalize_velocity, dimensionalize_density,
-       dimensionalize_pressure
+       dimensionalize_pressure, nondimensionalize_pressure
 
 const ABI_VERSION = Int32(3)
 
@@ -30,11 +30,11 @@ struct LaMEMPluginMarkers
     x::Ptr{Cdouble}
     y::Ptr{Cdouble}
     z::Ptr{Cdouble}
-    p::Ptr{Cdouble}
 
-    # writable fields: input values
+    # writable fields: input values (p: raw, without pShift)
     phase_in::Ptr{Int32}
     T_in::Ptr{Cdouble}
+    p_in::Ptr{Cdouble}
     aps_in::Ptr{Cdouble}
     ats_in::Ptr{Cdouble}
     sxx_in::Ptr{Cdouble}
@@ -50,6 +50,7 @@ struct LaMEMPluginMarkers
     # writable fields: output values (pre-filled with the input values)
     phase_out::Ptr{Int32}
     T_out::Ptr{Cdouble}
+    p_out::Ptr{Cdouble}
     aps_out::Ptr{Cdouble}
     ats_out::Ptr{Cdouble}
     sxx_out::Ptr{Cdouble}
@@ -158,6 +159,7 @@ end
 @inline dimensionalize_T(s::LaMEMPluginScaling, T_internal) = T_internal * s.temperature - s.Tshift
 @inline nondimensionalize_T(s::LaMEMPluginScaling, T_dim)   = (T_dim + s.Tshift) / s.temperature
 @inline dimensionalize_pressure(s::LaMEMPluginScaling, p_internal_raw) = (p_internal_raw + s.pShift) * s.stress
+@inline nondimensionalize_pressure(s::LaMEMPluginScaling, p_dim)         = p_dim / s.stress - s.pShift
 
 #-----------------------------------------------------------------------------
 # CellView: lazy, dimensional, read-only view of one cell
@@ -236,8 +238,8 @@ end
 #-----------------------------------------------------------------------------
 # T_internal is the input temperature in LaMEM's internal units, so a plugin
 # can reproduce a built-in comparison bit-for-bit (see ptlib_constant.jl).
-# Writable: phase, T, aps, ats, sxx..syz, ux..uz (return them changed via
-# `update`); everything else is ignored on return.
+# Writable: phase, T, p, aps, ats, sxx..syz, ux..uz (return them changed
+# via `update`); everything else is ignored on return.
 struct MarkerView
     x::Float64
     y::Float64
@@ -266,11 +268,11 @@ end
 # copy of `m` with the given writable fields replaced, e.g.
 #   update(m; phase = 3, T = 900.0)
 @inline function update(m::MarkerView;
-        phase::Integer = m.phase, T::Real = m.T, aps::Real = m.aps, ats::Real = m.ats,
+        phase::Integer = m.phase, T::Real = m.T, p::Real = m.p, aps::Real = m.aps, ats::Real = m.ats,
         sxx::Real = m.sxx, syy::Real = m.syy, szz::Real = m.szz,
         sxy::Real = m.sxy, sxz::Real = m.sxz, syz::Real = m.syz,
         ux::Real = m.ux, uy::Real = m.uy, uz::Real = m.uz)
-    return MarkerView(m.x, m.y, m.z, m.p,
+    return MarkerView(m.x, m.y, m.z, Float64(p),
         Float64(T), Float64(aps), Float64(ats),
         Float64(sxx), Float64(syy), Float64(szz), Float64(sxy), Float64(sxz), Float64(syz),
         Float64(ux), Float64(uy), Float64(uz),
@@ -294,6 +296,12 @@ end
 @inline function _store_T!(out::Ptr{Cdouble}, i::Int, new::Float64, old::Float64, s::LaMEMPluginScaling)
     new == old && return false
     unsafe_store!(out, nondimensionalize_T(s, new), i)
+    return true
+end
+
+@inline function _store_p!(out::Ptr{Cdouble}, i::Int, new::Float64, old::Float64, s::LaMEMPluginScaling)
+    new == old && return false
+    unsafe_store!(out, nondimensionalize_pressure(s, new), i)
     return true
 end
 
@@ -331,7 +339,7 @@ function lamem_pt_wrapper(rule::F,
                 dimensionalize_length(s, unsafe_load(M.x, i)),
                 dimensionalize_length(s, unsafe_load(M.y, i)),
                 dimensionalize_length(s, unsafe_load(M.z, i)),
-                dimensionalize_pressure(s, unsafe_load(M.p, i)),
+                dimensionalize_pressure(s, unsafe_load(M.p_in, i)),
                 dimensionalize_T(s, T_int),
                 unsafe_load(M.aps_in, i),
                 unsafe_load(M.ats_in, i),
@@ -360,6 +368,7 @@ function lamem_pt_wrapper(rule::F,
                 ch = true
             end
             ch |= _store_T!(M.T_out, i, r.T, m.T, s)
+            ch |= _store_p!(M.p_out, i, r.p, m.p, s)
             ch |= _store!(M.aps_out, i, r.aps, m.aps, 1.0)
             ch |= _store!(M.ats_out, i, r.ats, m.ats, 1.0)
             ch |= _store!(M.sxx_out, i, r.sxx, m.sxx, s.stress)

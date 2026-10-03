@@ -38,11 +38,15 @@
 //
 // Markers: one entry per local marker. *_in arrays are read-only copies of
 // the marker fields; *_out arrays are pre-filled with the same values and
-// are what LaMEM writes back. Only phase, T, APS, ATS, the deviatoric
-// stress S and the displacement U are writable: the position (that would be
-// advection) and the pressure (re-interpolated from the grid every step)
-// are read-only. LaMEM copies an *_out value back only if it differs from
-// *_in, so a plugin must leave unchanged entries bit-for-bit as pre-filled.
+// are what LaMEM writes back. Writable are phase, T, p, APS, ATS, the
+// deviatoric stress S and the displacement U; only the position is
+// read-only (moving markers is advection's job). The marker pressure is a
+// history variable (incremented by the grid pressure change in advection,
+// projected to the cells as svBulk.pn = p_old): changing it imposes a
+// pressure-history jump that acts through the volumetric elastic term
+// IKdt*(p - pn) of the next solve, i.e. only for compressible phases.
+// LaMEM copies an *_out value back only if it differs from *_in, so a
+// plugin must leave unchanged entries bit-for-bit as pre-filled.
 //
 // Cells: structure-of-arrays over the local cells of this rank (ncells), a
 // read-only copy of SolVarCell taken once per step, plus the cell-centred J2
@@ -71,17 +75,16 @@ typedef struct LaMEMPluginMarkers
 
 	// read-only
 	const double  *x, *y, *z;  // position
-	const double  *p;          // pressure (raw, without pShift)
 
-	// writable fields: input values
+	// writable fields: input values (p: raw, without pShift)
 	const int32_t *phase_in;
-	const double  *T_in, *aps_in, *ats_in;
+	const double  *T_in, *p_in, *aps_in, *ats_in;
 	const double  *sxx_in, *syy_in, *szz_in, *sxy_in, *sxz_in, *syz_in;
 	const double  *ux_in, *uy_in, *uz_in;
 
 	// writable fields: output values (pre-filled with the input values)
 	int32_t       *phase_out;
-	double        *T_out, *aps_out, *ats_out;
+	double        *T_out, *p_out, *aps_out, *ats_out;
 	double        *sxx_out, *syy_out, *szz_out, *sxy_out, *sxz_out, *syz_out;
 	double        *ux_out, *uy_out, *uz_out;
 } LaMEMPluginMarkers;
