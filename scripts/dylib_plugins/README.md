@@ -3,12 +3,25 @@
 User documentation: `doc/src/man/JuliaPlugins.md` ("Julia phase-transition
 plugins" in the LaMEM manual). This file is the short developer summary.
 
-Julia sources for LaMEM's user-defined dylib plugin (`src/dylib_plugins.h`).
-A rule file `include`s `LaMEMPlugin.jl` and defines
-`rule(m::MarkerView) -> (phase, T_dimensional)`, wrapped by
-`lamem_pt_wrapper` into the `lamem_phase_transition`/
-`lamem_phase_transition_abi_version` `@ccallable`s that `-dylib_plugin`
-loads. `ptlib_constant.jl`/`ptlib_box.jl` are example rules, one per file.
+Julia sources for LaMEM's user-defined dylib plugin, ABI v3
+(`src/dylib_plugins.h`, mirrored struct-for-struct in `LaMEMPlugin.jl`).
+A rule file `include`s `LaMEMPlugin.jl`, defines
+`rule(m::MarkerView) -> MarkerView` (return `m`, or `update(m; phase=..,
+T=.., aps=.., ...)`; a `(phase, T)` tuple also works) and one
+`lamem_phase_transition` `@ccallable` that calls
+`lamem_pt_wrapper(rule, markers, cells, step, scaling)`. `LaMEMPlugin.jl`
+itself exports the `lamem_plugin_abi_version`/`lamem_plugin_struct_sizes`
+`@ccallable`s LaMEM checks at load time.
+
+`MarkerView` carries every marker field (dimensional); writable are phase,
+T, APS, ATS, the deviatoric stress and the displacement, read-only are the
+position and the pressure. `m.cell` is a lazy, dimensional view of all
+`SolVarCell` fields of the marker's cell plus the cell-centred J2
+invariants; `phase_ratio(m.cell, ph)` gives the phase ratios.
+
+Examples, one rule per file: `ptlib_constant.jl`/`ptlib_box.jl` reproduce
+the built-in Constant/Box transitions bit-for-bit, `ptlib_demo_fields.jl`
+reads cell data and writes APS.
 
 Build: `julia --project=@juliac build_plugin.jl <rule.jl> [output_dir]`
 (`@juliac`: an environment with `JuliaC` installed). Produces
