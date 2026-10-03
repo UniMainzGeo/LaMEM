@@ -7,7 +7,7 @@ The rule is compiled once, ahead of time, with [JuliaC.jl](https://github.com/Ju
 !!! note
     A plugin embeds its own Julia runtime. It works whenever LaMEM runs as its own process — including when it is launched from Julia through `LaMEM.jl`'s `run_lamem`, which starts LaMEM as a subprocess. It cannot be used from a LaMEM that is itself loaded as a library into an already-running Julia session. Only one plugin can be loaded per LaMEM run.
 
-Plugins are supported on Linux, macOS and Windows, and are tested in CI on all three. You need Julia 1.13 or later and the `JuliaC` package.
+Plugins are supported on Linux, macOS and Windows, and are tested in CI on all three. You need Julia 1.12 or later and the `JuliaC` package (tested with 1.12 and 1.13).
 
 ## Writing a rule
 
