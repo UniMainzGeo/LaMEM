@@ -90,8 +90,10 @@ jobs:
         julia --project=@juliac -e 'using Pkg; Pkg.add("JuliaC")'
         julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_constant.jl test/t40_PhaseTransitionPlugin
         julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_box.jl test/t40_PhaseTransitionPlugin
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_demo_fields.jl test/t40_PhaseTransitionPlugin
         test -f test/t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.so
         test -f test/t40_PhaseTransitionPlugin/build_box/lib/libptlib_box.so
+        test -f test/t40_PhaseTransitionPlugin/build_demo_fields/lib/libptlib_demo_fields.so
 
     - name: 'Test LaMEM | Int32'
       run: |
@@ -180,8 +182,10 @@ jobs:
         julia --project=@juliac -e 'using Pkg; Pkg.add("JuliaC")'
         julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_constant.jl test/t40_PhaseTransitionPlugin
         julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_box.jl test/t40_PhaseTransitionPlugin
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_demo_fields.jl test/t40_PhaseTransitionPlugin
         test -f test/t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.dylib
         test -f test/t40_PhaseTransitionPlugin/build_box/lib/libptlib_box.dylib
+        test -f test/t40_PhaseTransitionPlugin/build_demo_fields/lib/libptlib_demo_fields.dylib
 
     - name: 'Test LaMEM | Int32'
       run: |

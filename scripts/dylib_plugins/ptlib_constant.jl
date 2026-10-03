@@ -82,39 +82,17 @@ function constant_transition_rule(m::MarkerView, constant_value_internal::Float6
         # ConstantValue when the .dat is read - so this performs the exact
         # same floating-point comparison LaMEM's C code does.
         newph = m.T_internal >= constant_value_internal ? PHASE_ABOVE : PHASE_BELOW
-        return (newph, m.T) # T itself is left untouched by this transition
+        return update(m; phase = newph) # T itself is left untouched by this transition
     end
-    return (m.phase, m.T)
+    return m
 end
 
-Base.@ccallable function lamem_phase_transition(
-        n::Csize_t,
-        x::Ptr{Cdouble}, y::Ptr{Cdouble}, z::Ptr{Cdouble},
-        T::Ptr{Cdouble}, p::Ptr{Cdouble}, time::Cdouble,
-        sxx::Ptr{Cdouble}, syy::Ptr{Cdouble}, szz::Ptr{Cdouble},
-        sxy::Ptr{Cdouble}, sxz::Ptr{Cdouble}, syz::Ptr{Cdouble},
-        j2_stress_cell::Ptr{Cdouble}, j2_strainrate_cell::Ptr{Cdouble},
-        eta_cell::Ptr{Cdouble}, aps_cell::Ptr{Cdouble},
-        phase_in::Ptr{Cint}, phase_out::Ptr{Cint},
-        T_out::Ptr{Cdouble},
-        scaling::Ptr{LaMEMPluginScaling})::Cint
-    try
-        s = unsafe_load(scaling)
-        constant_value_internal = (CONSTANT_VALUE_DIM + s.Tshift) / s.temperature
-
-        rule = m -> constant_transition_rule(m, constant_value_internal)
-
-        return lamem_pt_wrapper(rule, n, x, y, z, T, p, time,
-            sxx, syy, szz, sxy, sxz, syz,
-            j2_stress_cell, j2_strainrate_cell, eta_cell, aps_cell,
-            phase_in, phase_out, T_out, scaling)
-    catch
-        return Cint(-1)
-    end
-end
-
-Base.@ccallable function lamem_plugin_abi_version()::Cint
-    return LaMEMPlugin.ABI_VERSION
+Base.@ccallable function lamem_phase_transition(markers::Ptr{LaMEMPluginMarkers}, cells::Ptr{LaMEMPluginCells},
+        step::Ptr{LaMEMPluginStep}, scaling::Ptr{LaMEMPluginScaling})::Int32
+    # (CONSTANT_VALUE_DIM + Tshift)/temperature, once per call
+    constant_value_internal = nondimensionalize_T(unsafe_load(scaling), CONSTANT_VALUE_DIM)
+    rule = m -> constant_transition_rule(m, constant_value_internal)
+    return lamem_pt_wrapper(rule, markers, cells, step, scaling)
 end
 
 end # module

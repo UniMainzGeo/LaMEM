@@ -1800,22 +1800,64 @@ if should_run_test("t40_PhaseTransitionPlugin")
             end
         end
 
-        # Scaling-struct guard (see LaMEMPlugin.jl's lamem_pt_wrapper): run as
-        # a separate C process, not via ccall - a second jl_init_with_image_handle
-        # inside this already-running Julia process is unsupported.
+        # A rule that reads cell data and writes a non-phase/T marker field
+        # (ptlib_demo_fields.jl: APS = 1 for markers in hot plume-head cells),
+        # on 2 ranks so that the per-rank cell arrays/cell_index are exercised.
+        # There is no built-in equivalent to compare against; instead check the
+        # per-step summary LaMEM prints: the first call must change APS on some
+        # markers (and nothing else), and since the rule skips markers that are
+        # already seeded, every later step must change fewer - which only holds
+        # if the APS written in step 1 really reached the markers.
+        demo_bundle_name = Sys.isapple() ? "libptlib_demo_fields.dylib" : "libptlib_demo_fields.so"
+        demo_bundle_path = joinpath(test_dir, dir, "build_demo_fields", "lib", demo_bundle_name)
+
+        if !isfile(demo_bundle_path)
+            @info "t40_PhaseTransitionPlugin: demo_fields test skipped - compiled plugin bundle not found at $demo_bundle_path. " *
+                  "Build it first with: julia --project=@juliac $build_script " *
+                  "scripts/dylib_plugins/ptlib_demo_fields.jl $(joinpath(test_dir, dir))"
+        else
+            @test perform_lamem_test(dir, "PT0_only_plugin.dat", "Demo_fields_plugin",
+                                    args="-dylib_plugin $demo_bundle_path -nstep_max 4",
+                                    keywords=keywords, accuracy=acc, cores=2, mpiexec=mpiexec,
+                                    create_expected_file=update_expected, clean_dir=false)
+
+            demo_out = joinpath(dir, update_expected ? "Demo_fields_plugin.expected" : "Demo_fields_plugin.out")
+            summary  = r"Dylib plugin  : (\d+) marker\(s\) changed phase, (\d+) marker\(s\) changed temperature, (\d+) marker\(s\) changed other fields"
+            counts   = isfile(demo_out) ? [parse.(Int, m.captures) for m in eachmatch(summary, read(demo_out, String))] : Vector{Int}[]
+
+            @test length(counts) == 4
+            if !isempty(counts)
+                @test all(c -> c[1] == 0 && c[2] == 0, counts)  # phase and T untouched
+                @test counts[1][3] > 0                          # APS seeded in step 1 ...
+                @test all(c -> c[3] < counts[1][3], counts[2:end]) # ... and kept afterwards
+            end
+
+            if clean_files
+                clean_test_directory(dir)
+            end
+        end
+
+        # ABI checks against the built ptlib_constant plugin (abi version,
+        # struct sizes vs. src/dylib_plugins.h, and lamem_pt_wrapper's
+        # scaling-struct guards): run as a separate C process, not via ccall -
+        # a second jl_init_with_image_handle inside this already-running Julia
+        # process is unsupported.
         guard_src = joinpath(dir, "scaling_guard_test.c")
         guard_bin = joinpath(dir, "scaling_guard_test")
+        src_dir   = joinpath(test_dir, "..", "src")
         cc = Sys.which("cc") !== nothing ? "cc" : Sys.which("clang")
 
         if cc === nothing
             @info "t40_PhaseTransitionPlugin: scaling-struct guard test skipped - no C compiler (cc/clang) found"
         else
             try
-                run(`$cc -O0 $guard_src -o $guard_bin -ldl`)
+                run(`$cc -O0 -I$src_dir $guard_src -o $guard_bin -ldl`)
                 guard_out = read(`$guard_bin $bundle_path`, String)
-                @test occursin("abi_version=2", guard_out)
-                @test occursin("good struct: rc=1", guard_out)
+                @test occursin("abi_version=3 (LaMEM: 3)", guard_out)
+                @test occursin(r"struct sizes: .* -> ok", guard_out)
+                @test occursin("good struct: rc=1, phase 2 -> 3", guard_out)
                 @test occursin("bad struct (length=0): rc=-2", guard_out)
+                @test occursin("bad struct (abi_version=2): rc=-3", guard_out)
             finally
                 isfile(guard_bin) && rm(guard_bin, force=true)
             end

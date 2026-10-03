@@ -38,7 +38,15 @@
 #include <windows.h> // GetModuleHandleA, see DylibPluginOpenWinLbt
 #endif
 //---------------------------------------------------------------------------
-typedef int      (*DylibPluginAbiVersionFn)(void);
+// the ABI structs have no implicit padding: on 64-bit platforms their sizes
+// are fixed (the plugin reports its own via lamem_plugin_struct_sizes)
+static_assert(sizeof(void*) != 8 || sizeof(LaMEMPluginMarkers) == 256, "LaMEMPluginMarkers layout changed");
+static_assert(sizeof(void*) != 8 || sizeof(LaMEMPluginCells)   == 344, "LaMEMPluginCells layout changed");
+static_assert(sizeof(LaMEMPluginStep)    == 24,  "LaMEMPluginStep layout changed");
+static_assert(sizeof(LaMEMPluginScaling) == 112, "LaMEMPluginScaling layout changed");
+
+typedef int32_t  (*DylibPluginAbiVersionFn)(void);
+typedef int32_t  (*DylibPluginStructSizesFn)(int64_t *sizes, int32_t n);
 typedef void      (*JlParseOptsFn)(int *argc, char ***argv);
 typedef void      (*JlInitWithImageHandleFn)(void *handle);
 typedef void      (*JlAtexitHookFn)(int status);
@@ -68,19 +76,40 @@ PetscDLHandle libjuliaHandle = NULL, lbtHandle = NULL; // sibling DLLs, see Dyli
 #define LbtSymHandle NULL // dlsym(NULL, ...) searches the whole process (RTLD_GLOBAL)
 #endif
 
-PetscInt      bufcap = 0;
-PetscScalar  *bx = NULL, *by = NULL, *bz = NULL, *bT = NULL, *bp = NULL, *bT_out = NULL;
-PetscScalar  *bsxx = NULL, *bsyy = NULL, *bszz = NULL, *bsxy = NULL, *bsxz = NULL, *bsyz = NULL;
-PetscScalar  *bj2s = NULL, *bj2e = NULL, *bvisc = NULL, *baps = NULL;
-int32_t      *bphase_in = NULL, *bphase_out = NULL;
+// per-marker buffers (grown, never shrunk); the writable fields have an
+// input copy (*_in) and an output array (*_out), in the same order
+enum
+{
+	MB_X, MB_Y, MB_Z, MB_P,                         // read-only
+	MB_IN,                                          // first writable input
+	MB_OUT = MB_IN + 12,                            // first writable output
+	MB_NUM = MB_OUT + 12
+};
+const int   nWritable = MB_OUT - MB_IN;
+const char *writableName[] = { "T", "aps", "ats", "sxx", "syy", "szz", "sxy", "sxz", "syz", "ux", "uy", "uz" };
 
-PetscScalar **markerBufs[] = { &bx, &by, &bz, &bT, &bp, &bT_out,
-                               &bsxx, &bsyy, &bszz, &bsxy, &bsxz, &bsyz, &bj2s, &bj2e, &bvisc, &baps
-                             };
-const int nMarkerBufs = sizeof(markerBufs)/sizeof(markerBufs[0]);
+PetscInt  bufcap = 0;
+double   *mblock = NULL; // backs mb[] and the three int32 arrays, see DylibPluginAllocBlock
+double   *mb[MB_NUM];
+int32_t  *mcell = NULL, *mphase_in = NULL, *mphase_out = NULL;
 
-PetscInt      cellcap = 0;
-PetscScalar  *cellJ2Stress = NULL, *cellJ2StrainRate = NULL;
+// per-cell buffers, copied once per step
+enum
+{
+	CB_ETA, CB_ETA_ST, CB_I2GDT, CB_HR, CB_APS, CB_PSR,
+	CB_THETA, CB_RHO, CB_IKDT, CB_ALPHA, CB_TN, CB_PN, CB_RHO_PF, CB_MF, CB_PHI, CB_HA, CB_COND,
+	CB_SXX, CB_SYY, CB_SZZ, CB_HXX, CB_HYY, CB_HZZ, CB_DXX, CB_DYY, CB_DZZ,
+	CB_UX, CB_UY, CB_UZ, CB_ATS, CB_ETA_CR,
+	CB_DIIDIF, CB_DIIDIS, CB_DIIPRL, CB_DIIFK, CB_DIIPL, CB_YIELD,
+	CB_J2S, CB_J2E,
+	CB_NUM
+};
+
+PetscInt  cellcap = 0, phRatcap = 0;
+double   *cblock = NULL; // backs cb[] and cfree
+double   *cb[CB_NUM];
+int32_t  *cfree  = NULL;
+double   *cphRat = NULL;
 
 enum { LBT_MAX_SNAPSHOT = 16 };
 LbtSnapshot lbtSnap[LBT_MAX_SNAPSHOT];
@@ -107,13 +136,11 @@ PetscErrorCode DylibPluginCheckPhaseTr(DBMat *dbm)
 //---------------------------------------------------------------------------
 static PetscErrorCode DylibPluginFreeBuffers(void)
 {
-	int i;
-
 	PetscFunctionBeginUser;
 
-	for(i = 0; i < nMarkerBufs; i++) PetscCall(PetscFree(*markerBufs[i]));
-	PetscCall(PetscFree(bphase_in)); PetscCall(PetscFree(bphase_out));
-	PetscCall(PetscFree(cellJ2Stress)); PetscCall(PetscFree(cellJ2StrainRate));
+	PetscCall(PetscFree(mblock));
+	PetscCall(PetscFree(cblock));
+	PetscCall(PetscFree(cphRat));
 
 	PetscFunctionReturn(0);
 }
@@ -130,7 +157,7 @@ static PetscErrorCode DylibPluginFinalize(void)
 
 	PetscCall(DylibPluginFreeBuffers());
 
-	bufcap = 0; cellcap = 0;
+	bufcap = 0; cellcap = 0; phRatcap = 0;
 
 	PetscFunctionReturn(0);
 }
@@ -278,7 +305,7 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 	char      lib[_str_len_];
 	void     *sym;
 	int32_t   nthreadsBefore = -1;
-	int       abiVersion     = -1; // -1: plugin does not export lamem_plugin_abi_version
+	int       abiVersion     = -1;
 
 	PetscFunctionBeginUser;
 
@@ -354,14 +381,47 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 
 	PetscCall(DylibPluginRestoreLbt(nthreadsBefore));
 
+	// a plugin built for another ABI would read/write the structs with a
+	// different layout: both checks are mandatory, before the first call
 	PetscCall(PetscDLSym(handle, "lamem_plugin_abi_version", &sym));
-	if(sym)
+	if(!sym)
 	{
-		abiVersion = ((DylibPluginAbiVersionFn)sym)();
-		if(abiVersion != DYLIB_PLUGIN_ABI_VERSION)
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB,
+		        "dylib_plugin: %s does not export lamem_plugin_abi_version (built for ABI v1?), expected v%d - rebuild it with this LaMEM's LaMEMPlugin.jl",
+		        lib, DYLIB_PLUGIN_ABI_VERSION);
+	}
+	abiVersion = (int)((DylibPluginAbiVersionFn)sym)();
+	if(abiVersion != DYLIB_PLUGIN_ABI_VERSION)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB,
+		        "dylib_plugin: %s reports ABI v%d, expected v%d", lib, abiVersion, DYLIB_PLUGIN_ABI_VERSION);
+	}
+
+	PetscCall(PetscDLSym(handle, "lamem_plugin_struct_sizes", &sym));
+	if(!sym) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "dylib_plugin: lamem_plugin_struct_sizes not found in %s", lib);
+	{
+		const char *names[DYLIB_PLUGIN_NUM_STRUCTS] = { "LaMEMPluginMarkers", "LaMEMPluginCells", "LaMEMPluginStep", "LaMEMPluginScaling" };
+		int64_t     ours [DYLIB_PLUGIN_NUM_STRUCTS] = { (int64_t)sizeof(LaMEMPluginMarkers), (int64_t)sizeof(LaMEMPluginCells),
+		                                                (int64_t)sizeof(LaMEMPluginStep),    (int64_t)sizeof(LaMEMPluginScaling)
+		                                              };
+		int64_t     theirs[DYLIB_PLUGIN_NUM_STRUCTS] = { -1, -1, -1, -1 };
+		int32_t     nret;
+		int         i;
+
+		nret = ((DylibPluginStructSizesFn)sym)(theirs, DYLIB_PLUGIN_NUM_STRUCTS);
+		if(nret != DYLIB_PLUGIN_NUM_STRUCTS)
 		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB,
-			        "dylib_plugin: %s reports ABI v%d, expected v%d", lib, abiVersion, DYLIB_PLUGIN_ABI_VERSION);
+			        "dylib_plugin: %s describes %d ABI structs, expected %d", lib, (int)nret, DYLIB_PLUGIN_NUM_STRUCTS);
+		}
+		for(i = 0; i < DYLIB_PLUGIN_NUM_STRUCTS; i++)
+		{
+			if(theirs[i] != ours[i])
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB,
+				        "dylib_plugin: struct layout mismatch in %s: sizeof(%s) is %lld bytes in the plugin, %lld in LaMEM - rebuild it with this LaMEM's LaMEMPlugin.jl",
+				        lib, names[i], (long long)theirs[i], (long long)ours[i]);
+			}
 		}
 	}
 
@@ -376,8 +436,7 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 
 	PetscPrintf(PETSC_COMM_WORLD, "Dylib plugin parameters:\n");
 	PetscPrintf(PETSC_COMM_WORLD, "   Library                                 : %s\n", lib);
-	if(abiVersion >= 0) PetscPrintf(PETSC_COMM_WORLD, "   Plugin ABI version                      : %d\n", abiVersion);
-	else                PetscPrintf(PETSC_COMM_WORLD, "   Plugin ABI version                      : not reported\n");
+	PetscPrintf(PETSC_COMM_WORLD, "   Plugin ABI version                      : %d\n", abiVersion);
 	if(actx->dbm->dylibPhaseTr) PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions                       : dylib (lamem_phase_transition is called every step, after the built-in transitions)\n");
 	else                        PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions                       : builtin\n");
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
@@ -385,38 +444,70 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+// One block for k arrays of cap 8-byte entries each, staggered by 128 bytes
+// modulo 16 KiB. Separate large mallocs are page aligned, so the 30-40
+// arrays the gather/scatter loops stream through in parallel would all map
+// to the same cache sets; that made those loops several times slower.
+static PetscErrorCode DylibPluginAllocBlock(PetscInt cap, int k, double **block, double **arr)
+{
+	size_t stride = ((size_t)cap + 2047)/2048*2048 + 16; // in doubles
+	int    i;
+
+	PetscFunctionBeginUser;
+
+	PetscCall(PetscFree(*block));
+	PetscCall(PetscMalloc((size_t)k*stride*sizeof(double), block));
+
+	for(i = 0; i < k; i++) arr[i] = *block + (size_t)i*stride;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 static PetscErrorCode DylibPluginEnsureMarkerCapacity(PetscInt n)
 {
-	int i;
+	double *arr[MB_NUM + 3];
+	int     i;
 
 	PetscFunctionBeginUser;
 
 	if(n <= bufcap) PetscFunctionReturn(0);
 
-	for(i = 0; i < nMarkerBufs; i++) PetscCall(PetscFree(*markerBufs[i]));
-	PetscCall(PetscFree(bphase_in)); PetscCall(PetscFree(bphase_out));
+	PetscCall(DylibPluginAllocBlock(n, MB_NUM + 3, &mblock, arr));
 
-	for(i = 0; i < nMarkerBufs; i++) PetscCall(PetscMalloc((size_t)n*sizeof(PetscScalar), markerBufs[i]));
-	PetscCall(PetscMalloc((size_t)n*sizeof(int32_t), &bphase_in));
-	PetscCall(PetscMalloc((size_t)n*sizeof(int32_t), &bphase_out));
+	for(i = 0; i < MB_NUM; i++) mb[i] = arr[i];
+	mcell      = (int32_t*)arr[MB_NUM];
+	mphase_in  = (int32_t*)arr[MB_NUM + 1];
+	mphase_out = (int32_t*)arr[MB_NUM + 2];
 
 	bufcap = n;
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-static PetscErrorCode DylibPluginEnsureCellCapacity(PetscInt ncells)
+static PetscErrorCode DylibPluginEnsureCellCapacity(PetscInt ncells, PetscInt numPhases)
 {
+	double *arr[CB_NUM + 1];
+	int     i;
+
 	PetscFunctionBeginUser;
 
-	if(ncells <= cellcap) PetscFunctionReturn(0);
+	if(ncells > cellcap)
+	{
+		PetscCall(DylibPluginAllocBlock(ncells, CB_NUM + 1, &cblock, arr));
 
-	PetscCall(PetscFree(cellJ2Stress));
-	PetscCall(PetscFree(cellJ2StrainRate));
-	PetscCall(PetscMalloc((size_t)ncells*sizeof(PetscScalar), &cellJ2Stress));
-	PetscCall(PetscMalloc((size_t)ncells*sizeof(PetscScalar), &cellJ2StrainRate));
+		for(i = 0; i < CB_NUM; i++) cb[i] = arr[i];
+		cfree = (int32_t*)arr[CB_NUM];
 
-	cellcap = ncells;
+		cellcap = ncells;
+	}
+
+	if(ncells*numPhases > phRatcap)
+	{
+		PetscCall(PetscFree(cphRat));
+		PetscCall(PetscMalloc((size_t)(ncells*numPhases)*sizeof(double), &cphRat));
+
+		phRatcap = ncells*numPhases;
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -452,6 +543,7 @@ static PetscErrorCode DylibPluginFillEdge(DM da, SolVarEdge *svEdge, PetscScalar
 // Cell-centred (not ParaView's corner-centred) J2 of deviatoric stress and
 // strain rate: cell diagonal components plus its 4 surrounding edge values
 // per off-diagonal direction, averaged (same geometry as JacResGetSHmax).
+// Writes cb[CB_J2S]/cb[CB_J2E]; the caller ensures their capacity.
 static PetscErrorCode DylibPluginComputeJ2(AdvCtx *actx)
 {
 	FDSTAG      *fs = actx->fs;
@@ -462,8 +554,6 @@ static PetscErrorCode DylibPluginComputeJ2(AdvCtx *actx)
 	PetscScalar  pf = jr->ctrl.initGuess ? 0.0 : 2.0;
 
 	PetscFunctionBeginUser;
-
-	PetscCall(DylibPluginEnsureCellCapacity(fs->nCells));
 
 	PetscCall(FDSTAGGetLocalVectorEdge(fs, &lxy_s, &lxz_s, &lyz_s));
 	PetscCall(FDSTAGGetLocalVectorEdge(fs, &lxy_d, &lxz_d, &lyz_d));
@@ -495,8 +585,8 @@ static PetscErrorCode DylibPluginComputeJ2(AdvCtx *actx)
 		PetscScalar J2s = 0.5*(sxx*sxx + syy*syy + szz*szz) + sxy*sxy + sxz*sxz + syz*syz;
 		PetscScalar J2e = 0.5*(c->dxx*c->dxx + c->dyy*c->dyy + c->dzz*c->dzz) + dxy*dxy + dxz*dxz + dyz*dyz;
 
-		cellJ2Stress[iter]     = sqrt(J2s);
-		cellJ2StrainRate[iter] = sqrt(J2e);
+		cb[CB_J2S][iter] = sqrt(J2s);
+		cb[CB_J2E][iter] = sqrt(J2e);
 
 		iter++;
 	}
@@ -511,71 +601,189 @@ static PetscErrorCode DylibPluginComputeJ2(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+// Read-only structure-of-arrays copy of all local cells, once per step
+static PetscErrorCode DylibPluginGatherCells(AdvCtx *actx, LaMEMPluginCells *cells)
+{
+	JacRes   *jr        = actx->jr;
+	PetscInt  nCells    = actx->fs->nCells;
+	PetscInt  numPhases = actx->dbm->numPhases;
+	PetscInt  c, ph;
+
+	PetscFunctionBeginUser;
+
+	PetscCall(DylibPluginEnsureCellCapacity(nCells, numPhases));
+	PetscCall(DylibPluginComputeJ2(actx)); // fills cb[CB_J2S], cb[CB_J2E]
+
+	for(c = 0; c < nCells; c++)
+	{
+		const SolVarCell *sv = &jr->svCell[c];
+
+		cb[CB_ETA]   [c] = sv->svDev.eta;
+		cb[CB_ETA_ST][c] = sv->svDev.eta_st;
+		cb[CB_I2GDT] [c] = sv->svDev.I2Gdt;
+		cb[CB_HR]    [c] = sv->svDev.Hr;
+		cb[CB_APS]   [c] = sv->svDev.APS;
+		cb[CB_PSR]   [c] = sv->svDev.PSR;
+
+		cb[CB_THETA] [c] = sv->svBulk.theta;
+		cb[CB_RHO]   [c] = sv->svBulk.rho;
+		cb[CB_IKDT]  [c] = sv->svBulk.IKdt;
+		cb[CB_ALPHA] [c] = sv->svBulk.alpha;
+		cb[CB_TN]    [c] = sv->svBulk.Tn;
+		cb[CB_PN]    [c] = sv->svBulk.pn;
+		cb[CB_RHO_PF][c] = sv->svBulk.rho_pf;
+		cb[CB_MF]    [c] = sv->svBulk.mf;
+		cb[CB_PHI]   [c] = sv->svBulk.phi;
+		cb[CB_HA]    [c] = sv->svBulk.Ha;
+		cb[CB_COND]  [c] = sv->svBulk.cond;
+
+		cb[CB_SXX][c] = sv->sxx; cb[CB_SYY][c] = sv->syy; cb[CB_SZZ][c] = sv->szz;
+		cb[CB_HXX][c] = sv->hxx; cb[CB_HYY][c] = sv->hyy; cb[CB_HZZ][c] = sv->hzz;
+		cb[CB_DXX][c] = sv->dxx; cb[CB_DYY][c] = sv->dyy; cb[CB_DZZ][c] = sv->dzz;
+		cb[CB_UX] [c] = sv->U[0]; cb[CB_UY][c] = sv->U[1]; cb[CB_UZ][c] = sv->U[2];
+
+		cb[CB_ATS]   [c] = sv->ATS;
+		cb[CB_ETA_CR][c] = sv->eta_cr;
+		cb[CB_DIIDIF][c] = sv->DIIdif;
+		cb[CB_DIIDIS][c] = sv->DIIdis;
+		cb[CB_DIIPRL][c] = sv->DIIprl;
+		cb[CB_DIIFK] [c] = sv->DIIfk;
+		cb[CB_DIIPL] [c] = sv->DIIpl;
+		cb[CB_YIELD] [c] = sv->yield;
+
+		cfree[c] = (int32_t)sv->FreeSurf;
+
+		for(ph = 0; ph < numPhases; ph++) cphRat[c*numPhases + ph] = sv->phRat[ph];
+	}
+
+	cells->ncells    = (size_t)nCells;
+	cells->numPhases = (int32_t)numPhases;
+	cells->reserved  = 0;
+
+	cells->eta    = cb[CB_ETA];    cells->eta_st = cb[CB_ETA_ST]; cells->I2Gdt = cb[CB_I2GDT];
+	cells->Hr     = cb[CB_HR];     cells->aps    = cb[CB_APS];    cells->psr   = cb[CB_PSR];
+
+	cells->theta  = cb[CB_THETA];  cells->rho    = cb[CB_RHO];    cells->IKdt  = cb[CB_IKDT];
+	cells->alpha  = cb[CB_ALPHA];  cells->Tn     = cb[CB_TN];     cells->pn    = cb[CB_PN];
+	cells->rho_pf = cb[CB_RHO_PF]; cells->mf     = cb[CB_MF];     cells->phi   = cb[CB_PHI];
+	cells->Ha     = cb[CB_HA];     cells->cond   = cb[CB_COND];
+
+	cells->sxx = cb[CB_SXX]; cells->syy = cb[CB_SYY]; cells->szz = cb[CB_SZZ];
+	cells->hxx = cb[CB_HXX]; cells->hyy = cb[CB_HYY]; cells->hzz = cb[CB_HZZ];
+	cells->dxx = cb[CB_DXX]; cells->dyy = cb[CB_DYY]; cells->dzz = cb[CB_DZZ];
+
+	cells->free_surf = cfree;
+	cells->ux        = cb[CB_UX]; cells->uy = cb[CB_UY]; cells->uz = cb[CB_UZ];
+	cells->ats       = cb[CB_ATS];
+	cells->eta_cr    = cb[CB_ETA_CR];
+	cells->DIIdif    = cb[CB_DIIDIF]; cells->DIIdis = cb[CB_DIIDIS]; cells->DIIprl = cb[CB_DIIPRL];
+	cells->DIIfk     = cb[CB_DIIFK];  cells->DIIpl  = cb[CB_DIIPL];
+	cells->yield     = cb[CB_YIELD];
+
+	cells->j2_stress     = cb[CB_J2S];
+	cells->j2_strainrate = cb[CB_J2E];
+
+	cells->phRat = cphRat;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx)
 {
-	JacRes      *jr = actx->jr;
-	Scaling     *scal = jr->scal;
-	Marker      *P;
-	PetscInt     i, ID, n = actx->nummark, numPhases = actx->dbm->numPhases;
-	int          rc;
-	PetscInt     errFlagLoc = 0, err2[2], glob2[2];
-	PetscInt     badIdx = -1;
-	int32_t      badPhase = 0;
-	PetscBool    badT = PETSC_FALSE;
-	LaMEMPluginScaling scaling;
+	JacRes             *jr   = actx->jr;
+	Scaling            *scal = jr->scal;
+	Marker             *P;
+	PetscInt            i, n = actx->nummark, numPhases = actx->dbm->numPhases;
+	int                 f;
+	int32_t             rc;
+	PetscInt            errFlagLoc = 0, errFlagGlob = 0, cnt[3], glob[3];
+	PetscInt            badIdx = -1;
+	int                 badField = -1; // index into writableName, -1: phase
+	int32_t             badPhase = 0;
+	LaMEMPluginMarkers  markers;
+	LaMEMPluginCells    cells;
+	LaMEMPluginStep     step;
+	LaMEMPluginScaling  scaling;
 
 	PetscFunctionBeginUser;
 
 	if(!active || !actx->dbm->dylibPhaseTr) PetscFunctionReturn(0);
 
 	PetscCall(DylibPluginEnsureMarkerCapacity(n));
-	PetscCall(DylibPluginComputeJ2(actx));
+	PetscCall(DylibPluginGatherCells(actx, &cells));
 
-	scaling.abi_version = DYLIB_PLUGIN_ABI_VERSION;
-	scaling.utype       = (int32_t)scal->utype;
-	scaling.length      = (double)scal->length;
-	scaling.time        = (double)scal->time;
-	scaling.stress      = (double)scal->stress;
-	scaling.temperature = (double)scal->temperature;
-	scaling.viscosity   = (double)scal->viscosity;
-	scaling.strain_rate = (double)scal->strain_rate;
-	scaling.velocity    = (double)scal->velocity;
-	scaling.density     = (double)scal->density;
-	scaling.Tshift      = (double)scal->Tshift;
-	scaling.pShift      = (double)jr->ctrl.pShift;
-	scaling.dt          = (double)jr->bc->ts->dt;
-	scaling.step        = (int64_t)jr->bc->ts->istep;
+	scaling.abi_version      = DYLIB_PLUGIN_ABI_VERSION;
+	scaling.utype            = (int32_t)scal->utype;
+	scaling.length           = (double)scal->length;
+	scaling.time             = (double)scal->time;
+	scaling.stress           = (double)scal->stress;
+	scaling.temperature      = (double)scal->temperature;
+	scaling.viscosity        = (double)scal->viscosity;
+	scaling.strain_rate      = (double)scal->strain_rate;
+	scaling.velocity         = (double)scal->velocity;
+	scaling.density          = (double)scal->density;
+	scaling.conductivity     = (double)scal->conductivity;
+	scaling.expansivity      = (double)scal->expansivity;
+	scaling.dissipation_rate = (double)scal->dissipation_rate;
+	scaling.Tshift           = (double)scal->Tshift;
+	scaling.pShift           = (double)jr->ctrl.pShift;
 
-	// arrays are LaMEM's internal (non-dimensional) units, unconverted;
-	// the plugin dimensionalises using `scaling` (see dylib_plugins.h)
-	for(i = 0; i < n; i++)
+	step.time = (double)jr->bc->ts->time;
+	step.dt   = (double)jr->bc->ts->dt;
+	step.step = (int64_t)jr->bc->ts->istep;
+
+	// one pass over the markers: copy every field (internal units, unconverted)
+	// and pre-fill the outputs with the inputs
 	{
-		P  = &actx->markers[i];
-		ID = actx->cellnum[i];
+		double         *x = mb[MB_X], *y = mb[MB_Y], *z = mb[MB_Z], *p = mb[MB_P];
+		double         *in[MB_OUT - MB_IN], *out[MB_OUT - MB_IN];
+		const PetscInt *cellnum = actx->cellnum;
 
-		bx[i] = P->X[0]; by[i] = P->X[1]; bz[i] = P->X[2];
-		bT[i] = P->T;    bp[i] = P->p; // raw, without pShift
+		for(f = 0; f < nWritable; f++) { in[f] = mb[MB_IN + f]; out[f] = mb[MB_OUT + f]; }
 
-		bsxx[i] = P->S.xx; bsyy[i] = P->S.yy; bszz[i] = P->S.zz;
-		bsxy[i] = P->S.xy; bsxz[i] = P->S.xz; bsyz[i] = P->S.yz;
+		for(i = 0; i < n; i++)
+		{
+			P = &actx->markers[i];
 
-		bj2s[i] = cellJ2Stress[ID];
-		bj2e[i] = cellJ2StrainRate[ID];
-		bvisc[i] = jr->svCell[ID].svDev.eta;
-		baps[i] = jr->svCell[ID].svDev.APS;
+			x[i] = P->X[0]; y[i] = P->X[1]; z[i] = P->X[2];
+			p[i] = P->p; // raw, without pShift
 
-		bphase_in[i]  = (int32_t)P->phase;
-		bphase_out[i] = (int32_t)P->phase;
-		bT_out[i]     = bT[i];
+			mcell[i]     = (int32_t)cellnum[i];
+			mphase_in[i] = mphase_out[i] = (int32_t)P->phase;
+
+			in[0] [i] = out[0] [i] = P->T;
+			in[1] [i] = out[1] [i] = P->APS;
+			in[2] [i] = out[2] [i] = P->ATS;
+			in[3] [i] = out[3] [i] = P->S.xx;
+			in[4] [i] = out[4] [i] = P->S.yy;
+			in[5] [i] = out[5] [i] = P->S.zz;
+			in[6] [i] = out[6] [i] = P->S.xy;
+			in[7] [i] = out[7] [i] = P->S.xz;
+			in[8] [i] = out[8] [i] = P->S.yz;
+			in[9] [i] = out[9] [i] = P->U[0];
+			in[10][i] = out[10][i] = P->U[1];
+			in[11][i] = out[11][i] = P->U[2];
+		}
+
+		markers.n          = (size_t)n;
+		markers.cell_index = mcell;
+		markers.x          = x; markers.y = y; markers.z = z; markers.p = p;
+		markers.phase_in   = mphase_in;
+		markers.phase_out  = mphase_out;
+
+		markers.T_in   = in[0];  markers.aps_in = in[1];  markers.ats_in = in[2];
+		markers.sxx_in = in[3];  markers.syy_in = in[4];  markers.szz_in = in[5];
+		markers.sxy_in = in[6];  markers.sxz_in = in[7];  markers.syz_in = in[8];
+		markers.ux_in  = in[9];  markers.uy_in  = in[10]; markers.uz_in  = in[11];
+
+		markers.T_out   = out[0]; markers.aps_out = out[1];  markers.ats_out = out[2];
+		markers.sxx_out = out[3]; markers.syy_out = out[4];  markers.szz_out = out[5];
+		markers.sxy_out = out[6]; markers.sxz_out = out[7];  markers.syz_out = out[8];
+		markers.ux_out  = out[9]; markers.uy_out  = out[10]; markers.uz_out  = out[11];
 	}
 
 	// every rank calls fn() and joins every collective below, even if n==0
-	rc = fn((size_t)n,
-	        bx, by, bz, bT, bp, (double)jr->bc->ts->time,
-	        bsxx, bsyy, bszz, bsxy, bsxz, bsyz,
-	        bj2s, bj2e, bvisc, baps,
-	        bphase_in, bphase_out, bT_out,
-	        &scaling);
+	rc = fn(&markers, &cells, &step, &scaling);
 
 	// validate before any write-back, so a per-rank failure cannot desync
 	// the collectives below (all ranks must reach the same MPI_Allreduce)
@@ -583,54 +791,88 @@ PetscErrorCode DylibPluginPhaseTransition(AdvCtx *actx)
 	{
 		errFlagLoc = 1;
 	}
-	else for(i = 0; i < n; i++)
+	else
+	{
+		for(i = 0; i < n; i++)
 		{
-			if(bphase_out[i] != bphase_in[i] && (bphase_out[i] < 0 || bphase_out[i] >= numPhases))
+			if(mphase_out[i] != mphase_in[i] && (mphase_out[i] < 0 || mphase_out[i] >= numPhases))
 			{
-				errFlagLoc = 1; badIdx = i; badPhase = bphase_out[i]; break;
-			}
-			if(!std::isfinite((double)bT_out[i]))
-			{
-				errFlagLoc = 1; badIdx = i; badT = PETSC_TRUE; break;
+				errFlagLoc = 1; badIdx = i; badPhase = mphase_out[i]; break;
 			}
 		}
+		for(f = 0; f < nWritable && !errFlagLoc; f++)
+		{
+			const double *out = mb[MB_OUT + f];
 
-	PetscCallMPI(MPI_Allreduce(&errFlagLoc, &glob2[0], 1, MPIU_INT, MPI_MAX, PETSC_COMM_WORLD));
+			for(i = 0; i < n; i++)
+			{
+				if(!std::isfinite(out[i])) { errFlagLoc = 1; badIdx = i; badField = f; break; }
+			}
+		}
+	}
 
-	if(glob2[0])
+	PetscCallMPI(MPI_Allreduce(&errFlagLoc, &errFlagGlob, 1, MPIU_INT, MPI_MAX, PETSC_COMM_WORLD));
+
+	if(errFlagGlob)
 	{
 		if(rc < 0)
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "dylib_plugin: plugin failed on at least one rank (rc=%d)", rc);
-		else if(badIdx >= 0 && badT)
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "dylib_plugin: non-finite T_out at local marker %" PetscInt_FMT, badIdx);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "dylib_plugin: plugin failed on at least one rank (rc=%d)", (int)rc);
+		else if(badIdx >= 0 && badField >= 0)
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "dylib_plugin: non-finite %s_out at local marker %" PetscInt_FMT, writableName[badField], badIdx);
 		else if(badIdx >= 0)
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "dylib_plugin: out-of-range phase %d at local marker %" PetscInt_FMT, badPhase, badIdx);
 		else
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "dylib_plugin: another MPI rank reported a plugin failure");
 	}
 
-	err2[0] = 0; err2[1] = 0; // reused as local changed-phase/changed-T counters
-
-	for(i = 0; i < n; i++)
+	// write back only what changed; count markers that changed phase,
+	// temperature, and any other field
+	cnt[0] = cnt[1] = cnt[2] = 0;
 	{
-		P = &actx->markers[i];
+		const double *in[MB_OUT - MB_IN], *out[MB_OUT - MB_IN];
 
-		if(bphase_out[i] != bphase_in[i]) { P->phase = (PetscInt)bphase_out[i]; err2[0]++; }
-		if(bT_out[i] != bT[i])            { P->T     = bT_out[i];               err2[1]++; }
+		for(f = 0; f < nWritable; f++) { in[f] = mb[MB_IN + f]; out[f] = mb[MB_OUT + f]; }
+
+		for(i = 0; i < n; i++)
+		{
+			PetscInt other = 0;
+
+			P = &actx->markers[i];
+
+			if(mphase_out[i] != mphase_in[i]) { P->phase = (PetscInt)mphase_out[i]; cnt[0]++; }
+			if(out[0][i]     != in[0][i])     { P->T     = out[0][i];               cnt[1]++; }
+
+			if(out[1] [i] != in[1] [i]) { P->APS  = out[1] [i]; other = 1; }
+			if(out[2] [i] != in[2] [i]) { P->ATS  = out[2] [i]; other = 1; }
+			if(out[3] [i] != in[3] [i]) { P->S.xx = out[3] [i]; other = 1; }
+			if(out[4] [i] != in[4] [i]) { P->S.yy = out[4] [i]; other = 1; }
+			if(out[5] [i] != in[5] [i]) { P->S.zz = out[5] [i]; other = 1; }
+			if(out[6] [i] != in[6] [i]) { P->S.xy = out[6] [i]; other = 1; }
+			if(out[7] [i] != in[7] [i]) { P->S.xz = out[7] [i]; other = 1; }
+			if(out[8] [i] != in[8] [i]) { P->S.yz = out[8] [i]; other = 1; }
+			if(out[9] [i] != in[9] [i]) { P->U[0] = out[9] [i]; other = 1; }
+			if(out[10][i] != in[10][i]) { P->U[1] = out[10][i]; other = 1; }
+			if(out[11][i] != in[11][i]) { P->U[2] = out[11][i]; other = 1; }
+
+			cnt[2] += other;
+		}
 	}
 
-	PetscCallMPI(MPI_Allreduce(err2, glob2, 2, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD));
+	PetscCallMPI(MPI_Allreduce(cnt, glob, 3, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD));
 
-	// ADVInterpMarkToCell also seeds svBulk.Tn from marker T, which the next
-	// JacResInitTemp call reads - must run on a T-only change too, not just phase
-	if(glob2[0] || glob2[1])
+	// ADVInterpMarkToCell maps every changed marker field back to the cells
+	// (phRat, svBulk.Tn - read by the next JacResInitTemp -, APS, ATS, the
+	// history stress and the displacement), so it must also run when only T
+	// or another non-phase field changed
+	if(glob[0] || glob[1] || glob[2])
 	{
 		PetscCall(ADVCheckMarkPhases(actx));
 		PetscCall(ADVInterpMarkToCell(actx));
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD, "Dylib plugin  : %" PetscInt_FMT " marker(s) changed phase, "
-	            "%" PetscInt_FMT " marker(s) changed temperature\n", glob2[0], glob2[1]);
+	            "%" PetscInt_FMT " marker(s) changed temperature, "
+	            "%" PetscInt_FMT " marker(s) changed other fields\n", glob[0], glob[1], glob[2]);
 
 	PetscFunctionReturn(0);
 }
