@@ -1725,7 +1725,7 @@ if should_run_test("t40_PhaseTransitionPlugin")
         # restored fields (nstep_max/nstep_rdb come back from the restart db
         # itself), so nstep_max=3, nstep_rdb=2 leaves the last save at step 2
         # (3 is not a multiple of 2): restarting from it still has step 3 left
-        # to run, and the plugin's "Dylib plugin :" log line must reappear.
+        # to run, and the plugin's "Dylib plugin parameters:" block must reappear.
         restart_args = "-dylib_plugin $bundle_path -nstep_max 3 -nstep_rdb 2"
         @test perform_lamem_test(dir, "PT0_only_plugin.dat", "PT0_only_plugin_restart_a",
                                 args=restart_args, keywords=keywords, accuracy=acc,
@@ -1736,7 +1736,7 @@ if should_run_test("t40_PhaseTransitionPlugin")
                                 cores=1, mpiexec=mpiexec,
                                 create_expected_file=update_expected, clean_dir=false)
         restart_b_out = joinpath(dir, "PT0_only_plugin_restart_b.out")
-        @test isfile(restart_b_out) && occursin("Dylib plugin  :", read(restart_b_out, String))
+        @test isfile(restart_b_out) && occursin("Dylib plugin parameters:", read(restart_b_out, String))
 
         if clean_files
             clean_test_directory(dir)

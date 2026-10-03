@@ -102,8 +102,6 @@ PetscErrorCode DylibPluginCheckPhaseTr(DBMat *dbm)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,
 		        "phase_transitions = dylib requires a loaded plugin (dylib_plugin = <path> in the .dat file, or -dylib_plugin on the command line)");
 	}
-	if(active && !dbm->dylibPhaseTr) PetscPrintf(PETSC_COMM_WORLD, "Dylib plugin  : loaded, but phase_transitions = builtin; lamem_phase_transition will not be called\n");
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -280,10 +278,9 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 	char      lib[_str_len_];
 	void     *sym;
 	int32_t   nthreadsBefore = -1;
+	int       abiVersion     = -1; // -1: plugin does not export lamem_plugin_abi_version
 
 	PetscFunctionBeginUser;
-
-	(void)actx;
 
 	// dylib_plugin = <path> in the .dat file; -dylib_plugin <path> on the
 	// command line takes precedence (same override rule getStringParam
@@ -360,11 +357,11 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 	PetscCall(PetscDLSym(handle, "lamem_plugin_abi_version", &sym));
 	if(sym)
 	{
-		int v = ((DylibPluginAbiVersionFn)sym)();
-		if(v != DYLIB_PLUGIN_ABI_VERSION)
+		abiVersion = ((DylibPluginAbiVersionFn)sym)();
+		if(abiVersion != DYLIB_PLUGIN_ABI_VERSION)
 		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB,
-			        "dylib_plugin: %s reports ABI v%d, expected v%d", lib, v, DYLIB_PLUGIN_ABI_VERSION);
+			        "dylib_plugin: %s reports ABI v%d, expected v%d", lib, abiVersion, DYLIB_PLUGIN_ABI_VERSION);
 		}
 	}
 
@@ -377,7 +374,19 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 
 	active = PETSC_TRUE;
 
-	PetscPrintf(PETSC_COMM_WORLD, "Dylib plugin  : %s\n", lib);
+	PetscPrintf(PETSC_COMM_WORLD, "Dylib plugin parameters:\n");
+	PetscPrintf(PETSC_COMM_WORLD, "   Library                                 : %s\n", lib);
+	if(abiVersion >= 0) PetscPrintf(PETSC_COMM_WORLD, "   Plugin ABI version                      : %d\n", abiVersion);
+	else                PetscPrintf(PETSC_COMM_WORLD, "   Plugin ABI version                      : not reported\n");
+	if(actx->dbm->dylibPhaseTr)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions                       : dylib (lamem_phase_transition is called every step, after the built-in transitions)\n");
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions                       : builtin (plugin loaded, but lamem_phase_transition will not be called)\n");
+	}
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	PetscFunctionReturn(0);
 }
