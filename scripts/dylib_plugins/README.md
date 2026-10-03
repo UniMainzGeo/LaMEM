@@ -1,5 +1,8 @@
 # dylib_plugins
 
+User documentation: `doc/src/man/JuliaPlugins.md` ("Julia phase-transition
+plugins" in the LaMEM manual). This file is the short developer summary.
+
 Julia sources for LaMEM's user-defined dylib plugin (`src/dylib_plugins.h`).
 A rule file `include`s `LaMEMPlugin.jl` and defines
 `rule(m::MarkerView) -> (phase, T_dimensional)`, wrapped by

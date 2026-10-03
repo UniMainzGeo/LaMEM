@@ -24,6 +24,7 @@ makedocs(;
             "Getting Started" =>  "man/GettingStarted.md",
             "Initial Model setup" =>  "man/InitialModelSetup.md",
             "Surface processes with FastScape" =>  "man/FastScape.md",
+            "Julia phase-transition plugins" =>  "man/JuliaPlugins.md",
         ],
         "Release Notes" => Any[
             "Upgrading from v3.1.0 to v3.2.0" => "man/Upgrade_v3.1.0_to_v3.2.0.md",
