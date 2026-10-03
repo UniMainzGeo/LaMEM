@@ -160,7 +160,7 @@ A few points about how this interacts with the rest of the input file:
 
 * The plugin does not require `Phasetrans = 1`. That flag only controls the built-in blocks; the plugin is controlled by `phase_transitions` alone. Built-in blocks and the plugin can be used together or separately.
 * Because the plugin runs after the built-in transitions, it sees their results within the same time step, whereas the built-in transitions only see the plugin's changes on the following step. Keep this ordering in mind if a built-in block and the plugin act on the same phases.
-* `phase_transitions = dylib` without a `dylib_plugin` is an error at startup. The reverse — a loaded plugin with `phase_transitions = builtin` — is allowed; the parameter block then says `builtin (plugin loaded, but lamem_phase_transition will not be called)`.
+* `phase_transitions = dylib` without a `dylib_plugin` is an error at startup. The reverse — a loaded plugin with `phase_transitions = builtin` — is allowed; the parameter block then shows `Phase transitions : builtin` and the rule is not called.
 
 ## Validation
 
@@ -178,4 +178,4 @@ The test `test/t40_PhaseTransitionPlugin` compares LaMEM runs that use the two e
 
 **`non-finite T_out`** or **`out-of-range phase`** — the rule returned `NaN`/`Inf` for the temperature, or a phase ID that does not exist in the material table. LaMEM checks every marker and stops at the first bad one; the message includes its local index.
 
-**The rule is never called** — check that `phase_transitions = dylib` is set; with the default `builtin`, LaMEM loads the plugin but the `Dylib plugin parameters` block says `lamem_phase_transition will not be called`.
+**The rule is never called** — check that `phase_transitions = dylib` is set; with the default `builtin`, LaMEM loads the plugin but the `Dylib plugin parameters` block shows `Phase transitions : builtin`.

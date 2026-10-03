@@ -378,14 +378,8 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 	PetscPrintf(PETSC_COMM_WORLD, "   Library                                 : %s\n", lib);
 	if(abiVersion >= 0) PetscPrintf(PETSC_COMM_WORLD, "   Plugin ABI version                      : %d\n", abiVersion);
 	else                PetscPrintf(PETSC_COMM_WORLD, "   Plugin ABI version                      : not reported\n");
-	if(actx->dbm->dylibPhaseTr)
-	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions                       : dylib (lamem_phase_transition is called every step, after the built-in transitions)\n");
-	}
-	else
-	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions                       : builtin (plugin loaded, but lamem_phase_transition will not be called)\n");
-	}
+	if(actx->dbm->dylibPhaseTr) PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions                       : dylib (lamem_phase_transition is called every step, after the built-in transitions)\n");
+	else                        PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions                       : builtin\n");
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	PetscFunctionReturn(0);
