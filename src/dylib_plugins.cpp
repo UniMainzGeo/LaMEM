@@ -138,19 +138,19 @@ static PetscErrorCode DylibPluginFinalize(void)
 }
 #if defined(_WIN32)
 //---------------------------------------------------------------------------
-// On POSIX, PetscDLOpen(..., PETSC_DL_NOW, ...) resolves with RTLD_GLOBAL, so a
-// symbol from any of the plugin's dependencies (libjulia, libblastrampoline-5,
-// pulled in by the JuliaC bundle) is visible via PetscDLSym(handle, ...) or even
-// PetscDLSym(NULL, ...) (searches the whole process). Windows has no equivalent:
-// GetProcAddress(handle, sym) only searches that exact DLL's own exports, and
-// GetProcAddress(GetCurrentProcess(), sym) only searches the main executable's,
-// never an arbitrary loaded DLL's. So on Windows the sibling DLLs a JuliaC
-// --bundle places next to the plugin (all flat in one directory - see JuliaC's
-// own docs, "Windows: everything under <output_dir>/bin") must be opened
-// explicitly, by name, to get a handle PetscDLSym can search.
-// Derives the plugin's own directory, used by both Win-deps openers below.
-static PetscErrorCode DylibPluginDir(const char *pluginPath, char dir[_str_len_])
+// On POSIX, PetscDLOpen(PETSC_DL_NOW) uses RTLD_GLOBAL, so the plugin's own
+// dependencies (libjulia, libblastrampoline) are reachable via PetscDLSym. Windows
+// has no equivalent: GetProcAddress only searches one specific DLL's exports, so
+// those DLLs need handles of their own. JuliaC places them flat next to the plugin.
+//
+// libjulia.dll must be opened from the plugin's directory BEFORE the plugin itself.
+// Windows binds imports by base name only: if the plugin were loaded first, its
+// libjulia/libjulia-internal imports could bind to an unrelated Julia found on
+// PATH, and jl_init_with_image_handle would fail its image consistency check
+// against that mismatched runtime.
+static PetscErrorCode DylibPluginOpenWinJulia(const char *pluginPath)
 {
+	char  dir[_str_len_], path[_str_len_];
 	char *slash;
 
 	PetscFunctionBeginUser;
@@ -158,24 +158,8 @@ static PetscErrorCode DylibPluginDir(const char *pluginPath, char dir[_str_len_]
 	PetscCall(PetscStrncpy(dir, pluginPath, _str_len_));
 	slash = strrchr(dir, '\\');
 	if(!slash) slash = strrchr(dir, '/');
-	if(slash) *slash = '\0'; else dir[0] = '\0'; // plugin given without a directory: current dir
+	if(slash) *slash = '\0'; else dir[0] = '\0'; // no directory given: current dir
 
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-// libjulia.dll must be loaded from the plugin's own directory BEFORE the
-// plugin itself (see the call site in DylibPluginLoad for why: otherwise
-// Windows may bind the plugin's own libjulia/libjulia-internal imports to
-// an unrelated Julia installation found via the normal search order, and
-// jl_init_with_image_handle then fails with "Image file failed consistency
-// check" against that mismatched runtime).
-static PetscErrorCode DylibPluginOpenWinJulia(const char *pluginPath)
-{
-	char dir[_str_len_], path[_str_len_];
-
-	PetscFunctionBeginUser;
-
-	PetscCall(DylibPluginDir(pluginPath, dir));
 	PetscCall(PetscSNPrintf(path, _str_len_, "%s%slibjulia.dll", dir, dir[0] ? "\\" : ""));
 	PetscCall(PetscDLOpen(path, PETSC_DL_NOW, &libjuliaHandle));
 	if(!libjuliaHandle) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_LIB, "dylib_plugin: %s not found next to %s", path, pluginPath);
@@ -183,31 +167,15 @@ static PetscErrorCode DylibPluginOpenWinJulia(const char *pluginPath)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-// libblastrampoline-5.dll, unlike libjulia.dll, must NOT be opened as a
-// second instance at all: PETSc's own BLAS/LAPACK calls (idamax_, dgemm_,
-// ...) are already bound, via PETSc's own PE imports, to whichever
-// libblastrampoline-5.dll is resolved at LaMEM.exe's own load time (it must
-// be kept staged next to LaMEM.exe for this to succeed in the first place).
-// PetscDLOpen()'ing a second copy by full path from the plugin's directory
-// - as DylibPluginOpenWinJulia does for libjulia.dll - would load a
-// genuinely separate module (Windows has no DLL privatization, but a
-// different path string for the same base name does still produce a
-// distinct instance). Julia's init would then set up BLAS forwarding on
-// that second instance while PETSc's calls remain bound to the first,
-// unconfigured one ("no BLAS/LAPACK library loaded").
-//
-// Since PETSc's copy is already loaded into the process by the time this
-// runs (LaMEM.exe's own PE imports are resolved before any of its own code,
-// including this function, executes), look it up by bare name instead of
-// opening a new one - GetModuleHandleA returns the handle of an
-// already-loaded module without incrementing its reference count or
-// loading a second copy, and PetscDLHandle is just void* on this platform
-// (same value PetscDLOpen's own Windows backend would have produced via
-// LoadLibrary), so it can be used directly as lbtHandle.
-static PetscErrorCode DylibPluginOpenWinLbt(const char *pluginPath)
+// libblastrampoline-5.dll must NOT be opened a second time: PETSc's own BLAS calls
+// are already bound to the copy loaded with LaMEM.exe, and opening the plugin's
+// copy by a different path would create a distinct module - Julia would then set up
+// forwarding on that one while PETSc's calls stay on the unconfigured first ("no
+// BLAS/LAPACK library loaded"). GetModuleHandleA returns the already-loaded
+// module's handle, which is the same void* PetscDLOpen would have produced.
+static PetscErrorCode DylibPluginOpenWinLbt(void)
 {
 	PetscFunctionBeginUser;
-	(void)pluginPath; // unused: looked up by name, not by the plugin's directory
 
 	lbtHandle = (PetscDLHandle)GetModuleHandleA("libblastrampoline-5.dll"); // NULL if not loaded, not an error
 
@@ -339,19 +307,7 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 	PetscCall(PetscRegisterFinalize(DylibPluginFinalize));
 
 #if defined(_WIN32)
-	// Load libjulia.dll from the plugin's own directory BEFORE opening the
-	// plugin itself. Windows matches DLLs by base name with no
-	// privatization: if the plugin's imports (libjulia.dll,
-	// libjulia-internal.dll) were resolved first - e.g. picking up an
-	// unrelated Julia installation's copy from PATH, such as the one
-	// julia-actions/setup-julia adds in CI - jl_init_with_image_handle later
-	// runs against a second, different runtime copy than the one actually
-	// bound to the plugin's own image, and fails with "Image file failed
-	// consistency check" even though both files individually look correct.
-	// Loading our copy first by full path makes Windows bind the plugin's
-	// same-named imports to it instead. libblastrampoline-5.dll is
-	// deliberately NOT opened here - see DylibPluginOpenWinLbt.
-	PetscCall(DylibPluginOpenWinJulia(lib));
+	PetscCall(DylibPluginOpenWinJulia(lib)); // must precede opening the plugin, see there
 #endif
 
 	// PETSC_DL_NOW -> dlopen(RTLD_NOW|RTLD_GLOBAL), pulling in libjulia as
@@ -381,9 +337,7 @@ PetscErrorCode DylibPluginLoad(AdvCtx *actx, FB *fb)
 	}
 
 #if defined(_WIN32)
-	// Looked up here (not opened early like libjulia.dll) - see
-	// DylibPluginOpenWinLbt for why.
-	PetscCall(DylibPluginOpenWinLbt(lib));
+	PetscCall(DylibPluginOpenWinLbt());
 #endif
 
 	PetscCall(DylibPluginSnapshotLbt());

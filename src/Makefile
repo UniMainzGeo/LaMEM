@@ -123,36 +123,20 @@ UNAME := $(shell uname)
 # MINGW64_NT-..., not MSYS_NT-... - match both.
 ifneq ($(filter MSYS% MINGW%,$(UNAME)),)
    CLIB_FLAGS = -lssp
-   # PETSc_jll's Windows petscvariables bakes PETSC_LIB's -L search path in
-   # as ${PETSC_DIR}/lib only (matching this platform's own -L flag, see
-   # PETSC_LIB_DIR in lib/petsc/conf/variables) but several of its own
-   # dependency libraries (HYPRE64, MUMPS, tet, triangle, gfortran, ...)
-   # actually live one level up, directly under destdir/lib (where
-   # setup_packages.jl's generic per-JLL-artifact copy loop puts them) -
-   # add that as a further search path. ld/gcc only resolve -l flags
-   # against -L paths already seen earlier on the command line, so this
-   # must be PREPENDED, not appended, to come before the -l flags it's
-   # meant to satisfy. -ldl is also listed, but dlopen isn't used on
-   # Windows (PetscDLOpen uses LoadLibrary there) and no libdl exists to
-   # link against, so drop it.
-   PETSC_LIB := $(filter-out -ldl, $(PETSC_LIB))
-   PETSC_LIB := -L$(PETSC_DIR)/../../../lib $(PETSC_LIB)
-   # These JLL-provided dependencies ship only a bare runtime .dll, with no
-   # accompanying .dll.a import library - plain -lNAME can't resolve them.
-   # ld can still link directly against a DLL by its exact filename, so
-   # swap -lNAME for -l:libNAME.dll for exactly these (every other -lNAME
-   # here does have a normal .dll.a and keeps working via -L above). A
-   # $(foreach ...$(patsubst...$(PETSC_LIB))) here would apply each
-   # substitution to the ORIGINAL PETSC_LIB independently and concatenate
-   # all the results, rather than chaining them - use $(eval) to fold each
-   # substitution into PETSC_LIB sequentially instead.
-   DLL_ONLY_LIBS = HYPRE64:libHYPRE64.dll dmumpspar:libdmumpspar.dll \
-                   mumps_commonpar:libmumps_commonpar.dll pordpar:libpordpar.dll \
-                   tet:libtet.dll triangle:libtriangle.dll gfortran:libgfortran-5.dll
-   define swap_dll_only_lib
-   PETSC_LIB := $$(patsubst -l$(word 1,$(subst :, ,$(1))),-l:$(word 2,$(subst :, ,$(1))),$$(PETSC_LIB))
-   endef
-   $(foreach l,$(DLL_ONLY_LIBS),$(eval $(call swap_dll_only_lib,$(l))))
+   # PETSc_jll's petscvariables only searches ${PETSC_DIR}/lib, but several of its
+   # dependencies live in destdir/lib. Prepend it: ld resolves each -l against the
+   # -L paths seen before it. -ldl has no Windows equivalent (PetscDLOpen uses
+   # LoadLibrary), so drop it.
+   PETSC_LIB := -L$(PETSC_DIR)/../../../lib $(filter-out -ldl, $(PETSC_LIB))
+   # These ship as bare .dll files without a .dll.a import library, so -lNAME can't
+   # find them; link them by exact filename instead.
+   PETSC_LIB := $(patsubst -lHYPRE64,-l:libHYPRE64.dll,$(PETSC_LIB))
+   PETSC_LIB := $(patsubst -ldmumpspar,-l:libdmumpspar.dll,$(PETSC_LIB))
+   PETSC_LIB := $(patsubst -lmumps_commonpar,-l:libmumps_commonpar.dll,$(PETSC_LIB))
+   PETSC_LIB := $(patsubst -lpordpar,-l:libpordpar.dll,$(PETSC_LIB))
+   PETSC_LIB := $(patsubst -ltet,-l:libtet.dll,$(PETSC_LIB))
+   PETSC_LIB := $(patsubst -ltriangle,-l:libtriangle.dll,$(PETSC_LIB))
+   PETSC_LIB := $(patsubst -lgfortran,-l:libgfortran-5.dll,$(PETSC_LIB))
 endif
 
 #==============================================================================
