@@ -298,6 +298,7 @@ PetscErrorCode VelBoxReadPeriods(
 	PetscFunctionReturn(0);
 }
 
+//---------------------------------------------------------------------------
 // get active velocity and accumulated displacement (integral of v over [0,time])
 // for one velocity component
 PetscErrorCode VelBoxGetComp(
@@ -371,6 +372,7 @@ PetscErrorCode VelBoxGetComp(
 	PetscFunctionReturn(0);
 }
 
+//---------------------------------------------------------------------------
 PetscErrorCode VelBoxCreate(VelBox *velbox, Scaling *scal, FB *fb)
 {
 	PetscFunctionBeginUser;
@@ -417,6 +419,7 @@ PetscErrorCode VelBoxCreate(VelBox *velbox, Scaling *scal, FB *fb)
 
 	PetscFunctionReturn(0);
 }
+
 //---------------------------------------------------------------------------
 PetscErrorCode VelBoxPrint(VelBox *velbox, Scaling *scal, PetscInt cnt)
 {
