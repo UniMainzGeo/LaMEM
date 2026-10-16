@@ -6,7 +6,7 @@ Parsing PETSc options
 Total number of options added: 0
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
--dylib_plugin /Users/kausb/WORK/LaMEM/LaMEM/.claude/worktrees/agent-a717ed7a97a5811d5/test/t40_PhaseTransitionPlugin/build_demo_fields/lib/libptlib_demo_fields.dylib # (source: code)
+-dylib_plugin /Users/kausb/WORK/LaMEM/LaMEM/.claude/worktrees/agent-a717ed7a97a5811d5/test/t41_PhaseTransitionPlugin/build_demo_fields/lib/libptlib_demo_fields.dylib # (source: code)
 -jp_pc_factor_mat_solver_type mumps # (source: code)
 -jp_pc_type lu # (source: code)
 -jp_pgamma 100 # (source: code)
@@ -147,7 +147,7 @@ Advection parameters:
 Reading geometric primitives ... done (0.00210446 sec)
 --------------------------------------------------------------------------
 Dylib plugin parameters:
-   Library                                 : /Users/kausb/WORK/LaMEM/LaMEM/.claude/worktrees/agent-a717ed7a97a5811d5/test/t40_PhaseTransitionPlugin/build_demo_fields/lib/libptlib_demo_fields.dylib
+   Library                                 : /Users/kausb/WORK/LaMEM/LaMEM/.claude/worktrees/agent-a717ed7a97a5811d5/test/t41_PhaseTransitionPlugin/build_demo_fields/lib/libptlib_demo_fields.dylib
    Plugin ABI version                      : 3
    Phase transitions                       : dylib (lamem_phase_transition is called every step, after the built-in transitions)
 --------------------------------------------------------------------------

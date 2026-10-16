@@ -144,7 +144,7 @@ Advection parameters:
 --------------------------------------------------------------------------
 Reading geometric primitives ... done (0.00374213 sec)
 --------------------------------------------------------------------------
-Dylib plugin  : /Users/kausb/WORK/LaMEM/LaMEM/.claude/worktrees/agent-a717ed7a97a5811d5/test/t40_PhaseTransitionPlugin/build_box/lib/libptlib_box.dylib
+Dylib plugin  : /Users/kausb/WORK/LaMEM/LaMEM/.claude/worktrees/agent-a717ed7a97a5811d5/test/t41_PhaseTransitionPlugin/build_box/lib/libptlib_box.dylib
 Output parameters:
    Output file name                        : Plume_PhaseTransitions 
    Write .pvd file                         : yes 

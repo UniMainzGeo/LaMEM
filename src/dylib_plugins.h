@@ -55,7 +55,7 @@
 //
 // The ABI part of this header is plain C: define LAMEM_PLUGIN_ABI_ONLY
 // before including it to get only the structs, without LaMEM's own
-// declarations (used by test/t40_PhaseTransitionPlugin/scaling_guard_test.c).
+// declarations (used by test/t41_PhaseTransitionPlugin/scaling_guard_test.c).
 #ifndef dylib_plugins_h_
 #define dylib_plugins_h_
 //---------------------------------------------------------------------------

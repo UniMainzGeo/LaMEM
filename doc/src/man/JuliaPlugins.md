@@ -201,7 +201,7 @@ A few points about how this interacts with the rest of the input file:
 
 ## Validation
 
-The test `test/t40_PhaseTransitionPlugin` compares LaMEM runs that use the `ptlib_constant` and `ptlib_box` plugins against runs that use the equivalent built-in transitions; the residual histories must agree to the tolerances used for the other phase-transition tests. It also runs `ptlib_demo_fields` on two MPI ranks and checks from the per-step summary that the plastic strain it writes persists on the markers, and checks the conversion of written values (including the pressure) back to internal units on hand-made input. It is a good template for validating a new rule: implement it as a built-in transition where possible, then check that the plugin reproduces it before extending the rule beyond what the built-ins can do.
+The test `test/t41_PhaseTransitionPlugin` compares LaMEM runs that use the `ptlib_constant` and `ptlib_box` plugins against runs that use the equivalent built-in transitions; the residual histories must agree to the tolerances used for the other phase-transition tests. It also runs `ptlib_demo_fields` on two MPI ranks and checks from the per-step summary that the plastic strain it writes persists on the markers, and checks the conversion of written values (including the pressure) back to internal units on hand-made input. It is a good template for validating a new rule: implement it as a built-in transition where possible, then check that the plugin reproduces it before extending the rule beyond what the built-ins can do.
 
 ## Troubleshooting
 

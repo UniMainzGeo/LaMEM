@@ -1,4 +1,4 @@
-// Standalone harness used by the t40_PhaseTransitionPlugin testset to
+// Standalone harness used by the t41_PhaseTransitionPlugin testset to
 // verify, against a built plugin (normally ptlib_constant):
 //   - lamem_plugin_abi_version() and lamem_plugin_struct_sizes() agree with
 //     src/dylib_plugins.h, which this file includes directly (as plain C,

@@ -8,7 +8,7 @@
 *.dylib
 *.so
 
-# Compiled by the t40 testset itself (scaling_guard_test.c -> a throwaway
+# Compiled by the t41 testset itself (scaling_guard_test.c -> a throwaway
 # binary), removed again after the test runs, but ignored here too as a
 # safety net.
 /scaling_guard_test

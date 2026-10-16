@@ -85,15 +85,15 @@ jobs:
         sudo -E mv -f deb deb64
         cd ..
 
-    - name: 'Build dylib plugin bundle (t40)'
+    - name: 'Build dylib plugin bundle (t41)'
       run: |
         julia --project=@juliac -e 'using Pkg; Pkg.add("JuliaC")'
-        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_constant.jl test/t40_PhaseTransitionPlugin
-        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_box.jl test/t40_PhaseTransitionPlugin
-        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_demo_fields.jl test/t40_PhaseTransitionPlugin
-        test -f test/t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.so
-        test -f test/t40_PhaseTransitionPlugin/build_box/lib/libptlib_box.so
-        test -f test/t40_PhaseTransitionPlugin/build_demo_fields/lib/libptlib_demo_fields.so
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_constant.jl test/t41_PhaseTransitionPlugin
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_box.jl test/t41_PhaseTransitionPlugin
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_demo_fields.jl test/t41_PhaseTransitionPlugin
+        test -f test/t41_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.so
+        test -f test/t41_PhaseTransitionPlugin/build_box/lib/libptlib_box.so
+        test -f test/t41_PhaseTransitionPlugin/build_demo_fields/lib/libptlib_demo_fields.so
 
     - name: 'Test LaMEM | Int32'
       run: |
@@ -177,15 +177,15 @@ jobs:
         mv -f deb deb64
         cd ..
 
-    - name: 'Build dylib plugin bundle (t40)'
+    - name: 'Build dylib plugin bundle (t41)'
       run: |
         julia --project=@juliac -e 'using Pkg; Pkg.add("JuliaC")'
-        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_constant.jl test/t40_PhaseTransitionPlugin
-        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_box.jl test/t40_PhaseTransitionPlugin
-        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_demo_fields.jl test/t40_PhaseTransitionPlugin
-        test -f test/t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.dylib
-        test -f test/t40_PhaseTransitionPlugin/build_box/lib/libptlib_box.dylib
-        test -f test/t40_PhaseTransitionPlugin/build_demo_fields/lib/libptlib_demo_fields.dylib
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_constant.jl test/t41_PhaseTransitionPlugin
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_box.jl test/t41_PhaseTransitionPlugin
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_demo_fields.jl test/t41_PhaseTransitionPlugin
+        test -f test/t41_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.dylib
+        test -f test/t41_PhaseTransitionPlugin/build_box/lib/libptlib_box.dylib
+        test -f test/t41_PhaseTransitionPlugin/build_demo_fields/lib/libptlib_demo_fields.dylib
 
     - name: 'Test LaMEM | Int32'
       run: |
@@ -264,9 +264,9 @@ jobs:
     - name: 'Build dylib plugin bundle'
       run: |
         julia --project=@juliac -e 'using Pkg; Pkg.add("JuliaC")'
-        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_constant.jl test/t40_PhaseTransitionPlugin
+        julia --project=@juliac scripts/dylib_plugins/build_plugin.jl scripts/dylib_plugins/ptlib_constant.jl test/t41_PhaseTransitionPlugin
         # JuliaC's Windows bundles are flat under bin/, with no lib/
-        test -f test/t40_PhaseTransitionPlugin/build_constant/bin/libptlib_constant.dll
+        test -f test/t41_PhaseTransitionPlugin/build_constant/bin/libptlib_constant.dll
 
     - name: 'Stage runtime DLLs next to LaMEM.exe'
       # Windows ignores rpath: DLLs are found via the exe's directory or PATH.
@@ -293,7 +293,7 @@ jobs:
         # empty unless told what to load. Same as for any standalone PETSc_jll binary.
         $destdir = $env:LAMEM_CI_DESTDIR
         $env:LBT_DEFAULT_LIBS = "$destdir\lib\libopenblas.dll;$destdir\lib\libopenblas64_.dll"
-        cd test/t40_PhaseTransitionPlugin
+        cd test/t41_PhaseTransitionPlugin
         $proc = Start-Process -FilePath "..\..\bin\opt\LaMEM.exe" -ArgumentList "-ParamFile","PT0_only_plugin.dat","-dylib_plugin","build_constant\bin\libptlib_constant.dll" -RedirectStandardOutput dylib_plugin_windows.log -RedirectStandardError dylib_plugin_windows.err.log -Wait -PassThru
         Get-Content dylib_plugin_windows.log
         Get-Content dylib_plugin_windows.err.log

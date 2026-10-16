@@ -1664,8 +1664,8 @@ if should_run_test("t40_TimeDependentVBox")
 end
 end
 #---------------------------------------------------------------------------
-if should_run_test("t40_PhaseTransitionPlugin")
-@testset "t40_PhaseTransitionPlugin" begin
+if should_run_test("t41_PhaseTransitionPlugin")
+@testset "t41_PhaseTransitionPlugin" begin
     # Compares LaMEM's built-in Constant phase transition against a Julia
     # re-implementation of it (ptlib_constant.jl), compiled with `juliac`
     # into a shared library and loaded at runtime via -dylib_plugin
@@ -1685,21 +1685,21 @@ if should_run_test("t40_PhaseTransitionPlugin")
     # NEXT step.
     #
     # Requires a juliac-compiled bundle at
-    # t40_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.{dylib,so},
+    # t41_PhaseTransitionPlugin/build_constant/lib/libptlib_constant.{dylib,so},
     # built from scripts/dylib_plugins/ptlib_constant.jl by
     # scripts/dylib_plugins/build_plugin.jl (juliac is not assumed to be
     # available in ordinary CI runs that only build LaMEM's C/C++ code, so
     # this testset skips itself, with a clear message, if the bundle is not
     # present rather than failing).
     cd(test_dir)
-    dir = "t40_PhaseTransitionPlugin"
+    dir = "t41_PhaseTransitionPlugin"
     build_script = joinpath(test_dir, "..", "scripts", "dylib_plugins", "build_plugin.jl")
 
     bundle_name = Sys.isapple() ? "libptlib_constant.dylib" : "libptlib_constant.so"
     bundle_path = joinpath(test_dir, dir, "build_constant", "lib", bundle_name)
 
     if !isfile(bundle_path)
-        @info "t40_PhaseTransitionPlugin: skipped - compiled plugin bundle not found at $bundle_path. " *
+        @info "t41_PhaseTransitionPlugin: skipped - compiled plugin bundle not found at $bundle_path. " *
               "Build it first with: julia --project=@juliac $build_script " *
               "scripts/dylib_plugins/ptlib_constant.jl $(joinpath(test_dir, dir))"
     else
@@ -1793,7 +1793,7 @@ if should_run_test("t40_PhaseTransitionPlugin")
         box_bundle_path = joinpath(test_dir, dir, "build_box", "lib", box_bundle_name)
 
         if !isfile(box_bundle_path)
-            @info "t40_PhaseTransitionPlugin: Box comparison skipped - compiled plugin bundle not found at $box_bundle_path. " *
+            @info "t41_PhaseTransitionPlugin: Box comparison skipped - compiled plugin bundle not found at $box_bundle_path. " *
                   "Build it first with: julia --project=@juliac $build_script " *
                   "scripts/dylib_plugins/ptlib_box.jl $(joinpath(test_dir, dir))"
         else
@@ -1848,7 +1848,7 @@ if should_run_test("t40_PhaseTransitionPlugin")
         demo_bundle_path = joinpath(test_dir, dir, "build_demo_fields", "lib", demo_bundle_name)
 
         if !isfile(demo_bundle_path)
-            @info "t40_PhaseTransitionPlugin: demo_fields test skipped - compiled plugin bundle not found at $demo_bundle_path. " *
+            @info "t41_PhaseTransitionPlugin: demo_fields test skipped - compiled plugin bundle not found at $demo_bundle_path. " *
                   "Build it first with: julia --project=@juliac $build_script " *
                   "scripts/dylib_plugins/ptlib_demo_fields.jl $(joinpath(test_dir, dir))"
         else
@@ -1884,7 +1884,7 @@ if should_run_test("t40_PhaseTransitionPlugin")
         cc = Sys.which("cc") !== nothing ? "cc" : Sys.which("clang")
 
         if cc === nothing
-            @info "t40_PhaseTransitionPlugin: scaling-struct guard test skipped - no C compiler (cc/clang) found"
+            @info "t41_PhaseTransitionPlugin: scaling-struct guard test skipped - no C compiler (cc/clang) found"
         else
             try
                 run(`$cc -O0 -I$src_dir $guard_src -o $guard_bin -ldl`)

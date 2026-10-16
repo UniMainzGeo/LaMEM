@@ -166,7 +166,7 @@ None of the following changes the behaviour of a Linux build.
   macOS and Windows, controlled by `LAMEM_CI_DESTDIR`. The default (`/workspace/destdir`) is unchanged.
 * **CI** now also runs on macOS (arm64) and has a Windows job that builds LaMEM and runs one plugin
   test. The Linux job builds the plugin bundles that the new test needs. CI uses Julia 1.13.
-* **New tests.** `t40_PhaseTransitionPlugin` compares plugin runs against the equivalent built-in
+* **New tests.** `t41_PhaseTransitionPlugin` compares plugin runs against the equivalent built-in
   transitions and checks that fields written by a plugin persist on the markers, also on two MPI
   ranks. It skips itself, with a message, if the plugin bundle has not been built. Run the
   plugin test locally by building the bundles first, as in the `Build dylib plugin bundle` step of

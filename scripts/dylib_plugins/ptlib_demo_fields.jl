@@ -10,13 +10,13 @@ module PTLibDemoFields
 # least that much. Seeded markers keep their APS when they move on, so after
 # the first step only markers newly entering such a cell change. With a
 # strain-softening rheology this would create a weak zone above the plume;
-# in t40_PhaseTransitionPlugin (no plasticity) it only shows up in the APS
+# in t41_PhaseTransitionPlugin (no plasticity) it only shows up in the APS
 # output and in the "changed other fields" count LaMEM prints each step.
 #
 # The same markers also get their pressure lowered by P_DROP (a fraction),
 # to exercise the pressure write path. The marker pressure is the pressure
 # history (p_old): for a compressible phase this would act as a
-# decompression in the next solve; the t40 model is incompressible, where
+# decompression in the next solve; the t41 model is incompressible, where
 # it has no effect on the solution.
 #
 # A melt-weakening variant would look the same, e.g.
