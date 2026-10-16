@@ -65,6 +65,13 @@ PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cp
 //---------------------------------------------------------------------------
 // Internal velocity boxes (rectangular boxes with constant prescribed velocity that are either fixed or move)
 //---------------------------------------------------------------------------
+// piecewise-constant velocity time series (one velocity component)
+struct VelPeriods
+{
+	PetscInt    n;                      // number of periods (0 = not used)
+	PetscScalar delims[_max_periods_];  // period end times (n-1 are used)
+	PetscScalar vals  [_max_periods_];  // velocity in each period
+};
 
 struct VelBox
 {
@@ -78,7 +85,27 @@ struct VelBox
 	PetscScalar vx;      // Vx-velocity within box
 	PetscScalar vy;      // Vy-velocity within box
 	PetscScalar vz;      // Vz-velocity within box
+
+	// optional piecewise-constant (time-dependent) velocities
+	PetscInt    vxNumPeriods;                 // number of Vx periods (0 = not used)
+	PetscScalar vxTimeDelims[_max_periods_];  // Vx period end times (vxNumPeriods-1 used)
+	PetscScalar vxValues    [_max_periods_];  // Vx in each period
+	PetscInt    vyNumPeriods;                 // number of Vy periods (0 = not used)
+	PetscScalar vyTimeDelims[_max_periods_];  // Vy period end times (vyNumPeriods-1 used)
+	PetscScalar vyValues    [_max_periods_];  // Vy in each period
+	PetscInt    vzNumPeriods;                 // number of Vz periods (0 = not used)
+	PetscScalar vzTimeDelims[_max_periods_];  // Vz period end times (vzNumPeriods-1 used)
+	PetscScalar vzValues    [_max_periods_];  // Vz in each period
 };
+
+PetscErrorCode VelBoxReadPeriods(FB *fb, Scaling *scal, const char *comp, VelPeriods *vp);
+
+PetscErrorCode VelBoxGetComp(
+    PetscScalar       vconst,
+    const VelPeriods *vp,
+    PetscScalar       time,
+    PetscScalar      *v,
+    PetscScalar      *disp);
 
 //---------------------------------------------------------------------------
 // Internal velocity cylinders (cylinders with constant prescribed velocity that are either fixed or move)

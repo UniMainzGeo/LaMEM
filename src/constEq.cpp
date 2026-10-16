@@ -927,7 +927,7 @@ PetscErrorCode checkConvConstEq(ConstEqCtx *ctx)
 
 	// exchange convergence statistics
 	// total number of [starts, successes, iterations]
-	PetscCallMPI(MPI_Reduce(stats, ctx->stats, 3, MPIU_SCALAR, MPI_SUM, 0, PETSC_COMM_WORLD));
+	PetscCallMPI(MPI_Reduce(ctx->stats, stats, 3, MPIU_SCALAR, MPI_SUM, 0, PETSC_COMM_WORLD));
 
 	// compute number of diverged equations and average iteration count
 	ndiv = (PetscInt)(stats[0] - stats[1]);
