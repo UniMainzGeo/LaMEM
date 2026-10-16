@@ -1,10 +1,11 @@
 # this downloads the required packages
 
-# Add PETSc with required version
+# Add the latest PETSc_jll, with the MPICH_jll it was built for. This is a single
+# call, so there is one resolve step and no pinned/downgraded version.
 using Pkg
-Pkg.add(name="PETSc_jll", version="3.25.4")
-Pkg.add(name="MPICH_jll", version="5.0.1")
-Pkg.add(name="Fastscapelib_jll")
+Pkg.add([PackageSpec(name="PETSc_jll"),
+         PackageSpec(name="MPICH_jll"),
+         PackageSpec(name="Fastscapelib_jll")])
 
 # Copy the relevant directories over
 using PETSc_jll, MPICH_jll, Fastscapelib_jll
