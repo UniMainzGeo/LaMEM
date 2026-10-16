@@ -27,6 +27,7 @@ makedocs(;
             "Julia phase-transition plugins" =>  "man/JuliaPlugins.md",
         ],
         "Release Notes" => Any[
+            "Upgrading from v3.3.0 to v3.4.0" => "man/Upgrade_v3.3.0_to_v3.4.0.md",
             "Upgrading from v3.2.0 to v3.3.0" => "man/Upgrade_v3.2.0_to_v3.3.0.md",
             "Upgrading from v3.1.0 to v3.2.0" => "man/Upgrade_v3.1.0_to_v3.2.0.md",
             "Upgrading from v3.0.0 to v3.1.0" => "man/Upgrade_v3.0.0_to_v3.1.0.md",
