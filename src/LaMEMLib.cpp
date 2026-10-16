@@ -39,6 +39,7 @@
 #include "adjoint.h"
 #include "paraViewOutPassiveTracers.h"
 #include "phase_transition.h"
+#include "dylib_plugins.h"
 #include "passive_tracer.h"
 #include "fastscape.h"
 #include "LaMEMLib.h"
@@ -61,7 +62,7 @@ PetscErrorCode LaMEMLibMain(void *param, FB *fb)
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"                   Lithosphere and Mantle Evolution Model                   \n");
 	PetscPrintf(PETSC_COMM_WORLD,"     Compiled: Date: %s - Time: %s 	    \n",__DATE__,__TIME__ );
-	PetscPrintf(PETSC_COMM_WORLD,"     Version : 3.3.0 \n");
+	PetscPrintf(PETSC_COMM_WORLD,"     Version : 3.4.0 \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
@@ -118,6 +119,9 @@ PetscErrorCode LaMEMLibMain(void *param, FB *fb)
 		// open restart database
 		PetscCall(LaMEMLibLoadRestart(&lm, fb));
 	}
+
+	// phase_transitions = dylib without a loaded plugin fails here, not at step 1
+	PetscCall(DylibPluginCheckPhaseTr(&lm.dbm));
 
 	//======
 	// SOLVE
@@ -180,6 +184,9 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param, FB *fb)
 
 	// create advection context
 	PetscCall(ADVCreate(&lm->actx, fb));
+
+	// load user-defined dylib plugin (no-op unless dylib_plugin is given)
+	PetscCall(DylibPluginLoad(&lm->actx, fb));
 
 	// create passive tracers
 	PetscCall(ADVPtrPassive_Tracer_create(&lm->actx,fb));
@@ -268,6 +275,9 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm, FB *fb)
 
 	// markers
 	PetscCall(ADVReadRestart(&lm->actx, fp));
+
+	// load user-defined dylib plugin (no-op unless dylib_plugin is given)
+	PetscCall(DylibPluginLoad(&lm->actx, fb));
 
 	// passive tracers read restart
 	PetscCall(ReadPassive_Tracers(&lm->actx,fp));
@@ -633,6 +643,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// apply phase transitions on particles
 		PetscCall(Phase_Transition(&lm->actx));
 
+		// apply user-defined dylib plugin's phase transition hook (no-op unless loaded)
+		PetscCall(DylibPluginPhaseTransition(&lm->actx));
+
 		// inject geometric primitives whose injection time has been reached
 		PetscCall(ADVMarkInjectGeom(&lm->actx));
 
@@ -794,6 +807,8 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 	// destroy objects
 	PetscCall(NLSolDestroy(&snes));
+
+	// dylib plugin (if any) is torn down once at PetscFinalize()
 
 	// save marker database
 	PetscCall(ADVMarkSave(&lm->actx));

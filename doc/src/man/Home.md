@@ -47,6 +47,8 @@ LaMEM contains a number of features, specifically tailored to simulate geologica
 
 * Phase transitions, by taking (multiple) precomputed phase diagrams into account
 
+* User-defined phase transitions written in Julia and loaded as a compiled plugin (see [Julia phase-transition plugins](JuliaPlugins.md))
+
 * Partial melting
 
 * Simplified erosion/sedimentation algorithms
