@@ -1,7 +1,7 @@
 # LaMEM source code review
 
 A critical review of `src/`, looking for bugs, problems and misconceptions.
-This folder is local only: it's listed in `.git/info/exclude` and not tracked by git.
+This folder is tracked on the `code-review` branch only; keep it off `master`.
 
 ## How to resume (read this first)
 
