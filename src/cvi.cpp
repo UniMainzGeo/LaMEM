@@ -612,13 +612,18 @@ PetscErrorCode ADVelCreateMPIBuff(AdvVelCtx *vi)
 {
 	// create send and receive buffers for asynchronous MPI communication
 
-	FDSTAG    *fs;
-	PetscInt  i, cnt, lrank;
-	PetscInt  grank;
+	FDSTAG      *fs;
+	PetscScalar *X;
+	PetscScalar  bx, ex, by, ey;
+	PetscInt     i, cnt, lrank;
+	PetscInt     grank;
 
 	PetscFunctionBeginUser;
 
 	fs = vi->fs;
+
+	// get current coordinates of the mesh boundaries
+	PetscCall(FDSTAGGetGlobalBox(fs, &bx, &by, NULL, &ex, &ey, NULL));
 
 	// compute buffer pointers
 	vi->nsend = getPtrCnt(_num_neighb_, vi->nsendm, vi->ptsend);
@@ -636,8 +641,16 @@ PetscErrorCode ADVelCreateMPIBuff(AdvVelCtx *vi)
 	// copy markers to send buffer, store their indices
 	for(i = 0, cnt = 0; i < vi->nmark; i++)
 	{
+		// get coordinates of interpolation point
+		X = vi->interp[i].x;
+
 		// get global & local ranks of a marker
-		PetscCall(FDSTAGGetPointRanks(fs, vi->interp[i].x, &lrank, &grank));
+		PetscCall(FDSTAGGetPointRanks(fs, X, &lrank, &grank));
+
+		// wrap interpolation point into the domain for periodic case
+		// NOTE: wrapping must be consistent with the rank lookup (the right/back face belongs to the next domain)
+		if(fs->periodic_x) { WRAP_POINT_PERIODIC(X[0], bx, ex) }
+		if(fs->periodic_y) { WRAP_POINT_PERIODIC(X[1], by, ey) }
 
 		if(grank != vi->iproc)
 		{

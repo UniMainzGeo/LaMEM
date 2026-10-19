@@ -40,7 +40,7 @@
 # Periodic geometry flags
 # WARNING! only implemented for x-direction
 	
-	periodic = 1
+	periodic_x = 1
 
 #===============================================================================
 # Free surface

@@ -50,7 +50,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 	fs = jr->fs;
 
 	// check compatibility with periodic bc
-	if(fs->periodic)
+	if(fs->periodic_x || fs->periodic_y)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Dike implementation has not been tested with periodic boundary condition yet\n");
 	}

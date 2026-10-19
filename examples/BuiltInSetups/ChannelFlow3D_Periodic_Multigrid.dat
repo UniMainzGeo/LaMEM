@@ -41,9 +41,10 @@
 	coord_z = 0.0 1.0
 
 # Periodic geometry flags
-# WARNING! only implemented for x-direction
+# periodic_x = 1 : periodic in x-direction (left/right)
+# periodic_y = 1 : periodic in y-direction (front/back), see *_PeriodicY_* examples
 	
-	periodic = 1
+	periodic_x = 1
 
 #===============================================================================
 # Free surface

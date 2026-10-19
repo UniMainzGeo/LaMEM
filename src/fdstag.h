@@ -189,7 +189,8 @@ struct FDSTAG
 
 	PetscInt    neighb[_num_neighb_]; // global ranks of neighboring process
 	PetscScalar gtol;                 // relative geometry tolerance
-	PetscInt    periodic;             // periodic topology flag
+	PetscInt    periodic_x;           // periodic topology flag (x-direction)
+	PetscInt    periodic_y;           // periodic topology flag (y-direction)
 };
 
 //---------------------------------------------------------------------------
@@ -292,10 +293,13 @@ PetscErrorCode FDSTAGSetEdgeCornerFaces      (FDSTAG *fs, Vec XFace, Vec YFace, 
 #define GET_OUTPUT_RANGE(r, n, s, ds) { r = ds.rank; s = ds.starts[r]; n = ds.starts[r+1] - s + 1; }
 
 // get loop bounds for node discretization (including INTERNAL ghost points)
-#define GET_NODE_RANGE_GHOST_INT(n, s, ds) { n = ds.nnods + 2; s = ds.pstart - 1; if(ds.grprev == -1) { s++; n--; } if(ds.grnext == -1) n--; }
+// NOTE: in a periodic direction the ghost layer of the first and last processor is a periodic image
+// (filled by the global-to-local scatter), hence it is treated as an internal ghost layer. The last
+// node of a periodic node grid is already the ghost image of the first node, hence no extra node there.
+#define GET_NODE_RANGE_GHOST_INT(n, s, ds) { n = ds.nnods + 2; s = ds.pstart - 1; if(ds.grprev == -1 && !ds.periodic) { s++; n--; } if(ds.grnext == -1) n--; }
 
 // get loop bounds for cell discretization (including INTERNAL ghost points)
-#define GET_CELL_RANGE_GHOST_INT(n, s, ds) { n = ds.ncels + 2; s = ds.pstart - 1; if(ds.grprev == -1) { s++; n--; } if(ds.grnext == -1) n--; }
+#define GET_CELL_RANGE_GHOST_INT(n, s, ds) { n = ds.ncels + 2; s = ds.pstart - 1; if(ds.grprev == -1 && !ds.periodic) { s++; n--; } if(ds.grnext == -1 && !ds.periodic) n--; }
 
 //---------------------------------------------------------------------------
 
@@ -325,6 +329,9 @@ PetscErrorCode FDSTAGSetEdgeCornerFaces      (FDSTAG *fs, Vec XFace, Vec YFace, 
 
 // return relative rank of a point
 #define GET_POINT_REL_RANK(r, x, bx, ex) { r = 1; if(x < bx) { r--; } else if(x >= ex) { r++; } }
+
+// wrap coordinate of a point into the periodic domain [bx, ex) (consistent with GET_POINT_REL_RANK)
+#define WRAP_POINT_PERIODIC(x, bx, ex) { if(x < bx) { x += (ex)-(bx); } else if(x >= ex) { x -= (ex)-(bx); } }
 
 // get consecutive index from I, J, K indices
 #define GET_CELL_ID(ID, i, j, k, m, n) { ID = i + (j)*(m) + (k)*(m)*(n); }

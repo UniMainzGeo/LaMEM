@@ -174,27 +174,31 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	// setup temperature parameters
 
 	FDSTAG         *fs;
-	DMBoundaryType BC_TYPE_X;
-	PetscInt       periodic;
+	DMBoundaryType BC_TYPE_X, BC_TYPE_Y;
+	PetscInt       periodic_x, periodic_y;
 	const PetscInt *lx, *ly, *lz;
 
 	PetscFunctionBeginUser;
 
 	fs = jr->fs;
 
-	// set periodic flag
-	periodic = fs->periodic;
+	// set periodic flags
+	periodic_x = fs->periodic_x;
+	periodic_y = fs->periodic_y;
 
 	// get cell center grid partitioning
 	PetscCall(DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, &lz));
 
-	// set boundary type in x direction
-	if(periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
-	else         { BC_TYPE_X = DM_BOUNDARY_NONE;     }
+	// set boundary type in x & y directions
+	if(periodic_x) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
+	else           { BC_TYPE_X = DM_BOUNDARY_NONE;     }
+
+	if(periodic_y) { BC_TYPE_Y = DM_BOUNDARY_PERIODIC; }
+	else           { BC_TYPE_Y = DM_BOUNDARY_NONE;     }
 
 	// create temperature DMDA
 	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
-	                            BC_TYPE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
+	                            BC_TYPE_X, BC_TYPE_Y, DM_BOUNDARY_NONE,
 	                            DMDA_STENCIL_STAR,
 	                            fs->dsx.tcels, fs->dsy.tcels, fs->dsz.tcels,
 	                            fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
@@ -314,7 +318,7 @@ PetscErrorCode JacResGetTemp(JacRes *jr, Vec lT)
 
 	FDSTAG      *fs;
 	BCCtx       *bc;
-	PetscInt    periodic;
+	PetscInt    periodic_x, periodic_y;
 	PetscScalar pmdof;
 	PetscScalar ***T, ***gT, ***bcT;
 	PetscInt    mcx, mcy, mcz;
@@ -352,8 +356,9 @@ PetscErrorCode JacResGetTemp(JacRes *jr, Vec lT)
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, lT,      &T));
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, bc->bcT, &bcT));
 
-	// set periodic flag
-	periodic = fs->periodic;
+	// set periodic flags
+	periodic_x = fs->periodic_x;
+	periodic_y = fs->periodic_y;
 
 	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
 	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
@@ -363,12 +368,12 @@ PetscErrorCode JacResGetTemp(JacRes *jr, Vec lT)
 	{
 		pmdof = T[k][j][i];
 
-		if(i == 0)   { if(!periodic) { SET_TPC(bcT, T, k,   j,   i-1, pmdof) } }
-		if(i == mcx) { if(!periodic) { SET_TPC(bcT, T, k,   j,   i+1, pmdof) } }
-		if(j == 0)   {                 SET_TPC(bcT, T, k,   j-1, i,   pmdof) }
-		if(j == mcy) {                 SET_TPC(bcT, T, k,   j+1, i,   pmdof) }
-		if(k == 0)   {                 SET_TPC(bcT, T, k-1, j,   i,   pmdof) }
-		if(k == mcz) {                 SET_TPC(bcT, T, k+1, j,   i,   pmdof) }
+		if(i == 0)   { if(!periodic_x) { SET_TPC(bcT, T, k,   j,   i-1, pmdof) } }
+		if(i == mcx) { if(!periodic_x) { SET_TPC(bcT, T, k,   j,   i+1, pmdof) } }
+		if(j == 0)   { if(!periodic_y) { SET_TPC(bcT, T, k,   j-1, i,   pmdof) } }
+		if(j == mcy) { if(!periodic_y) { SET_TPC(bcT, T, k,   j+1, i,   pmdof) } }
+		if(k == 0)   {                   SET_TPC(bcT, T, k-1, j,   i,   pmdof)   }
+		if(k == mcz) {                   SET_TPC(bcT, T, k+1, j,   i,   pmdof)   }
 	}
 	END_STD_LOOP
 
@@ -389,7 +394,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	SolVarCell  *svCell;
 	SolVarDev   *svDev;
 	SolVarBulk  *svBulk;
-	PetscInt    periodic;
+	PetscInt    periodic_x, periodic_y;
 	Controls    ctrl;
 	Vec         ldcen, ldxy, ldxz, ldyz;
 	Vec         lvx, lvy, lvz, lT;
@@ -417,8 +422,9 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	// access controls
 	ctrl = jr->ctrl;
 
-	// set periodic flag
-	periodic = fs->periodic;
+	// set periodic flags
+	periodic_x = fs->periodic_x;
+	periodic_y = fs->periodic_y;
 
 	// initialize maximum cell index in all directions
 	mx = fs->dsx.tcels - 1;
@@ -489,12 +495,12 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		Hr = Hr * jr->ctrl.shearHeatEff;
 
 		// check index bounds
-		Im1 = i-1; if(Im1 < 0)  { if(!periodic) Im1++; }
-		Ip1 = i+1; if(Ip1 > mx) { if(!periodic) Ip1--; }
-		Jm1 = j-1; if(Jm1 < 0)  {               Jm1++; }
-		Jp1 = j+1; if(Jp1 > my) {               Jp1--; }
-		Km1 = k-1; if(Km1 < 0)  {               Km1++; }
-		Kp1 = k+1; if(Kp1 > mz) {               Kp1--; }
+		Im1 = i-1; if(Im1 < 0)  { if(!periodic_x)   Im1++; }
+		Ip1 = i+1; if(Ip1 > mx) { if(!periodic_x)   Ip1--; }
+		Jm1 = j-1; if(Jm1 < 0)  { if(!periodic_y) Jm1++; }
+		Jp1 = j+1; if(Jp1 > my) { if(!periodic_y) Jp1--; }
+		Km1 = k-1; if(Km1 < 0)  {                 Km1++; }
+		Kp1 = k+1; if(Kp1 > mz) {                 Kp1--; }
 
 		// save conductivity for output
 		svBulk->cond = kc;
@@ -581,7 +587,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	FDSTAG     *fs;
 	BCCtx      *bc;
 	SolVarCell *svCell;
-	PetscInt    periodic;
+	PetscInt    periodic_x, periodic_y;
 	Vec         ldcen;
 	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
@@ -603,8 +609,9 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	num  = bc->tNumSPC;
 	list = bc->tSPCList;
 
-	// set periodic flag
-	periodic = fs->periodic;
+	// set periodic flags
+	periodic_x = fs->periodic_x;
+	periodic_y = fs->periodic_y;
 
 	// compute inverse time step
 	if(dt) invdt = 1.0/dt;
@@ -654,12 +661,12 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, Tc, ycell, jcell));
 
 		// check index bounds and TPC multipliers
-		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { if(!periodic) { Im1++; if(bcT[k][j][i-1] != DBL_MAX) cf[0] = -1.0; } }
-		Ip1 = i+1; cf[1] = 1.0; if(Ip1 > mx) { if(!periodic) { Ip1--; if(bcT[k][j][i+1] != DBL_MAX) cf[1] = -1.0; } }
-		Jm1 = j-1; cf[2] = 1.0; if(Jm1 < 0)  {                 Jm1++; if(bcT[k][j-1][i] != DBL_MAX) cf[2] = -1.0;   }
-		Jp1 = j+1; cf[3] = 1.0; if(Jp1 > my) {                 Jp1--; if(bcT[k][j+1][i] != DBL_MAX) cf[3] = -1.0;   }
-		Km1 = k-1; cf[4] = 1.0; if(Km1 < 0)  {                 Km1++; if(bcT[k-1][j][i] != DBL_MAX) cf[4] = -1.0;   }
-		Kp1 = k+1; cf[5] = 1.0; if(Kp1 > mz) {                 Kp1--; if(bcT[k+1][j][i] != DBL_MAX) cf[5] = -1.0;   }
+		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { if(!periodic_x) { Im1++; if(bcT[k][j][i-1] != DBL_MAX) cf[0] = -1.0; } }
+		Ip1 = i+1; cf[1] = 1.0; if(Ip1 > mx) { if(!periodic_x) { Ip1--; if(bcT[k][j][i+1] != DBL_MAX) cf[1] = -1.0; } }
+		Jm1 = j-1; cf[2] = 1.0; if(Jm1 < 0)  { if(!periodic_y) { Jm1++; if(bcT[k][j-1][i] != DBL_MAX) cf[2] = -1.0; } }
+		Jp1 = j+1; cf[3] = 1.0; if(Jp1 > my) { if(!periodic_y) { Jp1--; if(bcT[k][j+1][i] != DBL_MAX) cf[3] = -1.0; } }
+		Km1 = k-1; cf[4] = 1.0; if(Km1 < 0)  {                   Km1++; if(bcT[k-1][j][i] != DBL_MAX) cf[4] = -1.0;   }
+		Kp1 = k+1; cf[5] = 1.0; if(Kp1 > mz) {                   Kp1--; if(bcT[k+1][j][i] != DBL_MAX) cf[5] = -1.0;   }
 
 		// compute average conductivities
 		bkx = (kc + lk[k][j][Im1])/2.0;      fkx = (kc + lk[k][j][Ip1])/2.0;

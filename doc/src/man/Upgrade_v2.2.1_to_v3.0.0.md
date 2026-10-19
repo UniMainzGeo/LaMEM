@@ -58,7 +58,7 @@ breaking change and both pitfalls; item 8 is the runtime confirmation.
 5. **Linear + thermal** — if you used `-snes_type ksponly` together with thermal diffusion
    (`act_temp_diff = 1`), replace it with `set_linear_problem = 1` (or `-snes_max_it 1`,
    `src/nlsolve.cpp:117`) — the old combination now aborts (§8, Pitfall #2).
-6. **Periodic BCs** — if you set `periodic`, check it against the compatibility guards:
+6. **Periodic BCs** — if you set `periodic_x` (or `periodic_y`), check it against the compatibility guards:
    no-slip bottom, *no* no-slip left/right, no `xx`/`xy` background strain, no `bvel_face`,
    no `fix_phase`/`fix_cell` (§5.5). Otherwise: `Periodic condition is incompatible with …`.
 7. **Gravity survey** — grep for any gravity-survey options; the feature was removed with
@@ -310,7 +310,7 @@ Any input relying on the gravity-survey / synthetic-gravity output is unsupporte
 
 ### 5.5 Periodic boundary conditions (new)
 
-New optional `periodic` flag (`src/fdstag.cpp:914`). It is checked for compatibility at
+New optional `periodic_x` and `periodic_y` flags (`periodic` is a deprecated alias of `periodic_x`). They are checked for compatibility at
 startup (`src/bc.cpp:755-780`) and will abort with a clear message if combined with an
 incompatible option. The guards (verbatim):
 
@@ -455,7 +455,7 @@ These abort immediately with a clear PETSc error — easy to spot and fix:
 `stokes_solver`, `direct_solver_type`, `penalty`, `coarse_solver`, `coarse_tolerances`,
 `init_thermal_solver`, `skip_defaults`, `linear_tolerances`, `nonlinear_tolerances`,
 `block_tolerances`, `thermal_tolerances`, `smoother_type`, `smoother_ksp`,
-`smoother_pc`, `smoother_omega`, `smoother_damping`, `picard_to_newton`, `periodic`,
+`smoother_pc`, `smoother_omega`, `smoother_damping`, `picard_to_newton`, `periodic_x`, `periodic_y`,
 plus internal knobs (`num_mg_levels`, `num_mat_free_levels`, `coarse_num_cpu`,
 `subdomain_*`, …) documented in `info/options/solver_options.txt`.
 
