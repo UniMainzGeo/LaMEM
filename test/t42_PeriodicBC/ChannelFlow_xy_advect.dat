@@ -1,5 +1,9 @@
-# t41_PeriodicBC: periodic channel flow (reduced from examples/BuiltInSetups/ChannelFlow3D_Periodic_Multigrid.dat,
-# with a viscous inclusion). Periodic in x.
+# t42_PeriodicBC: marker advection across periodic boundaries. Doubly periodic channel flow
+# (periodic in x and y) driven by a diagonal body force, with a viscous inclusion that straddles
+# the corner where the periodic faces meet (x = 0/2, y = 0/1). The inclusion is advected across
+# both periodic faces over several time steps, hence the residuals of the later steps depend on
+# the markers being correctly wrapped and exchanged between processors. The results must be
+# independent of the number of processors (up to round-off).
 
 #===============================================================================
 # Scaling
@@ -11,15 +15,15 @@
 # Time stepping parameters
 #===============================================================================
 
-	time_end  = 1.0   # simulation end time
-	dt        = 1e-6  # time step
+	time_end  = 100.0 # simulation end time
+	dt        = 1.0   # time step
 	dt_min    = 1e-9  # minimum time step (declare divergence if lower value is attempted)
-	dt_max    = 1e-6   # maximum time step
+	dt_max    = 1.0   # maximum time step
 	dt_out    = 0.2   # output step (output at least at fixed time intervals)
 	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
 	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 0.5   # CFL criterion for elasticity
-	nstep_max = 1     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 8     # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 1     # save output every n steps
 	nstep_rdb = 0     # save restart database every n steps
 
@@ -45,6 +49,7 @@
 # periodic_y = 1 : periodic in y-direction (front/back), see *_PeriodicY_* examples
 	
 	periodic_x = 1
+	periodic_y = 1
 
 #===============================================================================
 # Free surface
@@ -64,7 +69,7 @@
 # Solution parameters & controls
 #===============================================================================
 
-	gravity        = 0.07 0.0 0.0   # gravity vector
+	gravity        = 0.07 0.07 0.0  # gravity vector (diagonal, drives flow across both periodic faces)
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 
 #	act_temp_diff  = 1              # temperature diffusion activation flag
@@ -84,6 +89,8 @@
 #===============================================================================
 
 	msetup         = geom              # setup type
+	mark_ctrl      = none              # marker control (keep markers as they are)
+	advect         = basic             # advection scheme
 	nmark_x        = 2                 # markers per cell in x-direction
 	nmark_y        = 2                 # ...                 y-direction
 	nmark_z        = 2                 # ...                 z-direction
@@ -91,9 +98,26 @@
 
 # Geometric primtives:
 
+# viscous inclusion straddling the x = 0/2 and y = 0/1 periodic faces (four pieces)
+
 	<BoxStart>
 		phase  = 1
-		bounds = 0.25 0.75 0.25 0.75 0.25 0.75  # (left, right, front, back, bottom, top)
+		bounds = 1.75 2.0 0.875 1.0 0.25 0.75  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+	<BoxStart>
+		phase  = 1
+		bounds = 0.0 0.25 0.875 1.0 0.25 0.75
+	<BoxEnd>
+
+	<BoxStart>
+		phase  = 1
+		bounds = 1.75 2.0 0.0 0.125 0.25 0.75
+	<BoxEnd>
+
+	<BoxStart>
+		phase  = 1
+		bounds = 0.0 0.25 0.0 0.125 0.25 0.75
 	<BoxEnd>
 
 
@@ -104,7 +128,7 @@
 # Grid output options (output is always active)
 
 	out_file_name       = ChannelFlow # output file name
-	out_pvd             = 1           # activate writing .pvd file
+	out_pvd             = 0           # activate writing .pvd file
 	out_j2_dev_stress   = 1
 	out_dev_stress      = 1
 	out_strain_rate     = 1

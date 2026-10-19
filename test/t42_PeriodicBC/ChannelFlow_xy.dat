@@ -1,5 +1,6 @@
-# t41_PeriodicBC: periodic heat flow (reduced from examples/BuiltInSetups/HeatFlow3D_Periodic_Multigrid.dat).
-# Periodic in x.
+# t42_PeriodicBC: periodic channel flow (reduced from examples/BuiltInSetups/ChannelFlow3D_Periodic_Multigrid.dat,
+# with a viscous inclusion). Periodic in x and y. The inclusion is symmetric about y = 0.5,
+# hence the solution is the same as for ChannelFlow_x.dat (free-slip front/back) up to solver tolerance.
 
 #===============================================================================
 # Scaling
@@ -30,13 +31,13 @@
 
 # Number of cells for all segments
 
-	nel_x = 16
+	nel_x = 32
 	nel_y = 16
 	nel_z = 16
 
 # Coordinates of all segments (including start and end points)
 
-	coord_x = 0.0 1.0
+	coord_x = 0.0 2.0
 	coord_y = 0.0 1.0
 	coord_z = 0.0 1.0
 
@@ -45,6 +46,7 @@
 # periodic_y = 1 : periodic in y-direction (front/back), see *_PeriodicY_* examples
 	
 	periodic_x = 1
+	periodic_y = 1
 
 #===============================================================================
 # Free surface
@@ -60,24 +62,24 @@
 
     noslip = 0 0 0 0 1 0
 
-    temp_top                =   0.0
-    temp_bot                =   10.0 
-
 #===============================================================================
 # Solution parameters & controls
 #===============================================================================
 
-	gravity        = 0.1 0.3 -1.0   # gravity vector
-
+	gravity        = 0.07 0.0 0.0   # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 
-	act_temp_diff   = 1             # temperature diffusion activation flag
-	act_steady_temp = 1             # steady-state temperature initial guess activation flag
+#	act_temp_diff  = 1              # temperature diffusion activation flag
+
+#	act_steady_temp = 1              # steady-state temperature initial guess activation flag
 
 	init_guess     = 0              # initial guess flag
 	eta_min        = 1e-3           # viscosity upper bound
 	eta_max        = 1e12           # viscosity lower limit
 
+#===============================================================================
+# Solver options
+#===============================================================================
 
 #===============================================================================
 # Model setup & advection
@@ -89,17 +91,11 @@
 	nmark_z        = 2                 # ...                 z-direction
 	bg_phase       = 0                 # background phase ID
 
-
 # Geometric primtives:
 
 	<BoxStart>
 		phase  = 1
 		bounds = 0.25 0.75 0.25 0.75 0.25 0.75  # (left, right, front, back, bottom, top)
-	<BoxEnd>
-
-	<BoxStart>
-		phase  = 2
-		bounds = 0.85 0.95 0.45 0.65 0.45 0.65  # (left, right, front, back, bottom, top)
 	<BoxEnd>
 
 
@@ -109,14 +105,14 @@
 
 # Grid output options (output is always active)
 
-	out_file_name    = HeatFlow # output file name
-	out_pvd          = 1          # activate writing .pvd file
-
-	out_density      = 1
-	out_temperature  = 1
-	out_energ_res    = 1
-
-
+	out_file_name       = ChannelFlow # output file name
+	out_pvd             = 1           # activate writing .pvd file
+	out_j2_dev_stress   = 1
+	out_dev_stress      = 1
+	out_strain_rate     = 1
+	out_j2_strain_rate  = 1
+	out_density = 1
+	
 # AVD phase viewer output options (requires activation)
 
 #	out_avd     = 1 # activate AVD phase output
@@ -134,25 +130,16 @@
 		eta = 1 # viscosity
 		Cp  = 1
 		k   = 1
+		
 	<MaterialEnd>
 
 	# Define properties of block
 	<MaterialStart>
 		ID  = 1   # phase id
-		rho = 2   # density
-		eta = 100 # viscosity
-		Cp  = 1
-		k   = 3
-	<MaterialEnd>
-
-	# Define properties of heat source zone
-	<MaterialStart>
-		ID  = 2 # phase id
-		rho = 1 # density
-		eta = 1 # viscosity
+		rho = 1   # density
+		eta = 10  # viscosity (viscous inclusion, makes the flow 3D)
 		Cp  = 1
 		k   = 1
-		A   = 1000
 	<MaterialEnd>
 
 #===============================================================================
@@ -162,17 +149,16 @@
 
 <SolverOptionsStart>
 
-	nonlinear_tolerances =  1e-6 1e-4 50    # rtol, atol, maxit
+	set_linear_problem   =  1
+	monitor_solvers      =  1
 	linear_tolerances    =  1e-6 1e-6 100   # rtol, atol, maxit
-	thermal_tolerances   =  1e-9 1e-6 500   # rtol, atol, maxit (-1 = automatic setting, only for atol)
 	stokes_solver        =  coupled_mg          
 	smoother_type        =  light           # richardson + jacobi
 	smoother_num_sweeps  =  5
 	coarse_solver        =  direct               
      num_mg_levels        =  3
-     init_thermal_solver  =  mg
-     coarse_num_cpu       = 1
-     
+     coarse_num_cpu       =  1
+
 <SolverOptionsEnd>
 
 #===============================================================================

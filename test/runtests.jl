@@ -1927,10 +1927,10 @@ if should_run_test("t41_PhaseTransitionPlugin")
 end
 end
 #---------------------------------------------------------------------------
-if should_run_test("t41_PeriodicBC")
-@testset "t41_PeriodicBC" begin
+if should_run_test("t42_PeriodicBC")
+@testset "t42_PeriodicBC" begin
     cd(test_dir)
-    dir = "t41_PeriodicBC";
+    dir = "t42_PeriodicBC";
 
     # The *_y setups are the *_x setups with x and y swapped (periodic_y = 1 instead of periodic_x = 1),
     # so they must reproduce the x-periodic results. The processor grid is forced with cpu_x/cpu_y

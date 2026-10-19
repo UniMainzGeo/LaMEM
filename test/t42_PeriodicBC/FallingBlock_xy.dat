@@ -1,4 +1,4 @@
-# t41_PeriodicBC: falling block with geometric multigrid and periodic boundary conditions (periodic in x).
+# t42_PeriodicBC: falling block with geometric multigrid and periodic boundary conditions (periodic in x and y).
 # Reduced from examples/BuiltInSetups/FallingBlock_Multigrid.dat: a single dense, viscous block
 # centered in the box sinks for 5 time steps. Since the block is centered and symmetric, the mirror
 # images of the free-slip solution form the same lattice as the periodic images, hence the x-, y- and
@@ -47,6 +47,7 @@
 # periodic_y = 1 : periodic in y-direction (front/back)
 
 	periodic_x = 1
+	periodic_y = 1
 
 #===============================================================================
 # Free surface

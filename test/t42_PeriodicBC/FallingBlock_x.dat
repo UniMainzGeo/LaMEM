@@ -1,6 +1,8 @@
-# t41_PeriodicBC: periodic channel flow (reduced from examples/BuiltInSetups/ChannelFlow3D_Periodic_Multigrid.dat,
-# with a viscous inclusion). Periodic in y: ChannelFlow_x.dat with x and y swapped,
-# must give the same result as ChannelFlow_x.dat.
+# t42_PeriodicBC: falling block with geometric multigrid and periodic boundary conditions (periodic in x).
+# Reduced from examples/BuiltInSetups/FallingBlock_Multigrid.dat: a single dense, viscous block
+# centered in the box sinks for 5 time steps. Since the block is centered and symmetric, the mirror
+# images of the free-slip solution form the same lattice as the periodic images, hence the x-, y- and
+# xy-periodic variants (and the free-slip solution) agree up to solver tolerance.
 
 #===============================================================================
 # Scaling
@@ -12,18 +14,17 @@
 # Time stepping parameters
 #===============================================================================
 
-	time_end  = 1.0   # simulation end time
-	dt        = 1e-6  # time step
-	dt_min    = 1e-9  # minimum time step (declare divergence if lower value is attempted)
-	dt_max    = 1e-6   # maximum time step
+	time_end  = 100   # simulation end time
+	dt        = 10    # time step
+	dt_min    = 1e-5  # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 100   # maximum time step
 	dt_out    = 0.2   # output step (output at least at fixed time intervals)
 	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
-	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	CFL       = 0.2   # CFL (Courant-Friedrichs-Lewy) criterion (limits every step, so the time step tracks the maximum velocity)
 	CFLMAX    = 0.5   # CFL criterion for elasticity
-	nstep_max = 1     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 5     # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 1     # save output every n steps
 	nstep_rdb = 0     # save restart database every n steps
-
 
 #===============================================================================
 # Grid & discretization parameters
@@ -32,21 +33,20 @@
 # Number of cells for all segments
 
 	nel_x = 16
-	nel_y = 32
+	nel_y = 16
 	nel_z = 16
 
 # Coordinates of all segments (including start and end points)
 
 	coord_x = 0.0 1.0
-	coord_y = 0.0 2.0
+	coord_y = 0.0 1.0
 	coord_z = 0.0 1.0
 
 # Periodic geometry flags
 # periodic_x = 1 : periodic in x-direction (left/right)
 # periodic_y = 1 : periodic in y-direction (front/back)
-# This is the x-periodic setup of ChannelFlow3D_Periodic_Multigrid.dat with x and y swapped
-	
-	periodic_y = 1
+
+	periodic_x = 1
 
 #===============================================================================
 # Free surface
@@ -59,45 +59,39 @@
 #===============================================================================
 
 # No-slip boundary flag mask (left right front back bottom top)
+# periodic boundaries require no-slip at the bottom
 
-    noslip = 0 0 0 0 1 0
+	noslip = 0 0 0 0 1 0
 
 #===============================================================================
 # Solution parameters & controls
 #===============================================================================
 
-	gravity        = 0.0 0.07 0.0   # gravity vector
+	gravity        = 0.0 0.0 -1.0   # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
-
-#	act_temp_diff  = 1              # temperature diffusion activation flag
-
-#	act_steady_temp = 1              # steady-state temperature initial guess activation flag
-
 	init_guess     = 0              # initial guess flag
 	eta_min        = 1e-3           # viscosity upper bound
 	eta_max        = 1e12           # viscosity lower limit
-
-#===============================================================================
-# Solver options
-#===============================================================================
 
 #===============================================================================
 # Model setup & advection
 #===============================================================================
 
 	msetup         = geom              # setup type
-	nmark_x        = 2                 # markers per cell in x-direction
-	nmark_y        = 2                 # ...                 y-direction
-	nmark_z        = 2                 # ...                 z-direction
+	nmark_x        = 3                 # markers per cell in x-direction
+	nmark_y        = 3                 # ...                 y-direction
+	nmark_z        = 3                 # ...                 z-direction
 	bg_phase       = 0                 # background phase ID
+	rand_noise     = 0                 # random noise flag (off: results independent of the number of processors)
+	advect         = rk2               # advection scheme (periodic wrapping of the intermediate positions)
+	mark_ctrl      = none              # marker control type
 
-# Geometric primtives:
+# Geometric primitives:
 
 	<BoxStart>
 		phase  = 1
-		bounds = 0.25 0.75 0.25 0.75 0.25 0.75  # (left, right, front, back, bottom, top)
+		bounds = 0.375 0.625 0.375 0.625 0.6 0.85  # (left, right, front, back, bottom, top)
 	<BoxEnd>
-
 
 #===============================================================================
 # Output
@@ -105,19 +99,8 @@
 
 # Grid output options (output is always active)
 
-	out_file_name       = ChannelFlow # output file name
-	out_pvd             = 1           # activate writing .pvd file
-	out_j2_dev_stress   = 1
-	out_dev_stress      = 1
-	out_strain_rate     = 1
-	out_j2_strain_rate  = 1
-	out_density = 1
-	
-# AVD phase viewer output options (requires activation)
-
-#	out_avd     = 1 # activate AVD phase output
-#	out_avd_pvd = 1 # activate writing .pvd file
-#	out_avd_ref = 3 # AVD grid refinement factor
+	out_file_name       = FallingBlock # output file name
+	out_pvd             = 0            # activate writing .pvd file
 
 #===============================================================================
 # Material phase parameters
@@ -128,38 +111,31 @@
 		ID  = 0 # phase id
 		rho = 1 # density
 		eta = 1 # viscosity
-		Cp  = 1
-		k   = 1
-		
 	<MaterialEnd>
 
 	# Define properties of block
 	<MaterialStart>
 		ID  = 1   # phase id
-		rho = 1   # density
-		eta = 10  # viscosity (viscous inclusion, makes the flow 3D)
-		Cp  = 1
-		k   = 1
+		rho = 2   # density
+		eta = 100 # viscosity
 	<MaterialEnd>
 
 #===============================================================================
 # Solver options
 #===============================================================================
 
-
 <SolverOptionsStart>
 
-	set_linear_problem   =  1
-	monitor_solvers      =  1
-	linear_tolerances    =  1e-6 1e-6 100   # rtol, atol, maxit
-	stokes_solver        =  coupled_mg          
-	smoother_type        =  light           # richardson + jacobi
-	smoother_num_sweeps  =  5
-	coarse_solver        =  direct               
-     num_mg_levels        =  3
-     coarse_num_cpu       =  1
+	set_linear_problem  = 1
+	monitor_solvers     = 1
+	linear_tolerances   = 1e-6 1e-8 200 # rtol, atol, maxit
+	num_mg_levels       = 3
+	stokes_solver       = coupled_mg
+	smoother_type       = light        # richardson + jacobi (processor independent)
+	smoother_num_sweeps = 5
+	coarse_solver       = direct       # processor independent
+	coarse_num_cpu      = 1
 
 <SolverOptionsEnd>
 
 #===============================================================================
-

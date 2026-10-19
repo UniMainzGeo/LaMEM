@@ -1,4 +1,4 @@
-# t41_PeriodicBC: periodic heat flow (reduced from examples/BuiltInSetups/HeatFlow3D_Periodic_Multigrid.dat).
+# t42_PeriodicBC: periodic heat flow (reduced from examples/BuiltInSetups/HeatFlow3D_Periodic_Multigrid.dat).
 # Periodic in y: HeatFlow_x.dat with x and y swapped, must give the same result as HeatFlow_x.dat.
 
 #===============================================================================
