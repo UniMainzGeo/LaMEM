@@ -884,7 +884,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	// to compute strain/rates/stresses/residuals including boundary conditions.
 
 	Scaling         *scal;
-	PetscInt         rank;
+	PetscInt         rank, periodic = 0;
 	const PetscInt  *plx, *ply, *plz;
 	PetscInt        *lx,  *ly,  *lz;
 	PetscInt         rx,   ry,   rz;
@@ -902,9 +902,20 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	fs->gtol = 1e-6;
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "gtol", &fs->gtol, 1, 1.0));
 
-	// read periodic grid topolgy flags
-	PetscCall(getIntParam(fb, _OPTIONAL_, "periodic",   &fs->periodic,   1, 1));
+	// read periodic grid topology flags (periodic is a deprecated alias of periodic_x)
+	PetscCall(getIntParam(fb, _OPTIONAL_, "periodic_x", &fs->periodic_x, 1, 1));
 	PetscCall(getIntParam(fb, _OPTIONAL_, "periodic_y", &fs->periodic_y, 1, 1));
+	PetscCall(getIntParam(fb, _OPTIONAL_, "periodic",   &periodic,       1, 1));
+
+	if(periodic)
+	{
+		if(complete_build)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "WARNING! Input parameter periodic is deprecated, use periodic_x instead\n");
+		}
+
+		fs->periodic_x = 1;
+	}
 
 	// set number of processors
 	Px = PETSC_DECIDE;
@@ -927,7 +938,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	Nz = msz.tcels + 1;
 
 	// set boundary type in x & y directions
-	if(fs->periodic)   { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
+	if(fs->periodic_x) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
 	else               { BC_TYPE_X = DM_BOUNDARY_GHOSTED;  }
 
 	if(fs->periodic_y) { BC_TYPE_Y = DM_BOUNDARY_PERIODIC; }
@@ -979,7 +990,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	PetscCall(Discret1DCreate(&fs->dsx, Px, rx, lx, cx,
 	                          getGlobalRank(rx-1, ry, rz, Px, Py, Pz),
 	                          getGlobalRank(rx+1, ry, rz, Px, Py, Pz),
-	                          fs->gtol, "x", fs->periodic));
+	                          fs->gtol, "x", fs->periodic_x));
 
 	PetscCall(Discret1DCreate(&fs->dsy, Py, ry, ly, cy,
 	                          getGlobalRank(rx, ry-1, rz, Px, Py, Pz),
@@ -1046,7 +1057,7 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 	PetscCall(Discret1DGetNumCells(&fs->dsz, &lz));
 
 	// set boundary type in x & y directions
-	if(fs->periodic)   { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
+	if(fs->periodic_x) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
 	else               { BC_TYPE_X = DM_BOUNDARY_GHOSTED;  }
 
 	if(fs->periodic_y) { BC_TYPE_Y = DM_BOUNDARY_PERIODIC; }
@@ -1104,7 +1115,7 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	// copy data
 	coarse->scal       = fine->scal;
 	coarse->gtol       = fine->gtol;
-	coarse->periodic   = fine->periodic;
+	coarse->periodic_x = fine->periodic_x;
 	coarse->periodic_y = fine->periodic_y;
 
 	for(i = 0; i < _num_neighb_; i++) { coarse->neighb[i] = fine->neighb[i]; }
@@ -1124,7 +1135,7 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	if(Nz > 2) { Nz /= 2;  for(i = 0; i < Pz; i++) { lz[i] /= 2; } }
 
 	// set boundary type in x & y directions
-	if(coarse->periodic)   { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
+	if(coarse->periodic_x) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
 	else                   { BC_TYPE_X = DM_BOUNDARY_GHOSTED;  }
 
 	if(coarse->periodic_y) { BC_TYPE_Y = DM_BOUNDARY_PERIODIC; }
@@ -1153,7 +1164,7 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	fdsz = &fine->dsz;
 
 	PetscCall(Discret1DCreate(&coarse->dsx, Px, fdsx->rank, lx, fdsx->color,
-	                          fdsx->grprev, fdsx->grnext, coarse->gtol, "x", coarse->periodic));
+	                          fdsx->grprev, fdsx->grnext, coarse->gtol, "x", coarse->periodic_x));
 
 	PetscCall(Discret1DCreate(&coarse->dsy, Py, fdsy->rank, ly, fdsy->color,
 	                          fdsy->grprev, fdsy->grnext, coarse->gtol, "y", coarse->periodic_y));
@@ -1220,7 +1231,7 @@ PetscErrorCode FDSTAGCreateDMDA(FDSTAG   *fs,
 	// PERIODIC CASE: JUST USE ONE POINT LESS IN X-DIRECTION FOR DA_COR, DA_XY, DA_XZ, AND DA_X
 	//                AND ONE POINT LESS IN Y-DIRECTION FOR DA_COR, DA_XY, DA_YZ, AND DA_Y
 
-	if(fs->periodic)   { BC_NONE_X = DM_BOUNDARY_PERIODIC; BC_GHOSTED_X = DM_BOUNDARY_PERIODIC; bc_node_x = 1; }
+	if(fs->periodic_x) { BC_NONE_X = DM_BOUNDARY_PERIODIC; BC_GHOSTED_X = DM_BOUNDARY_PERIODIC; bc_node_x = 1; }
 	else               { BC_NONE_X = DM_BOUNDARY_NONE;     BC_GHOSTED_X = DM_BOUNDARY_GHOSTED;  bc_node_x = 0; }
 
 	if(fs->periodic_y) { BC_NONE_Y = DM_BOUNDARY_PERIODIC; BC_GHOSTED_Y = DM_BOUNDARY_PERIODIC; bc_node_y = 1; }
@@ -1313,7 +1324,7 @@ PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs)
 	Pz = fs->dsz.nproc;
 
 	// get periodic topology flags
-	ptx = fs->periodic;
+	ptx = fs->periodic_x;
 	pty = fs->periodic_y;
 	ptz = 0;
 
@@ -1443,7 +1454,7 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	PetscPrintf(PETSC_COMM_WORLD, "   Maximum cell aspect ratio            :  %7.5f\n", maxAspRat);
 	PetscPrintf(PETSC_COMM_WORLD, "   Lower coordinate bounds [bx, by, bz] : [%g, %g, %g]\n", bx*chLen, by*chLen, bz*chLen);
 	PetscPrintf(PETSC_COMM_WORLD, "   Upper coordinate bounds [ex, ey, ez] : [%g, %g, %g]\n", ex*chLen, ey*chLen, ez*chLen);
-	if(fs->periodic)
+	if(fs->periodic_x)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "   Using periodic BC in x-direction     @ \n");
 	}
@@ -1915,13 +1926,21 @@ PetscErrorCode FDSTAGSplitVectors(FDSTAG *fs, Vec gf, Vec gfx, Vec gfy, Vec gfz,
 //---------------------------------------------------------------------------
 PetscErrorCode FDSTAGSetEdgeCornerCenter(FDSTAG *fs, Vec Center)
 {
+	// set ghost values at the edges and corners of the (non-periodic) boundaries
+	// NOTE: in a periodic direction the ghost points are periodic images that are
+	// filled by the global-to-local scatter and must not be overridden
+
 	PetscScalar pmdof;
 	PetscScalar ***lCenter;
-	PetscInt    mcx, mcy, mcz;
+	PetscInt    mcx, mcy, mcz, periodic_x, periodic_y;
 	PetscInt    I, J, K, fi, fj, fk;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 
 	PetscFunctionBeginUser;
+
+	// set periodic flags
+	periodic_x = fs->periodic_x;
+	periodic_y = fs->periodic_y;
 
 	// set index boundaries in all directions
 	mcx = fs->dsx.tcels - 1;
@@ -1946,12 +1965,12 @@ PetscErrorCode FDSTAGSetEdgeCornerCenter(FDSTAG *fs, Vec Center)
 		J = j; fj = 0;
 		K = k; fk = 0;
 
-		if(i == 0)   { fi = 1; I = i-1; }
-		if(i == mcx) { fi = 1; I = i+1; }
-		if(j == 0)   { fj = 1; J = j-1; }
-		if(j == mcy) { fj = 1; J = j+1; }
-		if(k == 0)   { fk = 1; K = k-1; }
-		if(k == mcz) { fk = 1; K = k+1; }
+		if(i == 0   && !periodic_x) { fi = 1; I = i-1; }
+		if(i == mcx && !periodic_x) { fi = 1; I = i+1; }
+		if(j == 0   && !periodic_y) { fj = 1; J = j-1; }
+		if(j == mcy && !periodic_y) { fj = 1; J = j+1; }
+		if(k == 0)                  { fk = 1; K = k-1; }
+		if(k == mcz)                { fk = 1; K = k+1; }
 
 		// set values at edges and corners
 		if(fi && fj )       { SET_EDGE_CORNER(lCenter, k, J, I, k, j, i, pmdof) }
@@ -1970,13 +1989,21 @@ PetscErrorCode FDSTAGSetEdgeCornerCenter(FDSTAG *fs, Vec Center)
 //---------------------------------------------------------------------------
 PetscErrorCode FDSTAGSetEdgeCornerFaces(FDSTAG *fs, Vec XFace, Vec YFace, Vec ZFace)
 {
-	PetscInt          mcx, mcy, mcz;
+	// set ghost values at the edges of the (non-periodic) boundaries
+	// NOTE: in a periodic direction the ghost points are periodic images that are
+	// filled by the global-to-local scatter and must not be overridden
+
+	PetscInt          mcx, mcy, mcz, periodic_x, periodic_y;
 	PetscInt          I, J, K, fi, fj, fk;
 	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar       ***lXFace, ***lYFace, ***lZFace;
 	PetscScalar       pmdof;
 
 	PetscFunctionBeginUser;
+
+	// set periodic flags
+	periodic_x = fs->periodic_x;
+	periodic_y = fs->periodic_y;
 
 	// initialize maximal index in tangential directions
 	mcx = fs->dsx.tcels - 1;
@@ -2002,10 +2029,10 @@ PetscErrorCode FDSTAGSetEdgeCornerFaces(FDSTAG *fs, Vec XFace, Vec YFace, Vec ZF
 		J = j; fj = 0;
 		K = k; fk = 0;
 
-		if(j == 0)   { fj = 1; J = j-1; }
-		if(j == mcy) { fj = 1; J = j+1; }
-		if(k == 0)   { fk = 1; K = k-1; }
-		if(k == mcz) { fk = 1; K = k+1; }
+		if(j == 0   && !periodic_y) { fj = 1; J = j-1; }
+		if(j == mcy && !periodic_y) { fj = 1; J = j+1; }
+		if(k == 0)                  { fk = 1; K = k-1; }
+		if(k == mcz)                { fk = 1; K = k+1; }
 
 		if(fj && fk) { SET_EDGE_CORNER(lXFace, K, J, i, k, j, i, pmdof) }
 	}
@@ -2025,10 +2052,10 @@ PetscErrorCode FDSTAGSetEdgeCornerFaces(FDSTAG *fs, Vec XFace, Vec YFace, Vec ZF
 		I = i; fi = 0;
 		K = k; fk = 0;
 
-		if(i == 0)   { fi = 1; I = i-1;}
-		if(i == mcx) { fi = 1; I = i+1;}
-		if(k == 0)   { fk = 1; K = k-1; }
-		if(k == mcz) { fk = 1; K = k+1; }
+		if(i == 0   && !periodic_x) { fi = 1; I = i-1; }
+		if(i == mcx && !periodic_x) { fi = 1; I = i+1; }
+		if(k == 0)                  { fk = 1; K = k-1; }
+		if(k == mcz)                { fk = 1; K = k+1; }
 
 		if(fi && fk) { SET_EDGE_CORNER(lYFace, K, j, I, k, j, i, pmdof) }
 	}
@@ -2048,10 +2075,10 @@ PetscErrorCode FDSTAGSetEdgeCornerFaces(FDSTAG *fs, Vec XFace, Vec YFace, Vec ZF
 		I = i; fi = 0;
 		J = j; fj = 0;
 
-		if(i == 0 )  { fi = 1; I = i-1; }
-		if(i == mcx) { fi = 1; I = i+1; }
-		if(j == 0)   { fj = 1; J = j-1; }
-		if(j == mcy) { fj = 1; J = j+1; }
+		if(i == 0   && !periodic_x) { fi = 1; I = i-1; }
+		if(i == mcx && !periodic_x) { fi = 1; I = i+1; }
+		if(j == 0   && !periodic_y) { fj = 1; J = j-1; }
+		if(j == mcy && !periodic_y) { fj = 1; J = j+1; }
 
 		if(fi && fj) { SET_EDGE_CORNER(lZFace, k, J, I, k, j, i, pmdof) }
 

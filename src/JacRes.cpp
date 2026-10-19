@@ -340,7 +340,7 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	numPhases =  jr->dbm->numPhases;
 
 	// set boundary type in x & y directions
-	if(fs->periodic)   { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
+	if(fs->periodic_x) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
 	else               { BC_TYPE_X = DM_BOUNDARY_NONE;     }
 
 	if(fs->periodic_y) { BC_TYPE_Y = DM_BOUNDARY_PERIODIC; }
@@ -905,7 +905,7 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 	SolVarEdge *svEdge;
 	ConstEqCtx  ctx;
 	PetscInt    iter;
-	PetscInt    periodic, periodic_y;
+	PetscInt    periodic_x, periodic_y;
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
 	Vec         lfx,  lfy,  lfz, gc;
@@ -945,7 +945,7 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 	dt   = jr->ts->dt;    // time step
 
 	// set periodic flags
-	periodic   = fs->periodic;
+	periodic_x = fs->periodic_x;
 	periodic_y = fs->periodic_y;
 
 	// get work vectors
@@ -1137,8 +1137,8 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 		//=================
 
 		// check index bounds
-		I1 = i;   if(!periodic   && I1 == mx) I1--;
-		I2 = i-1; if(!periodic   && I2 == -1) I2++;
+		I1 = i;   if(!periodic_x   && I1 == mx) I1--;
+		I2 = i-1; if(!periodic_x   && I2 == -1) I2++;
 		J1 = j;   if(!periodic_y && J1 == my) J1--;
 		J2 = j-1; if(!periodic_y && J2 == -1) J2++;
 
@@ -1244,8 +1244,8 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 		// SECOND INVARIANT
 		//=================
 
-		I1 = i;   if(!periodic && I1 == mx) I1--;
-		I2 = i-1; if(!periodic && I2 == -1) I2++;
+		I1 = i;   if(!periodic_x && I1 == mx) I1--;
+		I2 = i-1; if(!periodic_x && I2 == -1) I2++;
 		K1 = k;   if(             K1 == mz) K1--;
 		K2 = k-1; if(             K2 == -1) K2++;
 
@@ -1847,7 +1847,7 @@ PetscErrorCode JacResGetVel(JacRes *jr, Vec x, Vec lvx, Vec lvy, Vec lvz)
 
 	FDSTAG           *fs;
 	BCCtx            *bc;
-	PetscInt          periodic, periodic_y;
+	PetscInt          periodic_x, periodic_y;
 	PetscInt          mcx, mcy, mcz;
 	PetscInt          I, J, K;
 	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
@@ -1862,7 +1862,7 @@ PetscErrorCode JacResGetVel(JacRes *jr, Vec x, Vec lvx, Vec lvy, Vec lvz)
 	bc = jr->bc;
 
 	// set periodic flags
-	periodic   = fs->periodic;
+	periodic_x = fs->periodic_x;
 	periodic_y = fs->periodic_y;
 
 	// initialize maximal index in all directions
@@ -1933,8 +1933,8 @@ PetscErrorCode JacResGetVel(JacRes *jr, Vec x, Vec lvx, Vec lvy, Vec lvz)
 		I = i;
 		K = k;
 
-		if(i == 0)   { I = i-1; if(!periodic) { SET_TPC(bcvy, vy, k, j, I, pmdof) } }
-		if(i == mcx) { I = i+1; if(!periodic) { SET_TPC(bcvy, vy, k, j, I, pmdof) } }
+		if(i == 0)   { I = i-1; if(!periodic_x) { SET_TPC(bcvy, vy, k, j, I, pmdof) } }
+		if(i == mcx) { I = i+1; if(!periodic_x) { SET_TPC(bcvy, vy, k, j, I, pmdof) } }
 		if(k == 0)   { K = k-1;                 SET_TPC(bcvy, vy, K, j, i, pmdof) }
 		if(k == mcz) { K = k+1;                 SET_TPC(bcvy, vy, K, j, i, pmdof) }
 	}
@@ -1954,8 +1954,8 @@ PetscErrorCode JacResGetVel(JacRes *jr, Vec x, Vec lvx, Vec lvy, Vec lvz)
 		I = i;
 		J = j;
 
-		if(i == 0 )  { I = i-1; if(!periodic)   { SET_TPC(bcvz, vz, k, j, I, pmdof) } }
-		if(i == mcx) { I = i+1; if(!periodic)   { SET_TPC(bcvz, vz, k, j, I, pmdof) } }
+		if(i == 0 )  { I = i-1; if(!periodic_x) { SET_TPC(bcvz, vz, k, j, I, pmdof) } }
+		if(i == mcx) { I = i+1; if(!periodic_x) { SET_TPC(bcvz, vz, k, j, I, pmdof) } }
 		if(j == 0)   { J = j-1; if(!periodic_y) { SET_TPC(bcvz, vz, k, J, i, pmdof) } }
 		if(j == mcy) { J = j+1; if(!periodic_y) { SET_TPC(bcvz, vz, k, J, i, pmdof) } }
 	}
@@ -1978,7 +1978,7 @@ PetscErrorCode JacResGetPres(JacRes *jr, Vec x, Vec lp)
 
 	FDSTAG            *fs;
 	BCCtx             *bc;
-	PetscInt          periodic, periodic_y;
+	PetscInt          periodic_x, periodic_y;
 	PetscInt          mcx, mcy, mcz;
 	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar       pmdof;
@@ -1992,7 +1992,7 @@ PetscErrorCode JacResGetPres(JacRes *jr, Vec x, Vec lp)
 	bc = jr->bc;;
 
 	// set periodic flags
-	periodic   = fs->periodic;
+	periodic_x = fs->periodic_x;
 	periodic_y = fs->periodic_y;
 
 	// initialize maximal index in all directions
@@ -2033,8 +2033,8 @@ PetscErrorCode JacResGetPres(JacRes *jr, Vec x, Vec lp)
 	{
 		pmdof = p[k][j][i];
 
-		if(i == 0)   { if(!periodic)   { SET_TPC(bcp, p, k,   j,   i-1, pmdof) } }
-		if(i == mcx) { if(!periodic)   { SET_TPC(bcp, p, k,   j,   i+1, pmdof) } }
+		if(i == 0)   { if(!periodic_x) { SET_TPC(bcp, p, k,   j,   i-1, pmdof) } }
+		if(i == mcx) { if(!periodic_x) { SET_TPC(bcp, p, k,   j,   i+1, pmdof) } }
 		if(j == 0)   { if(!periodic_y) { SET_TPC(bcp, p, k,   j-1, i,   pmdof) } }
 		if(j == mcy) { if(!periodic_y) { SET_TPC(bcp, p, k,   j+1, i,   pmdof) } }
 		if(k == 0)   {                   SET_TPC(bcp, p, k-1, j,   i,   pmdof)   }

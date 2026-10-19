@@ -1932,7 +1932,7 @@ if should_run_test("t41_PeriodicBC")
     cd(test_dir)
     dir = "t41_PeriodicBC";
 
-    # The *_y setups are the *_x setups with x and y swapped (periodic_y = 1 instead of periodic = 1),
+    # The *_y setups are the *_x setups with x and y swapped (periodic_y = 1 instead of periodic_x = 1),
     # so they must reproduce the x-periodic results. The processor grid is forced with cpu_x/cpu_y
     # such that the domain is split across the periodic direction.
     keywords = ("|Div|_inf", "|mRes|_2")
@@ -1970,6 +1970,26 @@ if should_run_test("t41_PeriodicBC")
     @test perform_lamem_test(dir,"HeatFlow_y.dat","HeatFlow_y_p4",
                             keywords=keywords, accuracy=acc, cores=4, args="-cpu_x 2 -cpu_y 2 -cpu_z 1", mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
+
+    # marker advection across the periodic faces: a viscous inclusion straddling the corner where the
+    # x and y periodic faces meet is advected over 8 time steps. The parallel runs (split across both
+    # periodic faces) must reproduce the serial run, hence they are compared with the same expected file.
+    @test perform_lamem_test(dir,"ChannelFlow_xy_advect.dat","ChannelFlow_xy_advect_p1",
+                            keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)
+
+    @test perform_lamem_test(dir,"ChannelFlow_xy_advect.dat","ChannelFlow_xy_advect_p1",
+                            keywords=keywords, accuracy=acc, cores=4, args="-cpu_x 2 -cpu_y 2 -cpu_z 1", mpiexec=mpiexec,
+                            create_expected_file=false, clean_dir=clean_files)
+
+    # same with 2nd order Runge-Kutta advection (periodic wrapping of the intermediate positions)
+    @test perform_lamem_test(dir,"ChannelFlow_xy_advect.dat","ChannelFlow_xy_advect_rk2_p1",
+                            keywords=keywords, accuracy=acc, cores=1, args="-advect rk2", mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)
+
+    @test perform_lamem_test(dir,"ChannelFlow_xy_advect.dat","ChannelFlow_xy_advect_rk2_p1",
+                            keywords=keywords, accuracy=acc, cores=4, args="-advect rk2 -cpu_x 2 -cpu_y 2 -cpu_z 1", mpiexec=mpiexec,
+                            create_expected_file=false, clean_dir=clean_files)
 
 end
 end

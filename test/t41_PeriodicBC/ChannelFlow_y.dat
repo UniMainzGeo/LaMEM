@@ -42,7 +42,7 @@
 	coord_z = 0.0 1.0
 
 # Periodic geometry flags
-# periodic   = 1 : periodic in x-direction (left/right)
+# periodic_x = 1 : periodic in x-direction (left/right)
 # periodic_y = 1 : periodic in y-direction (front/back)
 # This is the x-periodic setup of ChannelFlow3D_Periodic_Multigrid.dat with x and y swapped
 	

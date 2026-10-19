@@ -175,7 +175,7 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 
 	FDSTAG         *fs;
 	DMBoundaryType BC_TYPE_X, BC_TYPE_Y;
-	PetscInt       periodic, periodic_y;
+	PetscInt       periodic_x, periodic_y;
 	const PetscInt *lx, *ly, *lz;
 
 	PetscFunctionBeginUser;
@@ -183,14 +183,14 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	fs = jr->fs;
 
 	// set periodic flags
-	periodic   = fs->periodic;
+	periodic_x = fs->periodic_x;
 	periodic_y = fs->periodic_y;
 
 	// get cell center grid partitioning
 	PetscCall(DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, &lz));
 
 	// set boundary type in x & y directions
-	if(periodic)   { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
+	if(periodic_x) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
 	else           { BC_TYPE_X = DM_BOUNDARY_NONE;     }
 
 	if(periodic_y) { BC_TYPE_Y = DM_BOUNDARY_PERIODIC; }
@@ -318,7 +318,7 @@ PetscErrorCode JacResGetTemp(JacRes *jr, Vec lT)
 
 	FDSTAG      *fs;
 	BCCtx       *bc;
-	PetscInt    periodic, periodic_y;
+	PetscInt    periodic_x, periodic_y;
 	PetscScalar pmdof;
 	PetscScalar ***T, ***gT, ***bcT;
 	PetscInt    mcx, mcy, mcz;
@@ -357,7 +357,7 @@ PetscErrorCode JacResGetTemp(JacRes *jr, Vec lT)
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, bc->bcT, &bcT));
 
 	// set periodic flags
-	periodic   = fs->periodic;
+	periodic_x = fs->periodic_x;
 	periodic_y = fs->periodic_y;
 
 	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
@@ -368,8 +368,8 @@ PetscErrorCode JacResGetTemp(JacRes *jr, Vec lT)
 	{
 		pmdof = T[k][j][i];
 
-		if(i == 0)   { if(!periodic)   { SET_TPC(bcT, T, k,   j,   i-1, pmdof) } }
-		if(i == mcx) { if(!periodic)   { SET_TPC(bcT, T, k,   j,   i+1, pmdof) } }
+		if(i == 0)   { if(!periodic_x) { SET_TPC(bcT, T, k,   j,   i-1, pmdof) } }
+		if(i == mcx) { if(!periodic_x) { SET_TPC(bcT, T, k,   j,   i+1, pmdof) } }
 		if(j == 0)   { if(!periodic_y) { SET_TPC(bcT, T, k,   j-1, i,   pmdof) } }
 		if(j == mcy) { if(!periodic_y) { SET_TPC(bcT, T, k,   j+1, i,   pmdof) } }
 		if(k == 0)   {                   SET_TPC(bcT, T, k-1, j,   i,   pmdof)   }
@@ -394,7 +394,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	SolVarCell  *svCell;
 	SolVarDev   *svDev;
 	SolVarBulk  *svBulk;
-	PetscInt    periodic, periodic_y;
+	PetscInt    periodic_x, periodic_y;
 	Controls    ctrl;
 	Vec         ldcen, ldxy, ldxz, ldyz;
 	Vec         lvx, lvy, lvz, lT;
@@ -423,7 +423,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	ctrl = jr->ctrl;
 
 	// set periodic flags
-	periodic   = fs->periodic;
+	periodic_x = fs->periodic_x;
 	periodic_y = fs->periodic_y;
 
 	// initialize maximum cell index in all directions
@@ -495,8 +495,8 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		Hr = Hr * jr->ctrl.shearHeatEff;
 
 		// check index bounds
-		Im1 = i-1; if(Im1 < 0)  { if(!periodic)   Im1++; }
-		Ip1 = i+1; if(Ip1 > mx) { if(!periodic)   Ip1--; }
+		Im1 = i-1; if(Im1 < 0)  { if(!periodic_x)   Im1++; }
+		Ip1 = i+1; if(Ip1 > mx) { if(!periodic_x)   Ip1--; }
 		Jm1 = j-1; if(Jm1 < 0)  { if(!periodic_y) Jm1++; }
 		Jp1 = j+1; if(Jp1 > my) { if(!periodic_y) Jp1--; }
 		Km1 = k-1; if(Km1 < 0)  {                 Km1++; }
@@ -587,7 +587,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	FDSTAG     *fs;
 	BCCtx      *bc;
 	SolVarCell *svCell;
-	PetscInt    periodic, periodic_y;
+	PetscInt    periodic_x, periodic_y;
 	Vec         ldcen;
 	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
@@ -610,7 +610,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	list = bc->tSPCList;
 
 	// set periodic flags
-	periodic   = fs->periodic;
+	periodic_x = fs->periodic_x;
 	periodic_y = fs->periodic_y;
 
 	// compute inverse time step
@@ -661,8 +661,8 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, Tc, ycell, jcell));
 
 		// check index bounds and TPC multipliers
-		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { if(!periodic)   { Im1++; if(bcT[k][j][i-1] != DBL_MAX) cf[0] = -1.0; } }
-		Ip1 = i+1; cf[1] = 1.0; if(Ip1 > mx) { if(!periodic)   { Ip1--; if(bcT[k][j][i+1] != DBL_MAX) cf[1] = -1.0; } }
+		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { if(!periodic_x) { Im1++; if(bcT[k][j][i-1] != DBL_MAX) cf[0] = -1.0; } }
+		Ip1 = i+1; cf[1] = 1.0; if(Ip1 > mx) { if(!periodic_x) { Ip1--; if(bcT[k][j][i+1] != DBL_MAX) cf[1] = -1.0; } }
 		Jm1 = j-1; cf[2] = 1.0; if(Jm1 < 0)  { if(!periodic_y) { Jm1++; if(bcT[k][j-1][i] != DBL_MAX) cf[2] = -1.0; } }
 		Jp1 = j+1; cf[3] = 1.0; if(Jp1 > my) { if(!periodic_y) { Jp1--; if(bcT[k][j+1][i] != DBL_MAX) cf[3] = -1.0; } }
 		Km1 = k-1; cf[4] = 1.0; if(Km1 < 0)  {                   Km1++; if(bcT[k-1][j][i] != DBL_MAX) cf[4] = -1.0;   }

@@ -274,13 +274,8 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 	else if(actx->advect == EULER)         PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order\n");
 	else if(actx->advect == RUNGE_KUTTA_2) PetscPrintf(PETSC_COMM_WORLD, "Runge-Kutta 2-nd order\n");
 
-	// set periodic advection flag
-	if(fs->periodic || fs->periodic_y || bc->ExyNumPeriods) { actx->periodic = 1; }
-
-	if(actx->periodic && (actx->advect == EULER || actx->advect == RUNGE_KUTTA_2))
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic marker advection is only compatible with BASIC_EULER (advect, periodic, periodic_y, exy_num_periods)");
-	}
+	// set periodic advection flag (markers leaving through a periodic face re-enter on the opposite face)
+	if(fs->periodic_x || fs->periodic_y) { actx->periodic = 1; }
 
 	if(actx->periodic)
 	{
@@ -1046,8 +1041,7 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 	// Maybe it makes sense to introduce static model with reallocation.
 	FDSTAG      *fs;
 	PetscScalar *X;
-	PetscScalar  bx, ex, dx;
-	PetscScalar  by, ey, dy;
+	PetscScalar  bx, ex, by, ey;
 	PetscInt     i, cnt, lrank;
 	PetscInt     grank;
 
@@ -1057,10 +1051,6 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 
 	// get current coordinates of the mesh boundaries
 	PetscCall(FDSTAGGetGlobalBox(fs, &bx, &by, NULL, &ex, &ey, NULL));
-
-	// get mesh size
-	dx = ex - bx;
-	dy = ey - by;
 
 	// compute buffer pointers
 	actx->nsend = getPtrCnt(_num_neighb_, actx->nsendm, actx->ptsend);
@@ -1084,19 +1074,10 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 		// get global & local ranks of a marker
 		PetscCall(FDSTAGGetPointRanks(fs, X, &lrank, &grank));
 
-		// correct marker position for periodic case
-		if(actx->periodic)
-		{
-			if(X[0] < bx) X[0] += dx;
-			if(X[0] > ex) X[0] -= dx;
-		}
-
-		// correct marker position for periodic case in y-direction
-		if(fs->periodic_y)
-		{
-			if(X[1] < by) X[1] += dy;
-			if(X[1] > ey) X[1] -= dy;
-		}
+		// wrap marker position into the domain for periodic case
+		// NOTE: wrapping must be consistent with the rank lookup (the right/back face belongs to the next domain)
+		if(fs->periodic_x) { WRAP_POINT_PERIODIC(X[0], bx, ex) }
+		if(fs->periodic_y) { WRAP_POINT_PERIODIC(X[1], by, ey) }
 
 		if(grank == -1)
 		{

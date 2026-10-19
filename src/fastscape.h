@@ -34,7 +34,7 @@ struct MeshSeg1DFS
 	PetscScalar biases[_max_num_segs_  ]; // biases for each segment
 	PetscInt    tcels;                    // total number of cells
 	PetscInt    bias;                  // uniform grid flag
-	PetscInt    periodic;                 // periodic topology flag
+	PetscInt    periodic_x;               // periodic topology flag (x-direction, unused)
 	PetscScalar grid_spacing_min[_max_num_segs_  ];
 	PetscScalar grid_spacing_max[_max_num_segs_  ];
 	PetscInt    nnodes_nug;
