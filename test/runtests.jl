@@ -1927,6 +1927,53 @@ if should_run_test("t41_PhaseTransitionPlugin")
 end
 end
 #---------------------------------------------------------------------------
+if should_run_test("t41_PeriodicBC")
+@testset "t41_PeriodicBC" begin
+    cd(test_dir)
+    dir = "t41_PeriodicBC";
+
+    # The *_y setups are the *_x setups with x and y swapped (periodic_y = 1 instead of periodic = 1),
+    # so they must reproduce the x-periodic results. The processor grid is forced with cpu_x/cpu_y
+    # such that the domain is split across the periodic direction.
+    keywords = ("|Div|_inf", "|mRes|_2")
+    acc      = ((rtol=1e-5, atol=1e-7), (rtol=1e-3, atol=1e-4))
+
+    # channel flow, periodic in x, split in x
+    @test perform_lamem_test(dir,"ChannelFlow_x.dat","ChannelFlow_x_p2",
+                            keywords=keywords, accuracy=acc, cores=2, args="-cpu_x 2 -cpu_y 1 -cpu_z 1", mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)
+
+    # channel flow, periodic in y, split in y
+    @test perform_lamem_test(dir,"ChannelFlow_y.dat","ChannelFlow_y_p2",
+                            keywords=keywords, accuracy=acc, cores=2, args="-cpu_x 1 -cpu_y 2 -cpu_z 1", mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)
+
+    @test perform_lamem_test(dir,"ChannelFlow_y.dat","ChannelFlow_y_p4",
+                            keywords=keywords, accuracy=acc, cores=4, args="-cpu_x 1 -cpu_y 4 -cpu_z 1", mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)
+
+    # channel flow, periodic in x and y, split in x and y
+    @test perform_lamem_test(dir,"ChannelFlow_xy.dat","ChannelFlow_xy_p4",
+                            keywords=keywords, accuracy=acc, cores=4, args="-cpu_x 2 -cpu_y 2 -cpu_z 1", mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)
+
+    # heat flow, periodic in x, split in x
+    @test perform_lamem_test(dir,"HeatFlow_x.dat","HeatFlow_x_p2",
+                            keywords=keywords, accuracy=acc, cores=2, args="-cpu_x 2 -cpu_y 1 -cpu_z 1", mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)
+
+    # heat flow, periodic in y, split in y
+    @test perform_lamem_test(dir,"HeatFlow_y.dat","HeatFlow_y_p2",
+                            keywords=keywords, accuracy=acc, cores=2, args="-cpu_x 1 -cpu_y 2 -cpu_z 1", mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)
+
+    @test perform_lamem_test(dir,"HeatFlow_y.dat","HeatFlow_y_p4",
+                            keywords=keywords, accuracy=acc, cores=4, args="-cpu_x 2 -cpu_y 2 -cpu_z 1", mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)
+
+end
+end
+#---------------------------------------------------------------------------
 end
 #---------------------------------------------------------------------------
 

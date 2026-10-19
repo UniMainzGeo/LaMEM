@@ -103,11 +103,18 @@
 # An attempt to specify a non-unit bias ratio will generate an error. 
     
 
-# Periodic grid topology flag (affects all solvers)
-# WARNING! only implemented for x-direction
-# WARNING! automatically activates periodic advection in x direction
+# Periodic grid topology flags (affect all solvers)
+# periodic   = 1 : periodic in x-direction (left/right boundaries)
+# periodic_y = 1 : periodic in y-direction (front/back boundaries)
+# Both flags can be combined (doubly periodic in x and y). z cannot be periodic.
+# WARNING! automatically activates periodic marker advection in the periodic direction(s)
+#          (requires advect = basic)
+# WARNING! requires no-slip on the bottom boundary, and is incompatible with no-slip on the
+#          periodic faces, with background strain rates normal to or shearing the periodic faces
+#          (exx/exy for x, eyy/exy for y), bvel_face, fix_phase, fix_cell, dikes and the adjoint solver
 	
-	periodic = 1
+	periodic   = 1
+	periodic_y = 1
 	
 # EXAMPLE:
 # segment 1: [0, 0.7),  10 cells, decreasing spacing  (sz.end/ sz.beg = 0.3)
