@@ -1991,6 +1991,37 @@ if should_run_test("t41_PeriodicBC")
                             keywords=keywords, accuracy=acc, cores=4, args="-advect rk2 -cpu_x 2 -cpu_y 2 -cpu_z 1", mpiexec=mpiexec,
                             create_expected_file=false, clean_dir=clean_files)
 
+    # falling block with geometric multigrid, periodic in x, in y, and in x and y (5 time steps, RK2 advection).
+    # The CFL-limited time step tracks the maximum velocity. Parallel runs split across the periodic faces
+    # are compared with the serial expected file.
+    keywords   = ("|Div|_inf", "|mRes|_2", "Actual time step")
+    split_sign = ("=", "=", ":")
+    acc        = ((rtol=1e-4, atol=1e-9), (rtol=1e-4, atol=1e-9), (rtol=1e-5, atol=1e-9))
+
+    @test perform_lamem_test(dir,"FallingBlock_x.dat","FallingBlock_x_p1",
+                            keywords=keywords, accuracy=acc, cores=1, split_sign=split_sign, mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)
+
+    @test perform_lamem_test(dir,"FallingBlock_x.dat","FallingBlock_x_p1",
+                            keywords=keywords, accuracy=acc, cores=2, args="-cpu_x 2 -cpu_y 1 -cpu_z 1", split_sign=split_sign, mpiexec=mpiexec,
+                            create_expected_file=false, clean_dir=clean_files)
+
+    @test perform_lamem_test(dir,"FallingBlock_y.dat","FallingBlock_y_p1",
+                            keywords=keywords, accuracy=acc, cores=1, split_sign=split_sign, mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)
+
+    @test perform_lamem_test(dir,"FallingBlock_y.dat","FallingBlock_y_p1",
+                            keywords=keywords, accuracy=acc, cores=2, args="-cpu_x 1 -cpu_y 2 -cpu_z 1", split_sign=split_sign, mpiexec=mpiexec,
+                            create_expected_file=false, clean_dir=clean_files)
+
+    @test perform_lamem_test(dir,"FallingBlock_xy.dat","FallingBlock_xy_p1",
+                            keywords=keywords, accuracy=acc, cores=1, split_sign=split_sign, mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)
+
+    @test perform_lamem_test(dir,"FallingBlock_xy.dat","FallingBlock_xy_p1",
+                            keywords=keywords, accuracy=acc, cores=4, args="-cpu_x 2 -cpu_y 2 -cpu_z 1", split_sign=split_sign, mpiexec=mpiexec,
+                            create_expected_file=false, clean_dir=clean_files)
+
 end
 end
 #---------------------------------------------------------------------------
