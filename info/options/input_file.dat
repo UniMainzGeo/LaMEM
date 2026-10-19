@@ -286,6 +286,9 @@
     	vx       =   1.0  # Vx velocity of box (default is unconstrained)
     	vy       =   0.0  # Vy velocity of box (default is unconstrained)
     	vz       =   0.0  # Vz velocity of box (default is unconstrained) 
+    	# vx_num_periods = 3            # instead of vx: number of periods of piecewise-constant Vx (max 20; same for vy_, vz_)
+    	# vx_time_delims = 1.0 2.0      # end time of each period but the last (vx_num_periods-1 values)
+    	# vx_values      = 1.0 0.0 -1.0 # Vx in each period; giving both vx and vx_num_periods is an error
     	advect   =   0    # box advection flag
     <VelBoxEnd>
     

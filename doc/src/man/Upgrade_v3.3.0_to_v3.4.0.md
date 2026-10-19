@@ -10,8 +10,9 @@ the build system and CI that only matter if you compile LaMEM yourself.
 
 ## 0. TL;DR — the v3.4.0 upgrade checklist
 
-**Your existing input files need no changes.** There are no renamed or removed keywords, no changes
-to the default behaviour, and no changes to the restart format.
+**Your existing input files need no changes.** There are no renamed or removed keywords and no changes
+to the default behaviour. Restart databases written by v3.3.0 cannot be read by v3.4.0, however
+(see [§5](@ref "5. Pitfalls when upgrading to v3.4.0")).
 
 1. **New: Julia phase-transition plugins.** Write the rule in Julia, compile it once with JuliaC.jl
    into a shared library, and activate it with `dylib_plugin = <library>` and
@@ -176,7 +177,14 @@ None of the following changes the behaviour of a Linux build.
 
 ## 5. Pitfalls when upgrading to v3.4.0
 
-There are no silent changes to existing input files. The pitfalls concern the new features.
+There are no silent changes to existing input files. Apart from restarts, the pitfalls concern the
+new features.
+
+* **Restarting a v3.3.0 run.** The restart database stores LaMEM's internal data structures as raw
+  binary, and two of them grew in v3.4.0 (velocity boxes and the material database). A restart
+  database written by v3.3.0 therefore fails to load under v3.4.0 `-mode restart`, with an error such
+  as `Ownership ranges sum to ... but global dimension is ...`. Finish such runs with v3.3.0, or start
+  them again with v3.4.0.
 
 * **Running a v3.4.0 input file on an older version.** `phase_transitions`, `dylib_plugin` and the
   `vx_`/`vy_`/`vz_` period keywords do not exist before v3.4.0, so an older LaMEM has no code that
