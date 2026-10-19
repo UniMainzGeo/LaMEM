@@ -189,7 +189,8 @@ struct FDSTAG
 
 	PetscInt    neighb[_num_neighb_]; // global ranks of neighboring process
 	PetscScalar gtol;                 // relative geometry tolerance
-	PetscInt    periodic;             // periodic topology flag
+	PetscInt    periodic;             // periodic topology flag (x-direction)
+	PetscInt    periodic_y;           // periodic topology flag (y-direction)
 };
 
 //---------------------------------------------------------------------------

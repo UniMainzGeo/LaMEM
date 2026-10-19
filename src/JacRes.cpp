@@ -329,7 +329,7 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	FDSTAG         *fs;
 	DOFIndex       *dof;
 	PetscScalar    *svBuff;
-	DMBoundaryType BC_TYPE_X;
+	DMBoundaryType BC_TYPE_X, BC_TYPE_Y;
 	const PetscInt *lx, *ly;
 	PetscInt        i, n, svBuffSz, numPhases;
 
@@ -339,9 +339,12 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	dof       = &fs->dof;
 	numPhases =  jr->dbm->numPhases;
 
-	// set boundary type in x direction
-	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
-	else             { BC_TYPE_X = DM_BOUNDARY_NONE;     }
+	// set boundary type in x & y directions
+	if(fs->periodic)   { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
+	else               { BC_TYPE_X = DM_BOUNDARY_NONE;     }
+
+	if(fs->periodic_y) { BC_TYPE_Y = DM_BOUNDARY_PERIODIC; }
+	else               { BC_TYPE_Y = DM_BOUNDARY_NONE;     }
 
 	// If any phase involves phase diagram initialize the data
 	for(i=0; i<jr->dbm->numPhases; i++)
@@ -418,7 +421,7 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 
 	// create 2D cell center grid
 	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
-	                            BC_TYPE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
+	                            BC_TYPE_X, BC_TYPE_Y, DM_BOUNDARY_NONE,
 	                            DMDA_STENCIL_BOX,
 	                            fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc,
 	                            fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
@@ -902,7 +905,7 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 	SolVarEdge *svEdge;
 	ConstEqCtx  ctx;
 	PetscInt    iter;
-	PetscInt    periodic;
+	PetscInt    periodic, periodic_y;
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
 	Vec         lfx,  lfy,  lfz, gc;
@@ -941,8 +944,9 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 	grav = jr->ctrl.grav; // gravity acceleration
 	dt   = jr->ts->dt;    // time step
 
-	// set periodic flag
-	periodic = fs->periodic;
+	// set periodic flags
+	periodic   = fs->periodic;
+	periodic_y = fs->periodic_y;
 
 	// get work vectors
 	PetscCall(FDSTAGGetLocalVectorFace  (fs, &lfx,  &lfy,  &lfz));
@@ -1133,10 +1137,10 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 		//=================
 
 		// check index bounds
-		I1 = i;   if(!periodic && I1 == mx) I1--;
-		I2 = i-1; if(!periodic && I2 == -1) I2++;
-		J1 = j;   if(             J1 == my) J1--;
-		J2 = j-1; if(             J2 == -1) J2++;
+		I1 = i;   if(!periodic   && I1 == mx) I1--;
+		I2 = i-1; if(!periodic   && I2 == -1) I2++;
+		J1 = j;   if(!periodic_y && J1 == my) J1--;
+		J2 = j-1; if(!periodic_y && J2 == -1) J2++;
 
 		// access strain rates
 		XY = dxy[k][j][i];
@@ -1348,10 +1352,10 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 		//=================
 
 		// check index bounds
-		J1 = j;   if(J1 == my) J1--;
-		J2 = j-1; if(J2 == -1) J2++;
-		K1 = k;   if(K1 == mz) K1--;
-		K2 = k-1; if(K2 == -1) K2++;
+		J1 = j;   if(!periodic_y && J1 == my) J1--;
+		J2 = j-1; if(!periodic_y && J2 == -1) J2++;
+		K1 = k;   if(               K1 == mz) K1--;
+		K2 = k-1; if(               K2 == -1) K2++;
 
 		// access strain rates
 		YZ = dyz[k][j][i];
@@ -1843,7 +1847,7 @@ PetscErrorCode JacResGetVel(JacRes *jr, Vec x, Vec lvx, Vec lvy, Vec lvz)
 
 	FDSTAG           *fs;
 	BCCtx            *bc;
-	PetscInt          periodic;
+	PetscInt          periodic, periodic_y;
 	PetscInt          mcx, mcy, mcz;
 	PetscInt          I, J, K;
 	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
@@ -1857,8 +1861,9 @@ PetscErrorCode JacResGetVel(JacRes *jr, Vec x, Vec lvx, Vec lvy, Vec lvz)
 	fs = jr->fs;
 	bc = jr->bc;
 
-	// set periodic flag
-	periodic = fs->periodic;
+	// set periodic flags
+	periodic   = fs->periodic;
+	periodic_y = fs->periodic_y;
 
 	// initialize maximal index in all directions
 	mcx = fs->dsx.tcels - 1;
@@ -1907,10 +1912,10 @@ PetscErrorCode JacResGetVel(JacRes *jr, Vec x, Vec lvx, Vec lvy, Vec lvz)
 		J = j;
 		K = k;
 
-		if(j == 0)   { J = j-1; SET_TPC(bcvx, vx, k, J, i, pmdof) }
-		if(j == mcy) { J = j+1; SET_TPC(bcvx, vx, k, J, i, pmdof) }
-		if(k == 0)   { K = k-1; SET_TPC(bcvx, vx, K, j, i, pmdof) }
-		if(k == mcz) { K = k+1; SET_TPC(bcvx, vx, K, j, i, pmdof) }
+		if(j == 0)   { J = j-1; if(!periodic_y) { SET_TPC(bcvx, vx, k, J, i, pmdof) } }
+		if(j == mcy) { J = j+1; if(!periodic_y) { SET_TPC(bcvx, vx, k, J, i, pmdof) } }
+		if(k == 0)   { K = k-1;                   SET_TPC(bcvx, vx, K, j, i, pmdof)   }
+		if(k == mcz) { K = k+1;                   SET_TPC(bcvx, vx, K, j, i, pmdof)   }
 	}
 	END_STD_LOOP
 
@@ -1949,10 +1954,10 @@ PetscErrorCode JacResGetVel(JacRes *jr, Vec x, Vec lvx, Vec lvy, Vec lvz)
 		I = i;
 		J = j;
 
-		if(i == 0 )  { I = i-1; if(!periodic) { SET_TPC(bcvz, vz, k, j, I, pmdof) } }
-		if(i == mcx) { I = i+1; if(!periodic) { SET_TPC(bcvz, vz, k, j, I, pmdof) } }
-		if(j == 0)   { J = j-1;                 SET_TPC(bcvz, vz, k, J, i, pmdof) }
-		if(j == mcy) { J = j+1;                 SET_TPC(bcvz, vz, k, J, i, pmdof) }
+		if(i == 0 )  { I = i-1; if(!periodic)   { SET_TPC(bcvz, vz, k, j, I, pmdof) } }
+		if(i == mcx) { I = i+1; if(!periodic)   { SET_TPC(bcvz, vz, k, j, I, pmdof) } }
+		if(j == 0)   { J = j-1; if(!periodic_y) { SET_TPC(bcvz, vz, k, J, i, pmdof) } }
+		if(j == mcy) { J = j+1; if(!periodic_y) { SET_TPC(bcvz, vz, k, J, i, pmdof) } }
 	}
 	END_STD_LOOP
 
@@ -1973,7 +1978,7 @@ PetscErrorCode JacResGetPres(JacRes *jr, Vec x, Vec lp)
 
 	FDSTAG            *fs;
 	BCCtx             *bc;
-	PetscInt          periodic;
+	PetscInt          periodic, periodic_y;
 	PetscInt          mcx, mcy, mcz;
 	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar       pmdof;
@@ -1986,8 +1991,9 @@ PetscErrorCode JacResGetPres(JacRes *jr, Vec x, Vec lp)
 	fs = jr->fs;
 	bc = jr->bc;;
 
-	// set periodic flag
-	periodic = fs->periodic;
+	// set periodic flags
+	periodic   = fs->periodic;
+	periodic_y = fs->periodic_y;
 
 	// initialize maximal index in all directions
 	mcx = fs->dsx.tcels - 1;
@@ -2027,12 +2033,12 @@ PetscErrorCode JacResGetPres(JacRes *jr, Vec x, Vec lp)
 	{
 		pmdof = p[k][j][i];
 
-		if(i == 0)   { if(!periodic) { SET_TPC(bcp, p, k,   j,   i-1, pmdof) } }
-		if(i == mcx) { if(!periodic) { SET_TPC(bcp, p, k,   j,   i+1, pmdof) } }
-		if(j == 0)   {                 SET_TPC(bcp, p, k,   j-1, i,   pmdof) }
-		if(j == mcy) {                 SET_TPC(bcp, p, k,   j+1, i,   pmdof) }
-		if(k == 0)   {                 SET_TPC(bcp, p, k-1, j,   i,   pmdof) }
-		if(k == mcz) {                 SET_TPC(bcp, p, k+1, j,   i,   pmdof) }
+		if(i == 0)   { if(!periodic)   { SET_TPC(bcp, p, k,   j,   i-1, pmdof) } }
+		if(i == mcx) { if(!periodic)   { SET_TPC(bcp, p, k,   j,   i+1, pmdof) } }
+		if(j == 0)   { if(!periodic_y) { SET_TPC(bcp, p, k,   j-1, i,   pmdof) } }
+		if(j == mcy) { if(!periodic_y) { SET_TPC(bcp, p, k,   j+1, i,   pmdof) } }
+		if(k == 0)   {                   SET_TPC(bcp, p, k-1, j,   i,   pmdof)   }
+		if(k == mcz) {                   SET_TPC(bcp, p, k+1, j,   i,   pmdof)   }
 	}
 	END_STD_LOOP
 

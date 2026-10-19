@@ -892,7 +892,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	PetscInt         Nx,   Ny,   Nz;
 	PetscInt         Px,   Py,   Pz;
 	MeshSeg1D        msx,  msy,  msz;
-	DMBoundaryType   BC_TYPE_X;
+	DMBoundaryType   BC_TYPE_X, BC_TYPE_Y;
 
 	PetscFunctionBeginUser;
 
@@ -902,8 +902,9 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	fs->gtol = 1e-6;
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "gtol", &fs->gtol, 1, 1.0));
 
-	// read periodic grid topolgy flag
-	PetscCall(getIntParam(fb, _OPTIONAL_, "periodic", &fs->periodic, 1, 1));
+	// read periodic grid topolgy flags
+	PetscCall(getIntParam(fb, _OPTIONAL_, "periodic",   &fs->periodic,   1, 1));
+	PetscCall(getIntParam(fb, _OPTIONAL_, "periodic_y", &fs->periodic_y, 1, 1));
 
 	// set number of processors
 	Px = PETSC_DECIDE;
@@ -925,13 +926,16 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	Ny = msy.tcels + 1;
 	Nz = msz.tcels + 1;
 
-	// set boundary type in x direction
-	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
-	else             { BC_TYPE_X = DM_BOUNDARY_GHOSTED;  }
+	// set boundary type in x & y directions
+	if(fs->periodic)   { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
+	else               { BC_TYPE_X = DM_BOUNDARY_GHOSTED;  }
+
+	if(fs->periodic_y) { BC_TYPE_Y = DM_BOUNDARY_PERIODIC; }
+	else               { BC_TYPE_Y = DM_BOUNDARY_GHOSTED;  }
 
 	// partition central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
-	                            BC_TYPE_X, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+	                            BC_TYPE_X, BC_TYPE_Y, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 	                            Nx-1, Ny-1, Nz-1, Px, Py, Pz, 1, 1, 0, 0, 0, &fs->DA_CEN));
 
 	// get actual number of processors (can be different compared to given)
@@ -980,7 +984,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	PetscCall(Discret1DCreate(&fs->dsy, Py, ry, ly, cy,
 	                          getGlobalRank(rx, ry-1, rz, Px, Py, Pz),
 	                          getGlobalRank(rx, ry+1, rz, Px, Py, Pz),
-	                          fs->gtol, "y"));
+	                          fs->gtol, "y", fs->periodic_y));
 
 	PetscCall(Discret1DCreate(&fs->dsz, Pz, rz, lz, cz,
 	                          getGlobalRank(rx, ry, rz-1, Px, Py, Pz),
@@ -1014,7 +1018,7 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 	PetscInt      *lx,  *ly,  *lz;
 	PetscInt       Nx,   Ny,   Nz;
 	PetscInt       Px,   Py,   Pz;
-	DMBoundaryType BC_TYPE_X;
+	DMBoundaryType BC_TYPE_X, BC_TYPE_Y;
 
 	PetscFunctionBeginUser;
 
@@ -1041,13 +1045,16 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 	PetscCall(Discret1DGetNumCells(&fs->dsy, &ly));
 	PetscCall(Discret1DGetNumCells(&fs->dsz, &lz));
 
-	// set boundary type in x direction
-	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
-	else             { BC_TYPE_X = DM_BOUNDARY_GHOSTED;  }
+	// set boundary type in x & y directions
+	if(fs->periodic)   { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
+	else               { BC_TYPE_X = DM_BOUNDARY_GHOSTED;  }
+
+	if(fs->periodic_y) { BC_TYPE_Y = DM_BOUNDARY_PERIODIC; }
+	else               { BC_TYPE_Y = DM_BOUNDARY_GHOSTED;  }
 
 	// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
-	                            BC_TYPE_X, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+	                            BC_TYPE_X, BC_TYPE_Y, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 	                            Nx-1, Ny-1, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_CEN));
 
 	// get number of nodes per processor (only different on the last processor)
@@ -1087,7 +1094,7 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	const PetscInt  *plx,  *ply,  *plz;
 	PetscInt        *lx,   *ly,   *lz;
 	Discret1D       *fdsx, *fdsy, *fdsz;
-	DMBoundaryType   BC_TYPE_X;
+	DMBoundaryType   BC_TYPE_X, BC_TYPE_Y;
 
 	PetscFunctionBeginUser;
 
@@ -1095,9 +1102,10 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	PetscCall(PetscMemzero(coarse, sizeof(FDSTAG)));
 
 	// copy data
-	coarse->scal     = fine->scal;
-	coarse->gtol     = fine->gtol;
-	coarse->periodic = fine->periodic;
+	coarse->scal       = fine->scal;
+	coarse->gtol       = fine->gtol;
+	coarse->periodic   = fine->periodic;
+	coarse->periodic_y = fine->periodic_y;
 
 	for(i = 0; i < _num_neighb_; i++) { coarse->neighb[i] = fine->neighb[i]; }
 
@@ -1115,13 +1123,16 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	if(Ny > 2) { Ny /= 2;  for(i = 0; i < Py; i++) { ly[i] /= 2; } }
 	if(Nz > 2) { Nz /= 2;  for(i = 0; i < Pz; i++) { lz[i] /= 2; } }
 
-	// set boundary type in x direction
-	if(coarse->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
-	else                 { BC_TYPE_X = DM_BOUNDARY_GHOSTED;  }
+	// set boundary type in x & y directions
+	if(coarse->periodic)   { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
+	else                   { BC_TYPE_X = DM_BOUNDARY_GHOSTED;  }
+
+	if(coarse->periodic_y) { BC_TYPE_Y = DM_BOUNDARY_PERIODIC; }
+	else                   { BC_TYPE_Y = DM_BOUNDARY_GHOSTED;  }
 
 	// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
-	                            BC_TYPE_X, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+	                            BC_TYPE_X, BC_TYPE_Y, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 	                            Nx, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &coarse->DA_CEN));
 
 	// get total number of nodes
@@ -1145,7 +1156,7 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	                          fdsx->grprev, fdsx->grnext, coarse->gtol, "x", coarse->periodic));
 
 	PetscCall(Discret1DCreate(&coarse->dsy, Py, fdsy->rank, ly, fdsy->color,
-	                          fdsy->grprev, fdsy->grnext, coarse->gtol, "y"));
+	                          fdsy->grprev, fdsy->grnext, coarse->gtol, "y", coarse->periodic_y));
 
 	PetscCall(Discret1DCreate(&coarse->dsz, Pz, fdsz->rank, lz, fdsz->color,
 	                          fdsz->grprev, fdsz->grnext, coarse->gtol, "z"));
@@ -1200,62 +1211,67 @@ PetscErrorCode FDSTAGCreateDMDA(FDSTAG   *fs,
                                 PetscInt  Px, PetscInt  Py, PetscInt  Pz,
                                 PetscInt *lx, PetscInt *ly, PetscInt *lz)
 {
-	PetscInt       bc_node;
-	DMBoundaryType BC_NONE, BC_GHOSTED;
+	PetscInt       bc_node_x, bc_node_y;
+	DMBoundaryType BC_NONE_X, BC_GHOSTED_X;
+	DMBoundaryType BC_NONE_Y, BC_GHOSTED_Y;
 
 	PetscFunctionBeginUser;
 
 	// PERIODIC CASE: JUST USE ONE POINT LESS IN X-DIRECTION FOR DA_COR, DA_XY, DA_XZ, AND DA_X
+	//                AND ONE POINT LESS IN Y-DIRECTION FOR DA_COR, DA_XY, DA_YZ, AND DA_Y
 
-	if(fs->periodic) { BC_NONE = DM_BOUNDARY_PERIODIC; BC_GHOSTED = DM_BOUNDARY_PERIODIC; bc_node = 1; }
-	else             { BC_NONE = DM_BOUNDARY_NONE;     BC_GHOSTED = DM_BOUNDARY_GHOSTED;  bc_node = 0; }
+	if(fs->periodic)   { BC_NONE_X = DM_BOUNDARY_PERIODIC; BC_GHOSTED_X = DM_BOUNDARY_PERIODIC; bc_node_x = 1; }
+	else               { BC_NONE_X = DM_BOUNDARY_NONE;     BC_GHOSTED_X = DM_BOUNDARY_GHOSTED;  bc_node_x = 0; }
+
+	if(fs->periodic_y) { BC_NONE_Y = DM_BOUNDARY_PERIODIC; BC_GHOSTED_Y = DM_BOUNDARY_PERIODIC; bc_node_y = 1; }
+	else               { BC_NONE_Y = DM_BOUNDARY_NONE;     BC_GHOSTED_Y = DM_BOUNDARY_GHOSTED;  bc_node_y = 0; }
 
 	// corners (DA_COR) no boundary ghost points (1-layer stencil box)
-	lx[Px-1] -= bc_node;
+	lx[Px-1] -= bc_node_x; ly[Py-1] -= bc_node_y;
 	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
-	                            BC_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
-	                            Nx-bc_node, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_COR));
-	lx[Px-1] += bc_node;
+	                            BC_NONE_X, BC_NONE_Y, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+	                            Nx-bc_node_x, Ny-bc_node_y, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_COR));
+	lx[Px-1] += bc_node_x; ly[Py-1] += bc_node_y;
 
 	// XY edges (DA_XY) no boundary ghost points (1-layer stencil box)
-	lz[Pz-1]--; lx[Px-1] -= bc_node;
+	lz[Pz-1]--; lx[Px-1] -= bc_node_x; ly[Py-1] -= bc_node_y;
 	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
-	                            BC_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
-	                            Nx-bc_node, Ny, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_XY));
-	lz[Pz-1]++; lx[Px-1] += bc_node;
+	                            BC_NONE_X, BC_NONE_Y, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+	                            Nx-bc_node_x, Ny-bc_node_y, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_XY));
+	lz[Pz-1]++; lx[Px-1] += bc_node_x; ly[Py-1] += bc_node_y;
 
 	// XZ edges (DA_XZ) no boundary ghost points (1-layer stencil box)
-	ly[Py-1]--; lx[Px-1] -= bc_node;
+	ly[Py-1]--; lx[Px-1] -= bc_node_x;
 	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
-	                            BC_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
-	                            Nx-bc_node, Ny-1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_XZ));
-	ly[Py-1]++; lx[Px-1] += bc_node;
+	                            BC_NONE_X, BC_NONE_Y, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+	                            Nx-bc_node_x, Ny-1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_XZ));
+	ly[Py-1]++; lx[Px-1] += bc_node_x;
 
 	// YZ edges (DA_YZ) no boundary ghost points (1-layer stencil box)
-	lx[Px-1]--;
+	lx[Px-1]--; ly[Py-1] -= bc_node_y;
 	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
-	                            BC_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
-	                            Nx-1, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_YZ));
-	lx[Px-1]++;
+	                            BC_NONE_X, BC_NONE_Y, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+	                            Nx-1, Ny-bc_node_y, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_YZ));
+	lx[Px-1]++; ly[Py-1] += bc_node_y;
 
 	// X face (DA_X) with boundary ghost points (1-layer stencil box)
-	ly[Py-1]--; lz[Pz-1]--; lx[Px-1] -= bc_node;
+	ly[Py-1]--; lz[Pz-1]--; lx[Px-1] -= bc_node_x;
 	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
-	                            BC_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
-	                            Nx-bc_node, Ny-1, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_X));
-	ly[Py-1]++; lz[Pz-1]++; lx[Px-1] += bc_node;
+	                            BC_GHOSTED_X, BC_GHOSTED_Y, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+	                            Nx-bc_node_x, Ny-1, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_X));
+	ly[Py-1]++; lz[Pz-1]++; lx[Px-1] += bc_node_x;
 
 	// Y face (DA_Y) with boundary ghost points (1-layer stencil box)
-	lx[Px-1]--; lz[Pz-1]--;
+	lx[Px-1]--; lz[Pz-1]--; ly[Py-1] -= bc_node_y;
 	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
-	                            BC_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
-	                            Nx-1, Ny, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_Y));
-	lx[Px-1]++; lz[Pz-1]++;
+	                            BC_GHOSTED_X, BC_GHOSTED_Y, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+	                            Nx-1, Ny-bc_node_y, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_Y));
+	lx[Px-1]++; lz[Pz-1]++; ly[Py-1] += bc_node_y;
 
 	// Z face (DA_Z) with boundary ghost points (1-layer stencil box)
 	lx[Px-1]--; ly[Py-1]--;
 	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
-	                            BC_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+	                            BC_GHOSTED_X, BC_GHOSTED_Y, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 	                            Nx-1, Ny-1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_Z));
 	lx[Px-1]++; ly[Py-1]++;
 
@@ -1298,7 +1314,7 @@ PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs)
 
 	// get periodic topology flags
 	ptx = fs->periodic;
-	pty = 0;
+	pty = fs->periodic_y;
 	ptz = 0;
 
 	// clear counter
@@ -1430,6 +1446,10 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	if(fs->periodic)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "   Using periodic BC in x-direction     @ \n");
+	}
+	if(fs->periodic_y)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Using periodic BC in y-direction     @ \n");
 	}
 
 	if(maxAspRat > 10.0) PetscPrintf(PETSC_COMM_WORLD, "   Don't expect any magic with this aspect ratio: %g ...\n", maxAspRat);

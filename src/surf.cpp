@@ -229,8 +229,8 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 {
 	FDSTAG         *fs;
-	PetscInt       bc_node;
-	DMBoundaryType BC_TYPE_X;
+	PetscInt       bc_node_x, bc_node_y;
+	DMBoundaryType BC_TYPE_X, BC_TYPE_Y;
 	const PetscInt *lx, *ly;
 	FastScapeLib   *FSLib;
 
@@ -241,22 +241,22 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 	FSLib = surf->FSLib;
 
 	// set boundary type in x direction
-	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; bc_node = 1; }
-	else             { BC_TYPE_X = DM_BOUNDARY_NONE;     bc_node = 0; }
+	if(fs->periodic)   { BC_TYPE_X = DM_BOUNDARY_PERIODIC; bc_node_x = 1; }
+	else               { BC_TYPE_X = DM_BOUNDARY_NONE;     bc_node_x = 0; }
 
-	// set boundary type in x direction
-	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; bc_node = 1; }
-	else             { BC_TYPE_X = DM_BOUNDARY_NONE;     bc_node = 0; }
+	// set boundary type in y direction
+	if(fs->periodic_y) { BC_TYPE_Y = DM_BOUNDARY_PERIODIC; bc_node_y = 1; }
+	else               { BC_TYPE_Y = DM_BOUNDARY_NONE;     bc_node_y = 0; }
 
 	// get grid partitioning in X & Y directions
 	PetscCall(DMDAGetOwnershipRanges(fs->DA_COR, &lx, &ly, NULL));
 
 	// create redundant free surface DMDA
 	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
-	                            BC_TYPE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
+	                            BC_TYPE_X, BC_TYPE_Y, DM_BOUNDARY_NONE,
 	                            DMDA_STENCIL_BOX,
-	                            fs->dsx.tnods - bc_node, fs->dsy.tnods, fs->dsz.nproc,
-	                            fs->dsx.nproc,           fs->dsy.nproc, fs->dsz.nproc,
+	                            fs->dsx.tnods - bc_node_x, fs->dsy.tnods - bc_node_y, fs->dsz.nproc,
+	                            fs->dsx.nproc,             fs->dsy.nproc,             fs->dsz.nproc,
 	                            1, 1, lx, ly, NULL, &surf->DA_SURF));
 
 	PetscCall(DMCreateLocalVector (surf->DA_SURF, &surf->ltopo));
@@ -509,7 +509,7 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	JacRes      *jr;
 	FDSTAG      *fs;
 	PetscInt    I, I1, I2, J, J1, J2;
-	PetscInt    i, j, jj, found, nx, ny, sx, sy, L, mx, my, periodic;
+	PetscInt    i, j, jj, found, nx, ny, sx, sy, L, mx, my, periodic, periodic_y;
 	PetscScalar cx[13], cy[13], cz[13];
 	PetscScalar X, X1, X2, Y, Y1, Y2, Z, Exx, Eyy, Rxx, Ryy, step, gtol;
 	PetscScalar ***advect, ***topo, ***vx, ***vy, ***vz;
@@ -547,8 +547,9 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	mx       = fs->dsx.tnods;
 	my       = fs->dsy.tnods;
 	L        = (PetscInt)fs->dsz.rank;
-	gtol     = fs->gtol;
-	periodic = fs->periodic;
+	gtol       = fs->gtol;
+	periodic   = fs->periodic;
+	periodic_y = fs->periodic_y;
 
 	// get current background strain rates
 	PetscCall(BCGetBGStrainRates(jr->bc, &Exx, &Eyy, NULL, NULL, &Rxx, &Ryy, NULL));
@@ -575,11 +576,11 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 
 		// get node indices
 		I  = i;
-		I1 = I-1; if(!periodic && I1 == -1) I1 = I;
-		I2 = I+1; if(!periodic && I2 == mx) I2 = I;
+		I1 = I-1; if(!periodic   && I1 == -1) I1 = I;
+		I2 = I+1; if(!periodic   && I2 == mx) I2 = I;
 		J  = j;
-		J1 = J-1; if(J1 == -1) J1 = J;
-		J2 = J+1; if(J2 == my) J2 = J;
+		J1 = J-1; if(!periodic_y && J1 == -1) J1 = J;
+		J2 = J+1; if(!periodic_y && J2 == my) J2 = J;
 
 		// compute deformed grid x-coordinates
 		cx[0]  = step*vx[L][J1][I1] + X1;
@@ -673,7 +674,7 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	Vec         cellTopo;
 	PetscScalar ***ntopo, ***ctopo;
 	PetscScalar tanMaxAng, zbot, dx, dy, h, t, tmax, cz[4], Ezz, Rzz, step;
-	PetscInt    i, j, nx, ny, sx, sy, L, cnt, gcnt, I1, I2, J1, J2, mx, my, periodic;
+	PetscInt    i, j, nx, ny, sx, sy, L, cnt, gcnt, I1, I2, J1, J2, mx, my, periodic, periodic_y;
 
 	PetscFunctionBeginUser;
 
@@ -687,8 +688,9 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	my        = fs->dsy.tnods - 1;
 	L         = (PetscInt)fs->dsz.rank;
 	step      = jr->ts->dt;
-	tanMaxAng = PetscTanReal(surf->MaxAngle);
-	periodic  = fs->periodic;
+	tanMaxAng  = PetscTanReal(surf->MaxAngle);
+	periodic   = fs->periodic;
+	periodic_y = fs->periodic_y;
 
 	// get global coordinate bounds
 	PetscCall(FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, NULL));
@@ -782,10 +784,10 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	START_PLANE_LOOP
 	{
 		// check index bounds
-		I1 = i;   if(!periodic && I1 == mx) I1--;
-		I2 = i-1; if(!periodic && I2 == -1) I2++;
-		J1 = j;   if(J1 == my) J1--;
-		J2 = j-1; if(J2 == -1) J2++;
+		I1 = i;   if(!periodic   && I1 == mx) I1--;
+		I2 = i-1; if(!periodic   && I2 == -1) I2++;
+		J1 = j;   if(!periodic_y && J1 == my) J1--;
+		J2 = j-1; if(!periodic_y && J2 == -1) J2++;
 
 		// get topography at neighboring cell centers
 		cz[0] = ctopo[L][J1][I1];
