@@ -275,11 +275,11 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 	else if(actx->advect == RUNGE_KUTTA_2) PetscPrintf(PETSC_COMM_WORLD, "Runge-Kutta 2-nd order\n");
 
 	// set periodic advection flag
-	if(fs->periodic || bc->ExyNumPeriods) { actx->periodic = 1; }
+	if(fs->periodic || fs->periodic_y || bc->ExyNumPeriods) { actx->periodic = 1; }
 
 	if(actx->periodic && (actx->advect == EULER || actx->advect == RUNGE_KUTTA_2))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic marker advection is only compatible with BASIC_EULER (advect, periodic, exy_num_periods)");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic marker advection is only compatible with BASIC_EULER (advect, periodic, periodic_y, exy_num_periods)");
 	}
 
 	if(actx->periodic)
@@ -1047,6 +1047,7 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 	FDSTAG      *fs;
 	PetscScalar *X;
 	PetscScalar  bx, ex, dx;
+	PetscScalar  by, ey, dy;
 	PetscInt     i, cnt, lrank;
 	PetscInt     grank;
 
@@ -1055,10 +1056,11 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 	fs = actx->fs;
 
 	// get current coordinates of the mesh boundaries
-	PetscCall(FDSTAGGetGlobalBox(fs, &bx, NULL, NULL, &ex, NULL, NULL));
+	PetscCall(FDSTAGGetGlobalBox(fs, &bx, &by, NULL, &ex, &ey, NULL));
 
 	// get mesh size
 	dx = ex - bx;
+	dy = ey - by;
 
 	// compute buffer pointers
 	actx->nsend = getPtrCnt(_num_neighb_, actx->nsendm, actx->ptsend);
@@ -1087,6 +1089,13 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 		{
 			if(X[0] < bx) X[0] += dx;
 			if(X[0] > ex) X[0] -= dx;
+		}
+
+		// correct marker position for periodic case in y-direction
+		if(fs->periodic_y)
+		{
+			if(X[1] < by) X[1] += dy;
+			if(X[1] > ey) X[1] -= dy;
 		}
 
 		if(grank == -1)

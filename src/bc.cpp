@@ -551,7 +551,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 {
 	Scaling     *scal;
 	FDSTAG      *fs;
-	PetscInt     periodic;
+	PetscInt     periodic, periodic_y;
 	PetscInt     jj, mID;
 	PetscScalar  bz;
 	char         inflow_temp[_str_len_],str_inflow[_str_len_];
@@ -563,8 +563,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	fs   = bc->fs;
 	mID  = bc->dbm->numPhases-1;
 
-	// set periodic flag
-	periodic = fs->periodic;
+	// set periodic flags
+	periodic   = fs->periodic;
+	periodic_y = fs->periodic_y;
 
 	// initialize
 	bc->Tbot[0]                 = -1.0;
@@ -924,6 +925,39 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		}
 	}
 
+	if(periodic_y)
+	{
+		if(!bc->noslip[4])
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition requires no-slip on bottom boundary (periodic_y, noslip) \n");
+		}
+
+		if(bc->noslip[2] || bc->noslip[3])
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with no-slip on front and back boundaries (periodic_y, noslip) \n");
+		}
+
+		if(bc->EyyNumPeriods || bc->ExyNumPeriods)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with yy and xy background strain rates (periodic_y, eyy_num_periods, exy_num_periods) \n");
+		}
+
+		if(bc->face)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with boundary velocity (periodic_y, bvel_face) \n");
+		}
+
+		if(bc->fixPhase != -1)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with fixed phase (periodic_y, fix_phase) \n");
+		}
+
+		if(bc->fixCell)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with fixed cells (periodic_y, fix_cell) \n");
+		}
+	}
+
 	//==============
 	// print summary
 	//==============
@@ -932,14 +966,15 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	PetscPrintf(PETSC_COMM_WORLD, "   No-slip boundary mask [lt rt ft bk bm tp]  : ");
 
-	if(periodic) { PetscPrintf(PETSC_COMM_WORLD, "   Periodic bc in x-direction                 @ "); }
-
 	for(jj = 0; jj < 6; jj++)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "%" PetscInt_FMT " ", bc->noslip[jj]);
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD, "\n");
+
+	if(periodic)   { PetscPrintf(PETSC_COMM_WORLD, "   Periodic bc in x-direction                 @ \n"); }
+	if(periodic_y) { PetscPrintf(PETSC_COMM_WORLD, "   Periodic bc in y-direction                 @ \n"); }
 
 	if(bc->ExxNumPeriods) { PetscPrintf(PETSC_COMM_WORLD, "   Number of x-background strain rate periods : %" PetscInt_FMT " \n",  bc->ExxNumPeriods); }
 	if(bc->EyyNumPeriods) { PetscPrintf(PETSC_COMM_WORLD, "   Number of y-background strain rate periods : %" PetscInt_FMT " \n",  bc->EyyNumPeriods); }
@@ -1541,7 +1576,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	PetscScalar vbx, vby, vbz;
 	PetscScalar vex, vey, vez;
 	PetscScalar y;
-	PetscInt    periodic;
+	PetscInt    periodic, periodic_y;
 	PetscInt    mnx, mny, mnz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, top_open;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
@@ -1551,8 +1586,9 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	// access context
 	fs = bc->fs;
 
-	// set periodic flag
-	periodic = fs->periodic;
+	// set periodic flags
+	periodic   = fs->periodic;
+	periodic_y = fs->periodic_y;
 
 	// set open boundary flag
 	top_open = bc->top_open;
@@ -1619,14 +1655,17 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	//------------------
 	// Y points SPC only
 	//------------------
-	PetscCall(DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz));
-
-	START_STD_LOOP
+	if(!periodic_y)
 	{
-		if(j == 0   && bcp[k][-1 ][i] == DBL_MAX) { bcvy[k][j][i] = vby; }
-		if(j == mny && bcp[k][mny][i] == DBL_MAX) { bcvy[k][j][i] = vey; }
+		PetscCall(DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz));
+
+		START_STD_LOOP
+		{
+			if(j == 0   && bcp[k][-1 ][i] == DBL_MAX) { bcvy[k][j][i] = vby; }
+			if(j == mny && bcp[k][mny][i] == DBL_MAX) { bcvy[k][j][i] = vey; }
+		}
+		END_STD_LOOP
 	}
-	END_STD_LOOP
 
 	//------------------
 	// Z points SPC only

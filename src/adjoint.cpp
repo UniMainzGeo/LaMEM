@@ -961,7 +961,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 {
 	PetscBool       mat_free;
 	PetscScalar     F, *fcconvar, *Par;
-	PetscInt        i, periodic=0, nlmf = 0;
+	PetscInt        i, periodic=0, periodic_y=0, nlmf = 0;
 	Adjoint_Vecs    Adjoint_Vectors;
 	PetscLogDouble  cputime_start, cputime_end;
 
@@ -976,12 +976,13 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Adjoint solver is incompatible with matrix-free options (-gmg_mat_free_levels, -js_mat_free) \n");
 	}
 
-	// read periodic grid topology flag
-	PetscCall(getIntParam(IOparam->fb, _OPTIONAL_, "periodic", &periodic, 1, 1));
+	// read periodic grid topology flags
+	PetscCall(getIntParam(IOparam->fb, _OPTIONAL_, "periodic",   &periodic,   1, 1));
+	PetscCall(getIntParam(IOparam->fb, _OPTIONAL_, "periodic_y", &periodic_y, 1, 1));
 
-	if(periodic)
+	if(periodic || periodic_y)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Adjoint solver is incompatible with periodic boundary conditions (periodic) \n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Adjoint solver is incompatible with periodic boundary conditions (periodic, periodic_y) \n");
 	}
 
 	PetscTime(&cputime_start);
