@@ -458,7 +458,7 @@ PetscErrorCode get_coarse_reduction_factor(
 {
 	// get number of processors for coarse grid solve
 
-	PetscInt total_num_cpu, coarse_num_cpu, targer_factor, lower_factor, upper_factor;
+	PetscInt total_num_cpu, coarse_num_cpu, coarse_num_cells, targer_factor, lower_factor, upper_factor;
 
 	PetscFunctionBeginUser;
 
@@ -479,7 +479,10 @@ PetscErrorCode get_coarse_reduction_factor(
 			// automatic setting
 			//==================
 
-			coarse_num_cpu = PetscCeilInt(coarse_num_local_cells, opt.coarse_cells_per_cpu);
+			// total coarse grid size (local grid size is constant on all processors)
+			coarse_num_cells = coarse_num_local_cells*total_num_cpu;
+
+			coarse_num_cpu = PetscCeilInt(coarse_num_cells, opt.coarse_cells_per_cpu);
 		}
 		else
 		{

@@ -398,7 +398,7 @@ PetscErrorCode MatDataRestrictParam3D(MatData *coarse, MatData *fine)
 {
 	// restrict parameters from fine to coarse grid
 
-	PetscInt    mnx, mny, mnz;
+	PetscInt    mcx, mcy, mcz;
 	PetscInt    I, J, K, Im1, Jm1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***fKb, ***frho, ***feta;
@@ -408,9 +408,9 @@ PetscErrorCode MatDataRestrictParam3D(MatData *coarse, MatData *fine)
 	PetscFunctionBeginUser;
 
 	// initialize index bounds in fine grid
-	mnx = fine->fs->dsx.tnods - 1;
-	mny = fine->fs->dsy.tnods - 1;
-	mnz = fine->fs->dsz.tnods - 1;
+	mcx = fine->fs->dsx.tcels - 1;
+	mcy = fine->fs->dsy.tcels - 1;
+	mcz = fine->fs->dsz.tcels - 1;
 
 	// initialize ghost points in coarse grid
 	PetscCall(VecZeroEntries(coarse->Kb));
@@ -494,8 +494,8 @@ PetscErrorCode MatDataRestrictParam3D(MatData *coarse, MatData *fine)
 		K = 2*k;
 
 		// check index bounds
-		if(I   > mnx) { I--;   }
-		if(J   > mny) { J--;   }
+		if(I   > mcx) { I--;   }
+		if(J   > mcy) { J--;   }
 		if(Im1 < 0)   { Im1++; }
 		if(Jm1 < 0)   { Jm1++; }
 
@@ -526,8 +526,8 @@ PetscErrorCode MatDataRestrictParam3D(MatData *coarse, MatData *fine)
 		K = 2*k; Km1 = K-1;
 
 		// check index bounds
-		if(I   > mnx) { I--;   }
-		if(K   > mnz) { K--;   }
+		if(I   > mcx) { I--;   }
+		if(K   > mcz) { K--;   }
 		if(Im1 < 0)   { Im1++; }
 		if(Km1 < 0)   { Km1++; }
 
@@ -558,8 +558,8 @@ PetscErrorCode MatDataRestrictParam3D(MatData *coarse, MatData *fine)
 		K = 2*k; Km1 = K-1;
 
 		// check index bounds
-		if(J   > mny) { J--;   }
-		if(K   > mnz) { K--;   }
+		if(J   > mcy) { J--;   }
+		if(K   > mcz) { K--;   }
 		if(Jm1 < 0)   { Jm1++; }
 		if(Km1 < 0)   { Km1++; }
 

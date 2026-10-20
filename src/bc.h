@@ -247,6 +247,7 @@ struct BCCtx
 	PetscInt     VelNetNumPeriods;
 	PetscScalar  VelNetTimeDelims [_max_periods_-1];
 	PetscScalar  velin_net_array [_max_periods_];
+	PetscScalar  velin_base;                              // scalar inflow velocity from input (base for net-only periods)
 
 	// plume inflow bottom boundary condition
 	PetscInt        Plume_Inflow;

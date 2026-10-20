@@ -1504,6 +1504,7 @@ PetscErrorCode JacResInitPres(JacRes *jr)
 
 	// get work vector
 	PetscCall(DMGetGlobalVector(fs->DA_CEN, &gp));
+	PetscCall(VecZeroEntries(gp));
 
 	// get grid coordinate bounds in z-direction
 	PetscCall(FDSTAGGetGlobalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez));
@@ -1521,7 +1522,7 @@ PetscErrorCode JacResInitPres(JacRes *jr)
 	START_STD_LOOP
 	{
 		// check for unconstrained cell
-		if(svCell[iter++].phRat[fixPhase] != 1.0)
+		if(fixPhase == -1 || svCell[iter].phRat[fixPhase] != 1.0)
 		{
 			// get z-coordinate of cell center
 			cz = COORD_CELL(k, sz, fs->dsz);
@@ -1529,6 +1530,7 @@ PetscErrorCode JacResInitPres(JacRes *jr)
 			// set pressure initial guess
 			p[k][j][i] = bc->pbot + dpdz*(cz - bz);
 		}
+		iter++;
 	}
 	END_STD_LOOP
 

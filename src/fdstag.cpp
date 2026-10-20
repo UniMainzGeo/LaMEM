@@ -547,8 +547,8 @@ PetscErrorCode Discret1DStretch(Discret1D *ds, PetscScalar eps, PetscScalar ref)
 		ds->ccoor[i] = (ds->ncoor[i] + ds->ncoor[i+1])/2.0;
 
 	// recompute global coordinate bounds
-	ds->gcrdbeg *= (1.0 + eps);
-	ds->gcrdend *= (1.0 + eps);
+	ds->gcrdbeg += eps*(ds->gcrdbeg - ref);
+	ds->gcrdend += eps*(ds->gcrdend - ref);
 
 	PetscFunctionReturn(0);
 }
@@ -731,7 +731,7 @@ PetscErrorCode Discret1DgetMaxInvStep(Discret1D *ds, DM da, Vec gv, PetscInt dir
 			h = ds->ncoor[idx+1] - ds->ncoor[idx];
 
 			// get inverse time step (safe to compute)
-			idt = v/h;
+			idt = PetscAbsScalar(v)/h;
 
 			// update maximum inverse time step
 			if(idt > idtmax) idtmax = idt;

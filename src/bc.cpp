@@ -692,6 +692,8 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		PetscCall(getIntParam   (fb, _OPTIONAL_, "velin_net_num_periods", &bc->VelNetNumPeriods, 1, _max_periods_));
 		PetscCall(getScalarParam(fb, _OPTIONAL_, "bvel_relax_d",          &bc->relax_dist,       1, scal->length ));
 
+		bc->velin_base = bc->velin;
+
 		if(bc->VelNumPeriods > 1)
 		{
 			PetscCall(getScalarParam(fb, _REQUIRED_, "velin_time_delims", bc->VelTimeDelims, bc->VelNumPeriods-1, scal->time    ));
@@ -1687,7 +1689,7 @@ PetscErrorCode BCGetVelins(BCCtx *bc)
 		            (PetscScalar)(bc->velin_net_array[kk]*scal->velocity),
 		            (PetscScalar)((bc->velin_array[jj] + bc->velin_net_array[kk])*scal->velocity));
 	}
-	else if (bc->VelNumPeriods)
+	else if (bc->VelNumPeriods > 1)
 	{
 		// only velin array provided
 		for(jj = 0; jj < bc->VelNumPeriods-1; jj++)
@@ -1701,13 +1703,6 @@ PetscErrorCode BCGetVelins(BCCtx *bc)
 	else if (bc->VelNetNumPeriods > 1)
 	{
 		// only velin_net array provided; velin scalar should have been read earlier */
-		static PetscBool   baseVelinInitialized = PETSC_FALSE;
-		static PetscScalar baseVelin            = 0.0;
-		if(!baseVelinInitialized)
-		{
-			baseVelin            = bc->velin;  // store the original scalar inflow velocity
-			baseVelinInitialized = PETSC_TRUE;
-		}
 		for(kk = 0; kk < bc->VelNetNumPeriods-1; kk++)
 		{
 			if (time < bc->VelNetTimeDelims[kk]) break;
@@ -1715,7 +1710,7 @@ PetscErrorCode BCGetVelins(BCCtx *bc)
 		PetscCall(FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL));
 		// piecewise constant: base scalar inflow plus the current net offset;
 		// no accumulation over timesteps
-		bc->velin  = baseVelin + bc->velin_net_array[kk];
+		bc->velin  = bc->velin_base + bc->velin_net_array[kk];
 		bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
 	}
 	else
