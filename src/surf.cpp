@@ -1003,8 +1003,8 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 
 			if(z > level)
 			{
-				// uniformly advect
-				z -= dz;
+				// uniformly advect (do not go below level)
+				z = PetscMax(z - dz, level);
 			}
 			// check if internal free surface goes outside the model domain
 			if(z > ztop) z = ztop;
@@ -1067,8 +1067,8 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 			// apply erosion only within x-coordinate range
 			if(x >= xmin && x <= xmax && z > level)
 			{
-				// uniformly erode
-				z -= dz;
+				// uniformly erode (do not go below level)
+				z = PetscMax(z - dz, level);
 			}
 
 			// check if internal free surface goes outside the model domain
@@ -1345,8 +1345,8 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 
 			if(z < level)
 			{
-				// uniformly advect
-				z += dz;
+				// uniformly advect (do not go above level)
+				z = PetscMin(z + dz, level);
 				//PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation model (%" PetscInt_FMT ") to internal free surface.\n", surf->SedimentModel);
 			}
 
@@ -1441,20 +1441,13 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 			dn = (x-aOn[0])*(aEn[1]-aOn[1]) - (y-aOn[1])*(aEn[0]-aOn[0]);
 			d  = (x-aO[0])*(aE[1]-aO[1]) - (y-aO[1])*(aE[0]-aO[0]);
 
-			if(dn<0)
-			{
+			// profile at current margin
+			if(d<0) zprop = surf->InitLevel + surf->hUp;
+			else    zprop = surf->InitLevel + surf->hDown + (surf->hUp-surf->hDown) * exp(-rsq /surf->dTrans/surf->dTrans );
 
-				zprop = surf->InitLevel+surf->hUp;
-			}
-			else if(d<0)
-			{
-				zpropn = surf->InitLevel+surf->hUp;
-			}
-			else
-			{
-				zprop  = surf->InitLevel + surf->hDown + (surf->hUp-surf->hDown) * exp(-rsq /surf->dTrans/surf->dTrans );
-				zpropn = surf->InitLevel + surf->hDown + (surf->hUp-surf->hDown) * exp(-rsqn /surf->dTrans/surf->dTrans );
-			}
+			// profile at new margin
+			if(dn<0) zpropn = surf->InitLevel + surf->hUp;
+			else     zpropn = surf->InitLevel + surf->hDown + (surf->hUp-surf->hDown) * exp(-rsqn /surf->dTrans/surf->dTrans );
 
 			dz = zpropn-zprop;
 
@@ -1528,7 +1521,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 			// get topography
 			z = topo[L][j][i];
 
-			dz_x = -dz/BoxWidth * x + dz1;
+			dz_x = -dz/BoxWidth * (x - bx) + dz1;
 
 			// uniformly advect
 			z += dz_x;
