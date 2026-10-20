@@ -625,13 +625,10 @@ void interpStretch(
 			SyAll[i] = Sy[0];
 		}
 	}
-	if (CtrlPoly[numCtrlPoly-1] != numCtrlPoly-1)
+	for (i=CtrlPoly[numCtrlPoly-1]; i < numPoly; i++)
 	{
-		for (i=CtrlPoly[numCtrlPoly-1]; i < numPoly; i++)
-		{
-			SxAll[i] = Sx[numCtrlPoly-1];
-			SyAll[i] = Sy[numCtrlPoly-1];
-		}
+		SxAll[i] = Sx[numCtrlPoly-1];
+		SyAll[i] = Sy[numCtrlPoly-1];
 	}
 
 	// no stretchfactor should be smaller than 0.1

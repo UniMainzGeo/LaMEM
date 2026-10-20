@@ -796,8 +796,9 @@ PetscErrorCode ADVelReAllocStorage(AdvVelCtx *vi, PetscInt nmark)
 	// check whether current storage is insufficient
 	if(nmark > vi->nbuff)
 	{
-		// delete host cell numbers
+		// delete host cell numbers & marker indices
 		PetscCall(PetscFree(vi->cellnum));
+		PetscCall(PetscFree(vi->markind));
 
 		// compute new capacity
 		nbuff = (PetscInt)(_cap_overhead_*(PetscScalar)nmark);

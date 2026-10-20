@@ -1086,7 +1086,7 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 		if(actx->periodic)
 		{
 			if(X[0] < bx) X[0] += dx;
-			if(X[0] > ex) X[0] -= dx;
+			if(X[0] >= ex) X[0] -= dx;
 		}
 
 		if(grank == -1)
@@ -1189,6 +1189,9 @@ PetscErrorCode ADVCollectGarbage(AdvCtx *actx)
 
 	ndel    = actx->ndel;
 	idel    = actx->idel;
+
+	// sort deleted indices (garbage collection below requires ascending order)
+	PetscCall(PetscSortInt(ndel, idel));
 
 	// close holes in marker storage
 	while(nrecv && ndel)
@@ -1481,6 +1484,9 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 					}
 				}
 
+				// skip corner if no parent marker is available
+				if(!n) continue;
+
 				// allocate memory for markers in cell
 				PetscCall(PetscMalloc((size_t)n*sizeof(Marker),&markers));
 				PetscCall(PetscMemzero(markers,(size_t)n*sizeof(Marker)));
@@ -1556,8 +1562,10 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	// destroy random context
 	PetscCall(PetscRandomDestroy(&rctx));
 
-	// store new markers
-	actx->ndel = 0;
+	// store new markers (skipped corners are not injected)
+	actx->nrecv = nind;
+	ninj        = nind;
+	actx->ndel  = 0;
 	PetscCall(ADVCollectGarbage(actx));
 
 	// compute host cells for all the markers

@@ -212,7 +212,7 @@ PetscErrorCode ADVMarkPerturb(AdvCtx *actx)
 	FDSTAG      *fs;
 	PetscScalar *X;
 	PetscInt     i, ID, I, J, K, nx,ny;
-	PetscScalar  dx,dy,dz;
+	PetscScalar  dx,dy,dz,xn,yn,zn;
 	PetscRandom  rctx;
 	PetscScalar  cf_rand;
 
@@ -252,11 +252,16 @@ PetscErrorCode ADVMarkPerturb(AdvCtx *actx)
 
 		// Perturb marker location
 		PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
-		X[0] += (cf_rand - 0.5)*dx;
+		xn = X[0] + (cf_rand - 0.5)*dx;
 		PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
-		X[1] += (cf_rand - 0.5)*dy;
+		yn = X[1] + (cf_rand - 0.5)*dy;
 		PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
-		X[2] += (cf_rand - 0.5)*dz;
+		zn = X[2] + (cf_rand - 0.5)*dz;
+
+		// keep marker in its host cell (cell map is not updated)
+		if(xn > fs->dsx.ncoor[I] && xn < fs->dsx.ncoor[I+1]) X[0] = xn;
+		if(yn > fs->dsy.ncoor[J] && yn < fs->dsy.ncoor[J+1]) X[1] = yn;
+		if(zn > fs->dsz.ncoor[K] && zn < fs->dsz.ncoor[K+1]) X[2] = zn;
 	}
 
 	// destroy random context
@@ -273,7 +278,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	Marker         *P;
 	PetscViewer    view_out;
 	PetscLogDouble t;
-	char           *filename, path[_str_len_];
+	char           *filename, *slash, path[_str_len_];
 	PetscScalar    *markbuf, *markptr, header, chLen, chTemp, Tshift, s_nummark;
 
 	PetscFunctionBeginUser;
@@ -290,11 +295,14 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	Tshift = actx->jr->scal->Tshift;
 
 
-	// extract directory path
-	strcpy(path, actx->saveFile); (*strrchr(path, '/')) = '\0';
-
-	// create directory
-	PetscCall(DirMake(path));
+	// extract directory path & create directory (if any)
+	strcpy(path, actx->saveFile);
+	slash = strrchr(path, '/');
+	if(slash)
+	{
+		(*slash) = '\0';
+		PetscCall(DirMake(path));
+	}
 
 	// compile file name
 	asprintf(&filename, "%s.%1.8" PetscInt_FMT ".dat", actx->saveFile, actx->iproc);
@@ -548,7 +556,7 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	PetscLogDouble t;
 	char           filename[_str_len_];
 	PetscScalar    header, dim[3];
-	PetscInt       GridSize, nx, ny, nz, imark, nummark, nmarkx, nmarky, nmarkz;
+	PetscInt       GridSize, nx, ny, nz, imark;
 	PetscScalar    DX, DY, DZ, bx, by, bz, ex, ey, ez;
 	PetscScalar    xp, yp, zp, Xc, Yc, Zc, xpL, ypL, zpL;
 	PetscScalar    *Temp;
@@ -600,13 +608,7 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	DY = (ey - by)/(dim[1] - 1.0);
 	DZ = (ez - bz)/(dim[2] - 1.0);
 
-	// get local number of markers
-	nmarkx  = fs->dsx.ncels * actx->NumPartX;
-	nmarky  = fs->dsy.ncels * actx->NumPartY;
-	nmarkz  = fs->dsz.ncels * actx->NumPartZ;
-	nummark = nmarkx*nmarky*nmarkz;
-
-	for(imark = 0; imark < nummark; imark++)
+	for(imark = 0; imark < actx->nummark; imark++)
 	{
 		// get current marker
 		P = &actx->markers[imark];
@@ -620,6 +622,11 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 		Ix = (PetscInt)floor((xp - bx)/DX);
 		Iy = (PetscInt)floor((yp - by)/DY);
 		Iz = (PetscInt)floor((zp - bz)/DZ);
+
+		// keep element index inside the temperature grid
+		Ix = PetscMax(0, PetscMin(Ix, nx-2));
+		Iy = PetscMax(0, PetscMin(Iy, ny-2));
+		Iz = PetscMax(0, PetscMin(Iz, nz-2));
 
 		// coordinate of the first corner (lower left deepest)
 		Xc = bx + (PetscScalar)Ix*DX;
@@ -1684,9 +1691,14 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 			for (i=0; i < nCP; ++i)
 			{
 				// also check if control polygon is out of bounds
-				if (CtrlPoly.Pos[i] > Vol.num)
+				if (CtrlPoly.Pos[i] < 1 || CtrlPoly.Pos[i] > Vol.num)
 				{
 					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Control Polygon out of bounds. Volume only has %" PetscInt_FMT " polygons",  Vol.num);
+				}
+				// previous position is already shifted to c indexing
+				if (i && CtrlPoly.Pos[i] <= CtrlPoly.Pos[i-1]+1)
+				{
+					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Control Polygon positions must be increasing");
 				}
 				PetscPrintf(PETSC_COMM_WORLD,"CtrlPoly %" PetscInt_FMT ": Pos: %" PetscInt_FMT ", Sx: %.6f, Sy: %.6f \n", i+1, CtrlPoly.Pos[i],CtrlPoly.Sx[i],CtrlPoly.Sy[i]);
 				CtrlPoly.Pos[i] = CtrlPoly.Pos[i] - 1;

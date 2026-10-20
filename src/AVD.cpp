@@ -826,11 +826,9 @@ PetscInt FindPointInCell(
     PetscInt     R,  // index of the rightmost node
     PetscScalar  x)  // point coordinate
 {
-	// find ID of the cell containing point (call this function for local point only!)
-	if(x < px[L] || x > px[R])
-	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Non-local marker");
-	}
+	// find ID of the cell containing point (returns -1 for non-local point)
+	if(x < px[L] || x > px[R]) return -1;
+
 	// get initial guess assuming uniform grid
 	PetscInt M = L + (PetscInt)((x-px[L])/((px[R]-px[L])/(PetscScalar)(R-L)));
 
@@ -893,6 +891,8 @@ PetscErrorCode AVDMapMarkersMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 		I = FindPointInCell(mv->xcoord, 0, mv->M, X[0]);
 		J = FindPointInCell(mv->ycoord, 0, mv->N, X[1]);
 		K = FindPointInCell(mv->zcoord, 0, mv->P, X[2]);
+
+		if(I < 0 || J < 0 || K < 0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Non-local marker");
 
 		// compute and store consecutive index
 		GET_CELL_ID(ID, I, J, K, mv->M, mv->N);
@@ -1119,10 +1119,19 @@ PetscErrorCode AVDInjectPointsMV(AdvCtx *actx, AVD *A)
 			}
 		}
 
-		// centroid coordinates
-		A->chain[i].xc[0] = A->chain[i].xc[0]/(PetscScalar)hclaim;
-		A->chain[i].xc[1] = A->chain[i].xc[1]/(PetscScalar)hclaim;
-		A->chain[i].xc[2] = A->chain[i].xc[2]/(PetscScalar)hclaim;
+		// centroid coordinates (use point coordinates if no cells are claimed)
+		if(hclaim)
+		{
+			A->chain[i].xc[0] = A->chain[i].xc[0]/(PetscScalar)hclaim;
+			A->chain[i].xc[1] = A->chain[i].xc[1]/(PetscScalar)hclaim;
+			A->chain[i].xc[2] = A->chain[i].xc[2]/(PetscScalar)hclaim;
+		}
+		else
+		{
+			A->chain[i].xc[0] = A->points[i].X[0];
+			A->chain[i].xc[1] = A->points[i].X[1];
+			A->chain[i].xc[2] = A->points[i].X[2];
+		}
 
 		// initialize variables for sorting
 		sind[i] = i;
@@ -1152,6 +1161,8 @@ PetscErrorCode AVDInjectPointsMV(AdvCtx *actx, AVD *A)
 		I = FindPointInCell(fs->dsx.ncoor, 0, fs->dsx.ncels, actx->recvbuf[actx->cinj+i].X[0]);
 		J = FindPointInCell(fs->dsy.ncoor, 0, fs->dsy.ncels, actx->recvbuf[actx->cinj+i].X[1]);
 		K = FindPointInCell(fs->dsz.ncoor, 0, fs->dsz.ncels, actx->recvbuf[actx->cinj+i].X[2]);
+
+		if(I < 0 || J < 0 || K < 0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Non-local marker");
 
 		// compute and store consecutive index
 		GET_CELL_ID(cellID, I, J, K, fs->dsx.ncels, fs->dsy.ncels);
