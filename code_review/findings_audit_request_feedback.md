@@ -10,10 +10,10 @@ Rule used to pick reviewers: any of the six who authored the affected code; code
 
 | Reviewer | Findings (by authorship) | Findings (by area only) |
 |---|---|---|
-| Wenrong Cao | 6: S-032, S-033, M-007, M-008, M-050, N-007 | 0: – |
+| Wenrong Cao | 5: S-032, S-033, M-007, M-050, N-007 | 0: – |
 | Anton Popov | 80: S-001, S-002, S-003, S-004, S-006, S-007, S-009, S-013, S-014, S-018, S-019, S-024, S-029, S-035, S-036, S-039, S-044, S-045, S-046, M-005, M-008, M-009, M-012, M-016, M-017, M-018, M-019, M-020, M-021, M-022, M-023, M-025, M-026, M-027, M-030, M-031, M-037, M-038, M-040, M-041, M-046, M-047, M-048, M-049, M-051, M-053, M-055, M-056, M-057, M-058, M-059, M-060, M-061, M-063, M-066, M-067, M-069, N-002, N-003, N-004, N-007, N-008, N-009, N-010, N-011, N-013, N-014, N-015, N-016, N-017, N-018, N-019, N-020, N-021, N-022, N-024, N-025, N-026, N-028, N-029 | 3: S-010, S-011, M-054 |
 | Garrett Ito | 21: S-015, S-022, S-023, S-037, M-004, M-029, M-032, M-033, M-034, M-035, M-045, M-046, M-048, M-062, M-064, M-065, M-067, M-073, N-001, N-002, N-023 | 0: – |
-| Andrea Piccolo | 23: S-008, S-020, S-021, S-024, S-030, S-036, S-038, M-001, M-003, M-013, M-014, M-015, M-016, M-024, M-028, M-036, M-039, M-052, M-068, N-005, N-011, N-012, N-023 | 0: – |
+| Andrea Piccolo | 22: S-008, S-020, S-021, S-030, S-036, S-038, M-001, M-003, M-013, M-014, M-015, M-016, M-024, M-028, M-036, M-039, M-052, M-068, N-005, N-011, N-012, N-023 | 0: – |
 | Yun Luo | 8: S-005, S-034, S-043, M-010, M-011, M-036, N-007, N-010 | 0: – |
 | Boris Kaus | 43: S-005, S-008, S-012, S-016, S-017, S-020, S-021, S-025, S-026, S-027, S-028, S-031, S-037, S-039, S-040, S-041, S-042, S-047, S-048, M-002, M-006, M-016, M-039, M-042, M-043, M-044, M-062, M-064, M-065, M-070, M-071, M-072, N-003, N-006, N-012, N-015, N-017, N-019, N-021, N-022, N-025, N-027, N-028 | 0: – |
 
@@ -24,7 +24,6 @@ Rule used to pick reviewers: any of the six who authored the affected code; code
 | S-032 | src/surf.cpp:1229-1253 (centered gradient + erosion); slope scan 1173-1188 | Slope-dependent erosion never erodes peaks and ridges | Implemented FreeSurfAppSlopeErosion with centered-difference slope. |  |
 | S-033 | src/surf.cpp:1199-1211 (E_max, dt_cfl = 0.5*d_min/E_max, nsolve) | Slope-erosion sub-step limit isn't a stability limit | Wrote the sub-step rule limiting vertical drop to half the grid spacing. |  |
 | M-007 | src/surf.cpp:1566-1567,1649-1669 (FreeSurfAppTopoDiffusion) | Topographic diffusion boundary is not zero-flux | boundary nodes skip x/y flux terms; comment claims zero-flux Neumann |  |
-| M-008 | src/surf.cpp:1004-1008, 1068-1072, 1346-1350 | Erosion and sedimentation levels overshoot by up to one step | copied same unclamped level test into erosion model 3 |  |
 | M-050 | src/surf.cpp:1167,1223,1643 | Slope erosion and topographic diffusion ignore periodic x | I1<0 -> I1=I clamp without periodic check (slope erosion, topo diffusion) |  |
 | N-007 | src/surf.cpp:111-112,243-248,72-73,1275; src/fastscape.cpp:92,124-130,1528; src/fastscape.h:163 | Small clean-ups in surf/fastscape | unit_m_yr comment wrong in slope-erosion code |  |
 
@@ -149,7 +148,6 @@ Rule used to pick reviewers: any of the six who authored the affected code; code
 | S-008 | src/bc.cpp:723 (read), 1087 (print), 1123 (nondimensionalize) | `bvel_temperature_constant` is scaled with the time unit, not as a temperature | first appearance of bvel_constant_temperature read with scal->time scale | hard to believe that this is wrong.. |
 | S-020 | src/phase_transition.cpp:756-763, 811-812, 824-825 | Box with `PhaseOutside = -1` sets marker phase to -1 | introduced nphc flag | Seems indeed a bug; Please fix |
 | S-021 | src/phase_transition.cpp:85, 100-119, 227-259, 426-433; dike.cpp:163 | Typos in phase transition input are silently accepted | ID range check and string-compare chains without else error |  |
-| S-024 | src/passive_tracer.cpp:560-561 | Passive tracer pressure and temperature are read half a cell too high | wrote pressure interpolation with vz pattern (K, ncz) |  |
 | S-030 | src/JacResTemp.cpp:517-526 (bdpdx.. lines 520-522 use P[...] incl. ghost neighbours) | Adiabatic heating sees a fake pressure jump at boundaries | Added adiabatic-heating pressure-gradient term using neighbour-cell lithostatic pressure. |  |
 | S-036 | src/phase_transition.cpp:592-594 (scaling), 667-711 (predefined laws in deg C / MPa/K); scaling.cpp | Clapeyron laws are wrong in SI units | Added T0 + Tshift conversion and predefined laws with T0 in deg C. |  |
 | S-038 | src/LaMEMLib.cpp:720-721 (call before ADVRemap); src/passive_tracer.cpp:585-607, 1032-1049, 904-938 | Passive tracers use a stale marker-to-cell list | Placed ADVAdvectPassiveTracer before ADVRemap and used markstart/markind in tracer code. |  |

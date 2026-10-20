@@ -18,7 +18,7 @@ results are reported; reference outputs are not updated silently.
 | Polygons | S-018 + M-012 | same bug, fix together |
 | Surface (Tobias) | S-004, M-005 | Boris: fix |
 | Small | M-018, M-041, N-013 | missing SNES/KSP reasons, truncate .pvd, guard division |
-| Shared | S-024 (Andrea), M-008 (Wenrong) | trivial; tell them |
+| Shared | S-024 (Andrea), M-008 (Wenrong) | trivial; taken over, unassigned from them |
 
 ## B. Fix next (more work, clear fix)
 
@@ -69,15 +69,28 @@ step, mostly markers) and dropped for now.
 
 ## Open items after group A (committed 14425854..876978e4)
 
-- S-006: Boris asked for a test (pure shear with non-zero `bg_ref_point`, check the global box).
-- Tell Andrea about S-024 and Wenrong about M-008 (both fixed).
-- `FindPointInCellAdjoint` (adjoint.cpp:102) has the same SETERRQ-in-PetscInt bug as M-022.
-  Proposed: declare `FindPointInCell` in AVD.h, delete the copy, check `< 0` at the 8 callers.
-  Boris's code: fix or add to his list (not decided).
-- Next batch: AVD marker control from B (S-035, M-021, M-058, M-059). S-013 + S-035 together
-  likely explain random phase loss/duplication under `mctrl = avd`.
+- `FindPointInCellAdjoint` (same bug as M-022): fixed. Copy deleted, `FindPointInCell` declared
+  in AVD.h, `< 0` checks added. The 3 topography loops in `AdjointPointInPro` tested `z` against
+  the global box, so with more than one rank in z they stopped with "Non-local marker"; they now
+  test the local box, as in `surf.cpp`.
+- AVD batch from B (not committed):
+  - S-035: delete path now counts claimed cells per point; smallest Voronoi volumes go first.
+  - M-058: one helper `AVDGetLimitsMV`; `nmax` is reduced like `nmin`. Per-rank half-volumes
+    kept on purpose (a volume cut by a rank boundary is half-size on each rank).
+  - M-059: edge volumes are now true edges (shifted in the two directions other than `dir`);
+    corner volumes get a quarter of the limits; log labels fixed. Changes results under `avd`.
+  - M-021: fine as is (no parent marker for an empty volume; sparse ones fill over steps).
+  - New (found while testing): `AVDCellInit` clamped only the upper border; a marker exactly on
+    the lower bound rounded into the mask cell and stopped the run ("Inserting cells into
+    boundary cells"). Hit by injected markers at cell-centre coordinates. Lower clamp added.
+  - No test uses `mark_ctrl = avd`. Checked by hand on t15 RTI (32x2x32, 1 and 2 ranks,
+    `-nmark_lim 20,60` for deletion and `200,800` for injection): runs clean. `make test` passed.
 - Tests: `make test` passed after A (115 pass, t37 FastScape broken as before). No
   reference output changed, so the fixed paths (S-006, S-007, S-013, S-024, M-008) are not covered.
+
+## Lowest priority (or ask Boris)
+
+- S-006 test: pure shear with non-zero `bg_ref_point`, check the global box (Boris asked for it).
 
 ## Order of work
 
