@@ -67,6 +67,18 @@ M-041: only the .pvd is truncated; stale `Timestep_*` folders after a restart fr
 checkpoint stay. Checkpointing at output steps was discussed (checkpoint ~20-150x one output
 step, mostly markers) and dropped for now.
 
+## Open items after group A (committed 14425854..876978e4)
+
+- S-006: Boris asked for a test (pure shear with non-zero `bg_ref_point`, check the global box).
+- Tell Andrea about S-024 and Wenrong about M-008 (both fixed).
+- `FindPointInCellAdjoint` (adjoint.cpp:102) has the same SETERRQ-in-PetscInt bug as M-022.
+  Proposed: declare `FindPointInCell` in AVD.h, delete the copy, check `< 0` at the 8 callers.
+  Boris's code: fix or add to his list (not decided).
+- Next batch: AVD marker control from B (S-035, M-021, M-058, M-059). S-013 + S-035 together
+  likely explain random phase loss/duplication under `mctrl = avd`.
+- Tests: `make mode=deb test` passed after A (115 pass, t37 FastScape broken as before). No
+  reference output changed, so the fixed paths (S-006, S-007, S-013, S-024, M-008) are not covered.
+
 ## Order of work
 
 One commit per group of A, then B, then C after discussion.
