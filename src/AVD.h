@@ -113,6 +113,9 @@ PetscErrorCode AVDInjectPointsMV (AdvCtx *actx, AVD *A);
 PetscErrorCode AVDDeletePointsMV (AdvCtx *actx, AVD *A);
 PetscErrorCode AVDDestroyMV      (MarkerVolume *mv);
 
+// find ID of the cell containing point (returns -1 for non-local point)
+PetscInt FindPointInCell(PetscScalar *px, PetscInt L, PetscInt R, PetscScalar x);
+
 //---------------------------------------------------------------------------
 static inline PetscScalar AVDDistanceTest(PetscScalar x0[3],PetscScalar x1[3],PetscScalar x2[3])
 {

@@ -96,37 +96,8 @@
 #include "objFunct.h"
 #include "constEq.h"
 #include "parsing.h"
+#include "AVD.h"
 #include <petscsys.h>
-//-----------------------------------------------------------------------------
-// A bit stupid that this has to be twice declared, but the original function is only in AVD.cpp and not in a header file anymore ...
-PetscInt FindPointInCellAdjoint(
-    PetscScalar *px, // node coordinates
-    PetscInt     L,  // index of the leftmost node
-    PetscInt     R,  // index of the rightmost node
-    PetscScalar  x)  // point coordinate
-{
-	// find ID of the cell containing point (call this function for local point only!)
-	if(x < px[L] || x > px[R])
-	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Non-local marker");
-	}
-	// get initial guess assuming uniform grid
-	PetscInt M = L + (PetscInt)((x-px[L])/((px[R]-px[L])/(PetscScalar)(R-L)));
-
-	if(M == R) return R-1;
-
-	if(px[M]   <= x) L=M;
-	if(px[M+1] >= x) R=M+1;
-
-	while((R-L) > 1)
-	{
-		M = (L+R)/2;
-		if(px[M] <= x) L=M;
-		if(px[M] >= x) R=M;
-
-	}
-	return(L);
-}
 //---------------------------------------------------------------------------
 PetscErrorCode swapStruct(struct Material_t *A, struct Material_t *B)
 {
@@ -2313,9 +2284,11 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
 
 				// find I, J, K indices by bisection algorithm
-				I = FindPointInCellAdjoint(ncx, 0, nx, coord_local[0]);
-				J = FindPointInCellAdjoint(ncy, 0, ny, coord_local[1]);
-				K = FindPointInCellAdjoint(ncz, 0, nz, coord_local[2]);
+				I = FindPointInCell(ncx, 0, nx, coord_local[0]);
+				J = FindPointInCell(ncy, 0, ny, coord_local[1]);
+				K = FindPointInCell(ncz, 0, nz, coord_local[2]);
+
+				if(I < 0 || J < 0 || K < 0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Non-local observation point");
 
 				// get coordinates of cell center
 				xc = ccx[I];
@@ -2542,10 +2515,10 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 					z = topo[level][j][i];
 
 					// check whether point belongs to domain
-					if(z >= dsz->gcrdbeg && z < dsz->gcrdend)
+					if(z >= dsz->ncoor[0] && z < dsz->ncoor[dsz->ncels])
 					{
 						// find containing cell
-						K = FindPointInCellAdjoint(dsz->ncoor, 0, dsz->ncels, z);
+						K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, z);
 
 						// get interpolation weight
 						w = (z - dsz->ncoor[K])/(dsz->ncoor[K+1] - dsz->ncoor[K]);
@@ -2599,10 +2572,10 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 					z = topo[level][j][i];
 
 					// check whether point belongs to domain
-					if(z >= dsz->gcrdbeg && z < dsz->gcrdend)
+					if(z >= dsz->ncoor[0] && z < dsz->ncoor[dsz->ncels])
 					{
 						// find containing cell
-						K = FindPointInCellAdjoint(dsz->ncoor, 0, dsz->ncels, z);
+						K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, z);
 
 						// get interpolation weight
 						w = (z - dsz->ncoor[K])/(dsz->ncoor[K+1] - dsz->ncoor[K]);
@@ -2655,10 +2628,10 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 					z = topo[level][j][i];
 
 					// check whether point belongs to domain
-					if(z >= dsz->gcrdbeg && z < dsz->gcrdend)
+					if(z >= dsz->ncoor[0] && z < dsz->ncoor[dsz->ncels])
 					{
 						// find containing cell
-						K = FindPointInCellAdjoint(dsz->ncoor, 0, dsz->ncels, z);
+						K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, z);
 
 						// get interpolation weight
 						w = (z - dsz->ncoor[K])/(dsz->ncoor[K+1] - dsz->ncoor[K]);
@@ -3267,9 +3240,11 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 			ncz = fs->dsz.ncoor;
 
 			// find I, J, K indices by bisection algorithm
-			I = FindPointInCellAdjoint(ncx, 0, nx, coord_local[0]);
-			J = FindPointInCellAdjoint(ncy, 0, ny, coord_local[1]);
-			K = FindPointInCellAdjoint(ncz, 0, nz, coord_local[2]);
+			I = FindPointInCell(ncx, 0, nx, coord_local[0]);
+			J = FindPointInCell(ncy, 0, ny, coord_local[1]);
+			K = FindPointInCell(ncz, 0, nz, coord_local[2]);
+
+			if(I < 0 || J < 0 || K < 0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Non-local observation point");
 
 			GET_CELL_ID(ID, I, J, K, nx, ny);
 
