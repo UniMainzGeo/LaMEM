@@ -186,9 +186,13 @@ PetscErrorCode AVDCellInit(AVD *A)
 		k = (PetscInt)((points[p].X[2] - (A->xs[2] - A->dz))/A->dz);
 
 		// if a particle is exactly on the border then make sure it is in a valid cell inside the element
+		// (the lower border can round down into the boundary cell)
 		if (i == mx-1) { i--; }
 		if (j == my-1) { j--; }
 		if (k == mz-1) { k--; }
+		if (i == 0)    { i++; }
+		if (j == 0)    { j++; }
+		if (k == 0)    { k++; }
 
 		ind = i+j*mx+k*mx*my;
 
@@ -711,12 +715,34 @@ PetscErrorCode AVDMarkerControlMV(AdvCtx *actx, VolumeCase vtype)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+void AVDGetLimitsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir, PetscInt i, PetscInt j, PetscInt k, PetscInt *nmin, PetscInt *nmax)
+{
+	// get marker limits of a control volume
+	// (reduced for half/quarter-volumes at the ends of the shifted directions)
+	PetscInt f = 1;
+
+	if (AVDShiftMV(dir, 0) && ((i == 0) || (i+1 == mv->M))) f *= 2;
+	if (AVDShiftMV(dir, 1) && ((j == 0) || (j+1 == mv->N))) f *= 2;
+	if (AVDShiftMV(dir, 2) && ((k == 0) || (k+1 == mv->P))) f *= 2;
+
+	if (f > 1)
+	{
+		(*nmin) = actx->nmin/f+1;
+		(*nmax) = actx->nmax/f+1;
+	}
+	else
+	{
+		(*nmin) = actx->nmin;
+		(*nmax) = actx->nmax;
+	}
+}
+//---------------------------------------------------------------------------
 PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 {
 	// check marker distribution and delete or inject markers if necessary
 	PetscScalar    xs[3], xe[3];
 	PetscInt       ind, i, j, k, M, N;
-	PetscInt       n, ninj, ndel, nmin;
+	PetscInt       n, ninj, ndel, nmin, nmax;
 	PetscLogDouble t0,t1;
 	char           lbl[_lbl_sz_];
 
@@ -737,24 +763,18 @@ PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 		// no of markers in cell
 		n = mv->markstart[ind+1] - mv->markstart[ind];
 
-		if (n < actx->nmin)
+		// expand i, j, k cell indices
+		GET_CELL_IJK(ind, i, j, k, M, N);
+
+		// limits (halved for half-volumes)
+		AVDGetLimitsMV(actx, mv, dir, i, j, k, &nmin, &nmax);
+
+		if (n < nmin)
 		{
-			// expand i, j, k cell indices
-			GET_CELL_IJK(ind, i, j, k, M, N);
-
-			// half-volumes
-			nmin = actx->nmin;
-			if ((dir == 0) && ((i == 0) | (i+1 == mv->M))) { nmin = (PetscInt) (actx->nmin/2+1); }
-			if ((dir == 1) && ((j == 0) | (j+1 == mv->N))) { nmin = (PetscInt) (actx->nmin/2+1); }
-			if ((dir == 2) && ((k == 0) | (k+1 == mv->P))) { nmin = (PetscInt) (actx->nmin/2+1); }
-
-			if (n < nmin)
-			{
-				if ((nmin - n) > n) ninj += n;
-				else                ninj += nmin - n;
-			}
+			if ((nmin - n) > n) ninj += n;
+			else                ninj += nmin - n;
 		}
-		if (n > actx->nmax) ndel += n - actx->nmax;
+		if (n > nmax) ndel += n - nmax;
 	}
 
 	// if no need for injection/deletion
@@ -776,27 +796,21 @@ PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 		// no of markers in cell
 		n = mv->markstart[ind+1] - mv->markstart[ind];
 
-		if ((n < actx->nmin) || (n > actx->nmax))
-		{
-			// expand i, j, k cell indices
-			GET_CELL_IJK(ind, i, j, k, M, N);
+		// expand i, j, k cell indices
+		GET_CELL_IJK(ind, i, j, k, M, N);
 
+		// limits (halved for half-volumes)
+		AVDGetLimitsMV(actx, mv, dir, i, j, k, &nmin, &nmax);
+
+		// inject/delete markers
+		if ((n < nmin) || (n > nmax))
+		{
 			// get cell coordinates
 			xs[0] = mv->xcoord[i]; xe[0] = mv->xcoord[i+1];
 			xs[1] = mv->ycoord[j]; xe[1] = mv->ycoord[j+1];
 			xs[2] = mv->zcoord[k]; xe[2] = mv->zcoord[k+1];
 
-			// here calculate half volumes minimum
-			nmin = actx->nmin;
-			if ((dir == 0) && ((i == 0) | (i+1 == mv->M))) { nmin = (PetscInt) (actx->nmin/2+1); }
-			if ((dir == 1) && ((j == 0) | (j+1 == mv->N))) { nmin = (PetscInt) (actx->nmin/2+1); }
-			if ((dir == 2) && ((k == 0) | (k+1 == mv->P))) { nmin = (PetscInt) (actx->nmin/2+1); }
-
-			// inject/delete markers
-			if ((n < nmin) || (n > actx->nmax))
-			{
-				PetscCall(AVDAlgorithmMV(actx, mv, n, xs, xe, ind, nmin));
-			}
+			PetscCall(AVDAlgorithmMV(actx, mv, n, xs, xe, ind, nmin, nmax));
 		}
 	}
 
@@ -811,9 +825,9 @@ PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	PetscCall(PetscTime(&t1));
 
 	if      (dir==-1) sprintf(lbl,"CELL");
-	else if (dir== 0) sprintf(lbl,"XYED");
+	else if (dir== 0) sprintf(lbl,"YZED");
 	else if (dir== 1) sprintf(lbl,"XZED");
-	else if (dir== 2) sprintf(lbl,"YZED");
+	else if (dir== 2) sprintf(lbl,"XYED");
 
 	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%" PetscInt_FMT "]: (AVD %s) injected %" PetscInt_FMT " markers and deleted %" PetscInt_FMT " markers in %1.4e s\n",actx->iproc,lbl, ninj, ndel, t1-t0);
 
@@ -860,21 +874,21 @@ PetscErrorCode AVDMapMarkersMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	fs = actx->fs;
 
 	// create coordinate arrays
-	if (dir == 0) // x-coord
+	if (AVDShiftMV(dir, 0)) // x-coord
 	{
 		mv->xcoord[0] = fs->dsx.ncoor[0]; mv->xcoord[mv->M] = fs->dsx.ncoor[fs->dsx.ncels];
 		for(i = 1; i < mv->M; i++) mv->xcoord[i] = fs->dsx.ccoor[i-1];
 	}
 	else for(i = 0; i < mv->M+1; i++) mv->xcoord[i] = fs->dsx.ncoor[i];
 
-	if (dir == 1) // y-coord
+	if (AVDShiftMV(dir, 1)) // y-coord
 	{
 		mv->ycoord[0] = fs->dsy.ncoor[0]; mv->ycoord[mv->N] = fs->dsy.ncoor[fs->dsy.ncels];
 		for(i = 1; i < mv->N; i++) mv->ycoord[i] = fs->dsy.ccoor[i-1];
 	}
 	else for(i = 0; i < mv->N+1; i++) mv->ycoord[i] = fs->dsy.ncoor[i];
 
-	if (dir == 2) // z-coord
+	if (AVDShiftMV(dir, 2)) // z-coord
 	{
 		mv->zcoord[0] = fs->dsz.ncoor[0]; mv->zcoord[mv->P] = fs->dsz.ncoor[fs->dsz.ncels];
 		for(i = 1; i < mv->P; i++) mv->zcoord[i] = fs->dsz.ccoor[i-1];
@@ -941,9 +955,9 @@ PetscErrorCode AVDCreateMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	mv->ncells = 0;
 
 	// get number of cells
-	if (dir == 0) mv->M = fs->dsx.ncels+1; else mv->M = fs->dsx.ncels;
-	if (dir == 1) mv->N = fs->dsy.ncels+1; else mv->N = fs->dsy.ncels;
-	if (dir == 2) mv->P = fs->dsz.ncels+1; else mv->P = fs->dsz.ncels;
+	if (AVDShiftMV(dir, 0)) mv->M = fs->dsx.ncels+1; else mv->M = fs->dsx.ncels;
+	if (AVDShiftMV(dir, 1)) mv->N = fs->dsy.ncels+1; else mv->N = fs->dsy.ncels;
+	if (AVDShiftMV(dir, 2)) mv->P = fs->dsz.ncels+1; else mv->P = fs->dsz.ncels;
 
 	// total number of cells
 	mv->ncells = mv->M * mv->N * mv->P;
@@ -1185,7 +1199,7 @@ PetscErrorCode AVDInjectPointsMV(AdvCtx *actx, AVD *A)
 //---------------------------------------------------------------------------
 PetscErrorCode AVDDeletePointsMV(AdvCtx *actx, AVD *A)
 {
-	PetscInt    i, ind;
+	PetscInt    i, ii, n, ind;
 	PetscInt    num_chain;
 	PetscInt    npoints, new_nmark = 0;
 	PetscInt    *area, *sind;
@@ -1194,16 +1208,19 @@ PetscErrorCode AVDDeletePointsMV(AdvCtx *actx, AVD *A)
 
 	npoints = A->npoints;
 	new_nmark = npoints - A->mmax;
+	n  = (A->nx+2)*(A->ny+2)*(A->nz+2);
 
 	// allocate memory for sorting
 	PetscCall(makeIntArray(&area, NULL, npoints));
 	PetscCall(makeIntArray(&sind, NULL, npoints));
 
 	// initialize variables for sorting
-	for (i = 0; i < npoints; i++)
+	for (i = 0; i < npoints; i++) sind[i] = i;
+
+	// number of cells claimed by each point (Voronoi volume)
+	for (ii = 0; ii < n; ii++)
 	{
-		sind[i] = i;
-		area[i] = A->chain[i].tclaimed;
+		if (A->cell[ii].p >= 0) area[A->cell[ii].p]++;
 	}
 
 	// sort in ascending order
@@ -1227,7 +1244,7 @@ PetscErrorCode AVDDeletePointsMV(AdvCtx *actx, AVD *A)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode AVDAlgorithmMV(AdvCtx *actx, MarkerVolume *mv, PetscInt npoints, PetscScalar xs[3], PetscScalar xe[3], PetscInt ind, PetscInt nmin)
+PetscErrorCode AVDAlgorithmMV(AdvCtx *actx, MarkerVolume *mv, PetscInt npoints, PetscScalar xs[3], PetscScalar xe[3], PetscInt ind, PetscInt nmin, PetscInt nmax)
 {
 
 	AVD          A;
@@ -1241,7 +1258,7 @@ PetscErrorCode AVDAlgorithmMV(AdvCtx *actx, MarkerVolume *mv, PetscInt npoints, 
 	A.nz = actx->avdz;
 
 	A.mmin = nmin;
-	A.mmax = actx->nmax;
+	A.mmax = nmax;
 
 	A.npoints = npoints;
 

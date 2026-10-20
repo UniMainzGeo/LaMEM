@@ -107,7 +107,8 @@ PetscErrorCode AVDMarkerControlMV(AdvCtx *actx, VolumeCase vtype);
 PetscErrorCode AVDCheckCellsMV   (AdvCtx *actx, MarkerVolume *mv, PetscInt dir);
 PetscErrorCode AVDMapMarkersMV   (AdvCtx *actx, MarkerVolume *mv, PetscInt dir);
 PetscErrorCode AVDCreateMV       (AdvCtx *actx, MarkerVolume *mv, PetscInt dir);
-PetscErrorCode AVDAlgorithmMV    (AdvCtx *actx, MarkerVolume *mv, PetscInt npoints, PetscScalar xs[3], PetscScalar xe[3], PetscInt ind, PetscInt nmin);
+void           AVDGetLimitsMV    (AdvCtx *actx, MarkerVolume *mv, PetscInt dir, PetscInt i, PetscInt j, PetscInt k, PetscInt *nmin, PetscInt *nmax);
+PetscErrorCode AVDAlgorithmMV    (AdvCtx *actx, MarkerVolume *mv, PetscInt npoints, PetscScalar xs[3], PetscScalar xe[3], PetscInt ind, PetscInt nmin, PetscInt nmax);
 PetscErrorCode AVDLoadPointsMV   (AdvCtx *actx, MarkerVolume *mv, AVD *A, PetscInt ind);
 PetscErrorCode AVDInjectPointsMV (AdvCtx *actx, AVD *A);
 PetscErrorCode AVDDeletePointsMV (AdvCtx *actx, AVD *A);
@@ -116,6 +117,13 @@ PetscErrorCode AVDDestroyMV      (MarkerVolume *mv);
 // find ID of the cell containing point (returns -1 for non-local point)
 PetscInt FindPointInCell(PetscScalar *px, PetscInt L, PetscInt R, PetscScalar x);
 
+//---------------------------------------------------------------------------
+// edge control volumes are shifted to cell centers in all directions except dir
+// (dir = -1 is the cell volume, no shift)
+static inline PetscBool AVDShiftMV(PetscInt dir, PetscInt d)
+{
+	return (PetscBool)(dir != -1 && dir != d);
+}
 //---------------------------------------------------------------------------
 static inline PetscScalar AVDDistanceTest(PetscScalar x0[3],PetscScalar x1[3],PetscScalar x2[3])
 {
