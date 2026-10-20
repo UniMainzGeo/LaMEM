@@ -1046,7 +1046,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   6e-2;
 		m->n             =   3.05;
 		m->En            =   276e3;
-		m->Vn            =   1;
+		m->Vn            =   0;
 		type             =   _UniAxial_;
 		MPa              =   1;
 		C_OH_0           =   1;

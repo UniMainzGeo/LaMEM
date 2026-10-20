@@ -480,7 +480,8 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscLogDouble t_beg)
 		if(ksp_reason == KSP_DIVERGED_BREAKDOWN     ||
 		   ksp_reason == KSP_DIVERGED_INDEFINITE_PC ||
 		   ksp_reason == KSP_DIVERGED_NANORINF      ||
-		   ksp_reason == KSP_DIVERGED_INDEFINITE_MAT)
+		   ksp_reason == KSP_DIVERGED_INDEFINITE_MAT ||
+		   ksp_reason == KSP_DIVERGED_PC_FAILED)
 		{
 			div_severe = 1;
 		}
@@ -506,6 +507,18 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscLogDouble t_beg)
 	else if(reason == SNES_DIVERGED_LOCAL_MIN)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "SNES Divergence Reason  : || J^T b || is small, implies converged to local minimum of F\n");
+	}
+	else if(reason == SNES_DIVERGED_DTOL)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "SNES Divergence Reason  : || F || increased by more than divtol\n");
+	}
+	else if(reason == SNES_DIVERGED_JACOBIAN_DOMAIN)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "SNES Divergence Reason  : the Jacobian calculation does not make sense\n");
+	}
+	else if(reason == SNES_DIVERGED_TR_DELTA)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "SNES Divergence Reason  : the trust-region size became too small\n");
 	}
 
 	if(div_severe)

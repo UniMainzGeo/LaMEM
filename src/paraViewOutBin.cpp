@@ -11,6 +11,7 @@
 //.................   FDSTAG PARAVIEW XML OUTPUT ROUTINES   .................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include <unistd.h>
 #include "paraViewOutBin.h"
 #include "scaling.h"
 #include "parsing.h"
@@ -767,9 +768,10 @@ PetscErrorCode UpdatePVDFile(
 	asprintf(&fname, "%s.pvd", outfile);
 	if(!ttime) fp = fopen(fname,"wb");
 	else       fp = fopen(fname,"r+b");
-	free(fname);
 
 	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+
+	free(fname);
 
 	if(!ttime)
 	{
@@ -795,6 +797,10 @@ PetscErrorCode UpdatePVDFile(
 	// close time step collection
 	fprintf(fp,"</Collection>\n");
 	fprintf(fp,"</VTKFile>\n");
+
+	// remove old entries left after a restart from an earlier checkpoint
+	fflush(fp);
+	if(ftruncate(fileno(fp), ftell(fp))) SETERRQ(PETSC_COMM_SELF, 1, "cannot truncate file %s.pvd", outfile);
 
 	// close file
 	fclose(fp);
