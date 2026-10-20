@@ -2,7 +2,7 @@
 
 Plan for the 83 findings assigned to Anton in `findings_audit_request_feedback.md`
 (80 by authorship, 3 by area). Made 2026-10-20 at commit 61bb7aa0. Each finding is checked in
-the code before it is fixed. Tests run in debug mode (`make mode=deb test`). Fixes that change
+the code before it is fixed. Tests: `make test` in `test/` (most tests use the opt build); compile check with `make mode=deb all`. Fixes that change
 results are reported; reference outputs are not updated silently.
 
 ## A. Fix right away (small, clear, local)
@@ -76,7 +76,7 @@ step, mostly markers) and dropped for now.
   Boris's code: fix or add to his list (not decided).
 - Next batch: AVD marker control from B (S-035, M-021, M-058, M-059). S-013 + S-035 together
   likely explain random phase loss/duplication under `mctrl = avd`.
-- Tests: `make mode=deb test` passed after A (115 pass, t37 FastScape broken as before). No
+- Tests: `make test` passed after A (115 pass, t37 FastScape broken as before). No
   reference output changed, so the fixed paths (S-006, S-007, S-013, S-024, M-008) are not covered.
 
 ## Order of work
