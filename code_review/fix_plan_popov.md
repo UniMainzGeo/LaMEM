@@ -14,10 +14,10 @@ results are reported; reference outputs are not updated silently.
 | Grid | S-006 | stretch global box about `ref`; add a test |
 | Inflow BC | S-011 | store base velocity in BCCtx, not a `static` |
 | Markers | S-013, S-019, M-020, M-022, M-025, M-026, M-031 | sort `idel`, remap after perturbation, empty/NULL checks, free leak |
-| Parallel | S-014, M-038 | global indices; total cell count |
+| Parallel | M-038 | total cell count (sum over ranks) |
 | Polygons | S-018 + M-012 | same bug, fix together |
 | Surface (Tobias) | S-004, M-005 | Boris: fix |
-| Small | M-018, M-041, N-004, N-013 | missing SNES/KSP reasons, truncate .pvd, real creep-input checks, guard division |
+| Small | M-018, M-041, N-013 | missing SNES/KSP reasons, truncate .pvd, guard division |
 | Shared | S-024 (Andrea), M-008 (Wenrong) | trivial; tell them |
 
 ## B. Fix next (more work, clear fix)
@@ -48,6 +48,24 @@ results are reported; reference outputs are not updated silently.
 10. Delete dead code? N-009, N-010, N-015, dead parts of N-021, N-022.
 11. Nothing to do: M-019 (mitigated by `-snes_max_funcs unlimited`); N-028, N-029 (Boris: leave).
     Small clean-ups: N-002, N-007 (mostly Wenrong/Yun), N-011, N-018.
+
+## Moved from A to C while fixing
+
+- S-014: the local wall tests also protect the upper side. With one ghost layer, node `nx+1`
+  does not exist at an internal boundary, so global tests alone would read out of range.
+  Needs a 2-layer ghost vector or a different stencil.
+- N-004: `eta && Bd` is accepted on purpose for restarts (phases are re-read into a struct
+  that still holds the old Bd/Bn, see c8ec3931). A strict check needs a decision on restart.
+
+## Status of A (2026-10-20)
+
+Done, not committed: S-001, S-003, S-004, S-006 (test not yet added), S-007, S-010, S-011,
+S-013, S-018/M-012, S-019 (perturbed coordinate kept in host cell), S-024, M-005, M-008,
+M-017, M-018, M-020, M-022, M-025, M-026 (APS still not saved), M-027, M-031, M-037, M-038,
+M-040, M-041, N-013. S-011 adds a field to BCCtx, so older restart files no longer load.
+M-041: only the .pvd is truncated; stale `Timestep_*` folders after a restart from an earlier
+checkpoint stay. Checkpointing at output steps was discussed (checkpoint ~20-150x one output
+step, mostly markers) and dropped for now.
 
 ## Order of work
 
