@@ -108,3 +108,15 @@ One commit per group of A, then B, then C after discussion.
   in `ADVMarkSetTempPhase`); `nmark_sub < 1`, negative `nmark_lim`/`nmark_avd`, `nmin > nmax`
   are rejected; `stagp_a = 0` is used as given (was replaced by 2/3).
 - `make test` passed (t37 FastScape broken as before).
+
+## Group B, batch 2: buffer checks (2026-10-21, not committed)
+
+- M-066: schedule size is checked against `_max_num_steps_` (also in `TSSolGetPeriodSteps`,
+  which writes n+1 values); first `time_dt_periods` entry must be 0; `TSSolAdjustSchedule`
+  no longer writes past the buffer (no insert when full). Decided: the schedule overrides basic
+  time stepping, so the run still ends after the scheduled steps; the log now prints the
+  schedule end and a warning if `time_end` is later. Note: the CFL-inserted steps at the end
+  let t30 run to t = 3 (schedule ends at 2); kept as is, t30 unchanged.
+- M-060: polygon file checked for truncation, `Vol.num <= Nmax`, polygon length `<= Lmax`,
+  at most `_max_polygons_` per slice; VLAs `SxAll`/`SyAll` replaced by heap arrays.
+- Tests: t30, t31 pass (selected tests only).
