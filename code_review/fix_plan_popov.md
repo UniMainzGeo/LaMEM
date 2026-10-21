@@ -120,3 +120,27 @@ One commit per group of A, then B, then C after discussion.
 - M-060: polygon file checked for truncation, `Vol.num <= Nmax`, polygon length `<= Lmax`,
   at most `_max_polygons_` per slice; VLAs `SxAll`/`SyAll` replaced by heap arrays.
 - Tests: t30, t31 pass (selected tests only).
+
+## Group B, batch 3: S-029, M-069 (2026-10-21, not committed)
+
+- S-029: new `FDSTAGSetBoundCenter` (fdstag.cpp) copies boundary cell values to the outside
+  ghosts (zero gradient, as for pressure; periodic x ghosts kept), then calls
+  `FDSTAGSetEdgeCornerCenter`. Called after `lp_lith` and `lp_pore` are computed. Changes
+  results where lithostatic pressure is used at walls (creep default, `p_litho_plast`, pore
+  pressure): t19 MigratingRidge_2D, t26 dyndike_4core, t29, t32 (FB, LR). References updated
+  for t19 MigratingRidge_2D, t29, t32 FB/LR (`make update`, unrelated references reverted).
+- M-069: SHmax/EHmax directions averaged to corners in doubled-angle form (output only),
+  shared helper `PVOutPutAxialDir` in outFunct.cpp.
+- Full suite before reference update: 107 pass, 5 fail (above), t37 broken as before.
+
+### MAJOR open issue: t26 dyndike_4core test is not reliable
+
+- Before S-029 the reference already needed exactly 50 = maxit nonlinear iterations at step 4
+  (just converged). With S-029 it hits maxit; `nonlinear_tolerances` maxit raised 50 -> 80 in
+  `dyndike_4core.dat` (not committed), then 51 and 48 iterations.
+- Steps 4-5 are not reproducible between runs on 4 ranks (steps 1-3 agree to 1e-12, steps 4-5
+  differ by 5-15% in |Div|_inf), so the updated reference passes only sometimes.
+- The run prints ~1000 "Number of diverged points : ~72000" warnings (local plasticity
+  iterations fail), with and without S-029; the old reference has none.
+- User: "this test was always a big mess". Needs a proper look (setup, solver, local
+  iterations), not just a tolerance change. Stopped here on 2026-10-21.
