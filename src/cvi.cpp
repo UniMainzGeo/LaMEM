@@ -1237,9 +1237,7 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 	PetscCall(ADVelMapMarkToCells(vi));
 
 	// set coefficients
-	if(vi->actx->A) A = vi->actx->A;
-	else            A = 2.0/3.0;
-
+	A = vi->actx->A;
 	B = 1.0 - A;
 
 	// access context

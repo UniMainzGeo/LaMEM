@@ -141,6 +141,20 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_z (%" PetscInt_FMT ") is smaller than allowed (%" PetscInt_FMT ")", actx->NumPartZ, _min_nmark_);
 	}
 
+	// check marker control parameters
+	if(actx->npmax < 1)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_sub (%" PetscInt_FMT ") must be positive", actx->npmax);
+	}
+	if(nmark_lim[0] < 0 || nmark_lim[1] < 0)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_lim must not be negative");
+	}
+	if(nmark_avd[0] < 0 || nmark_avd[1] < 0 || nmark_avd[2] < 0)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_avd must not be negative");
+	}
+
 	// check advection & interpolation types compatibility
 	if(actx->advect == BASIC_EULER && actx->interp != STAG)
 	{
@@ -178,6 +192,11 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 		if(nmark_avd[0]) actx->avdx = nmark_avd[0];
 		if(nmark_avd[1]) actx->avdy = nmark_avd[1];
 		if(nmark_avd[2]) actx->avdz = nmark_avd[2];
+
+		if(actx->nmin > actx->nmax)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Minimum number of markers per cell (%" PetscInt_FMT ") is larger than maximum (%" PetscInt_FMT ") (nmark_lim)", actx->nmin, actx->nmax);
+		}
 	}
 
 	// PRINT
@@ -209,9 +228,9 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	if(!actx->randNoise) PetscPrintf(PETSC_COMM_WORLD, "uniform\n");
 	else                 PetscPrintf(PETSC_COMM_WORLD, "random noise\n");
 
-	if(actx->saveMark)      PetscPrintf(PETSC_COMM_WORLD,"   Marker storage file           : %s \n", actx->saveFile);
-	if(actx->bgPhase != -1) PetscPrintf(PETSC_COMM_WORLD,"   Background phase ID           : %" PetscInt_FMT " \n", actx->bgPhase);
-	if(actx->A)             PetscPrintf(PETSC_COMM_WORLD,"   Interpolation constant        : %g \n", actx->A);
+	if(actx->saveMark)         PetscPrintf(PETSC_COMM_WORLD,"   Marker storage file           : %s \n", actx->saveFile);
+	if(actx->bgPhase != -1)    PetscPrintf(PETSC_COMM_WORLD,"   Background phase ID           : %" PetscInt_FMT " \n", actx->bgPhase);
+	if(actx->interp == STAG_P) PetscPrintf(PETSC_COMM_WORLD,"   Interpolation constant        : %g \n", actx->A);
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 

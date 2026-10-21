@@ -553,7 +553,6 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	FDSTAG      *fs;
 	PetscInt     periodic;
 	PetscInt     jj, mID;
-	PetscScalar  bz;
 	char         inflow_temp[_str_len_],str_inflow[_str_len_];
 
 	PetscFunctionBeginUser;
@@ -677,6 +676,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	else if (!strcmp(str_inflow, "Front"))              bc->face=3;
 	else if (!strcmp(str_inflow, "Back"))               bc->face=4;
 	else if (!strcmp(str_inflow, "CompensatingInflow")) bc->face=5;
+	else if (strlen(str_inflow)) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect inflow boundary face (bvel_face): %s", str_inflow);
 
 	PetscCall(getIntParam(fb, _OPTIONAL_, "bvel_face_out", &bc->face_out,   1, -1));
 
@@ -692,7 +692,8 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		PetscCall(getIntParam   (fb, _OPTIONAL_, "velin_net_num_periods", &bc->VelNetNumPeriods, 1, _max_periods_));
 		PetscCall(getScalarParam(fb, _OPTIONAL_, "bvel_relax_d",          &bc->relax_dist,       1, scal->length ));
 
-		bc->velin_base = bc->velin;
+		bc->velout_user = (bc->velout != DBL_MAX);
+		bc->velin_base  = bc->velin;
 
 		if(bc->VelNumPeriods > 1)
 		{
@@ -711,8 +712,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		PetscCall(getScalarParam(fb, _OPTIONAL_, "bvel_phase_interval",     bc->phase_interval, bc->num_phase_bc+1, scal->length));
 		PetscCall(getStringParam(fb, _OPTIONAL_, "bvel_temperature_inflow", inflow_temp, NULL));
 
-		if(!strcmp(inflow_temp, "Constant_T_inflow")) { bc->bvel_temperature_inflow = 1; }
-		if(!strcmp(inflow_temp, "Fixed_thermal_age")) { bc->bvel_temperature_inflow = 2; }
+		if     (!strcmp(inflow_temp, "Constant_T_inflow")) { bc->bvel_temperature_inflow = 1; }
+		else if(!strcmp(inflow_temp, "Fixed_thermal_age")) { bc->bvel_temperature_inflow = 2; }
+		else if(strlen(inflow_temp)) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect inflow temperature type (bvel_temperature_inflow): %s", inflow_temp);
 
 		if( bc->bvel_temperature_inflow == 2)
 		{
@@ -728,15 +730,8 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		PetscCall(getScalarParam(fb, _OPTIONAL_, "bvel_velbot", &bc->velbot, 1, scal->velocity));
 		PetscCall(getScalarParam(fb, _OPTIONAL_, "bvel_veltop", &bc->veltop, 1, scal->velocity));
 
-		PetscCall(FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL));
-
 		// compute outflow velocity (if required)
-		if(bc->velout == DBL_MAX)
-		{
-			// INTRODUCE CORRECTION FOR CELL SIZES
-			// MUST BE MASS CONSERVATIVE IN DISCRETE SENSE
-			bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
-		}
+		PetscCall(BCGetVelins(bc));
 	}
 
 	// open boundary flag
@@ -891,6 +886,11 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	if(bc->top_open && bc->noslip[5])
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No-slip condition is incompatible with open boundary (open_top_bound, noslip) \n");
+	}
+
+	if(bc->ExyNumPeriods && (bc->noslip[2] || bc->noslip[3]))
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "xy background strain rate is incompatible with no-slip on front and back boundaries (exy_num_periods, noslip) \n");
 	}
 
 	if(periodic)
@@ -1068,7 +1068,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		PetscPrintf(PETSC_COMM_WORLD, "      Inflow window [bottom, top]             : [%3.2f,%3.2f] %s \n", bc->bot*scal->length, bc->top*scal->length, scal->lbl_length);
 		PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity                         : %1.2f %s \n", bc->velin*scal->velocity, scal->lbl_velocity);
 
-		if(bc->velout > 0.0)
+		if(bc->velout_user)
 		{
 			PetscPrintf(PETSC_COMM_WORLD, "      Outflow velocity                        : %1.2f %s \n", bc->velout*scal->velocity, scal->lbl_velocity);
 		}
@@ -1676,10 +1676,7 @@ PetscErrorCode BCGetVelins(BCCtx *bc)
 			if (time < bc->VelNetTimeDelims[kk]) break;
 		}
 
-		PetscCall(FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL));
-
 		bc->velin  = bc->velin_array[jj] + bc->velin_net_array[kk];
-		bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
 
 		PetscPrintf(PETSC_COMM_WORLD,
 		            "BCGetVelins BOTH: time=%g (Myr) jj=%" PetscInt_FMT " kk=%" PetscInt_FMT " velin_base=%g velin_net=%g velin_total=%g\n",
@@ -1696,9 +1693,7 @@ PetscErrorCode BCGetVelins(BCCtx *bc)
 		{
 			if (time < bc->VelTimeDelims[jj]) break;
 		}
-		PetscCall(FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL));
 		bc->velin  = bc->velin_array[jj];
-		bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
 	}
 	else if (bc->VelNetNumPeriods > 1)
 	{
@@ -1707,15 +1702,16 @@ PetscErrorCode BCGetVelins(BCCtx *bc)
 		{
 			if (time < bc->VelNetTimeDelims[kk]) break;
 		}
-		PetscCall(FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL));
 		// piecewise constant: base scalar inflow plus the current net offset;
 		// no accumulation over timesteps
 		bc->velin  = bc->velin_base + bc->velin_net_array[kk];
-		bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
 	}
-	else
+
+	// outflow velocity from mass balance, unless given by user
+	if(!bc->velout_user)
 	{
-		// neither periods array provided; use scalar velin (already read) and compute velout
+		// INTRODUCE CORRECTION FOR CELL SIZES
+		// MUST BE MASS CONSERVATIVE IN DISCRETE SENSE
 		PetscCall(FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL));
 		bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
 	}
@@ -1788,13 +1784,11 @@ PetscErrorCode BCApplyVelTPC(BCCtx *bc)
 				if(j == 0)   { bcvx[k][j-1][i] = vx - dy*Exy/2.0; }
 				if(j == mcy) { bcvx[k][j+1][i] = vx + dy*Exy/2.0; }
 			}
-			else
-			{
-				if(nsFront  && j == 0)   { bcvx[k][j-1][i] = 0.0; }
-				if(nsBack   && j == mcy) { bcvx[k][j+1][i] = 0.0; }
-				if(nsBottom && k == 0)   { bcvx[k-1][j][i] = 0.0; }
-				if(nsTop    && k == mcz) { bcvx[k+1][j][i] = 0.0; }
-			}
+
+			if(nsFront  && j == 0)   { bcvx[k][j-1][i] = 0.0; }
+			if(nsBack   && j == mcy) { bcvx[k][j+1][i] = 0.0; }
+			if(nsBottom && k == 0)   { bcvx[k-1][j][i] = 0.0; }
+			if(nsTop    && k == mcz) { bcvx[k+1][j][i] = 0.0; }
 		}
 		END_STD_LOOP
 	}

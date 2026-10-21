@@ -339,8 +339,9 @@
     permeable_phase_inflow = 1 # Phase of the inflow material from the bottom (The temperature of the inflow phase it is the same of the bottom boundary)
     
 # No-slip boundary flag mask (left right front back bottom top)
+# (no-slip on front/back is incompatible with exy_num_periods)
 
-    noslip = 0 0 1 1 0 0
+    noslip = 0 0 0 0 1 0
 
 # fixed phase (no-flow condition)
 

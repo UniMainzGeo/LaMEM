@@ -69,6 +69,9 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	// For msetup = geom this is already handled by ADVMarkInitGeom.
 	if(actx->msetup != _GEOM_)            { PetscCall(ADVMarkInitInjectGeom(actx, fb)); }
 
+	// check marker phases before they are used as array indices
+	PetscCall(ADVCheckMarkPhases(actx));
+
 	// set temperature (optional methods)
 
 	// linear gradient
