@@ -2,8 +2,17 @@
 
 Plan for the 83 findings assigned to Anton in `findings_audit_request_feedback.md`
 (80 by authorship, 3 by area). Made 2026-10-20 at commit 61bb7aa0. Each finding is checked in
-the code before it is fixed. Tests: `make test` in `test/` (most tests use the opt build); compile check with `make mode=deb all`. Fixes that change
-results are reported; reference outputs are not updated silently.
+the code before it is fixed. Fixes that change results are reported; reference outputs are not
+updated silently.
+
+Testing:
+- Always build LaMEM in both modes after a change: `make mode=deb all` and `make mode=opt all`
+  in `src/`. Tests use both binaries (most use opt, a few use deb). Hand runs use `bin/opt` or
+  `bin/deb` directly, so a stale binary gives wrong conclusions.
+- Use test selectors and run only the tests that touch the changed code: `make test 30 31` or
+  `make test 03-07` in `test/`. Run the full suite (>10 min) only when asked.
+- `make update NN` rewrites all references in those test folders. Keep them all (no need to
+  revert the ones whose tests passed before; they do the same job).
 
 ## A. Fix right away (small, clear, local)
 

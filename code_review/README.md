@@ -13,6 +13,19 @@ This folder is tracked on the `code-review` branch only; keep it off `master`.
    details. New IDs go at the end; the quick/medium/design order is only for existing IDs.
 5. Update the status table before the session ends.
 
+## Fixing findings: build and test
+
+- Check each finding in the code before fixing it; some fix ideas in `findings.md` are wrong.
+- Always build LaMEM in both modes after a change: `make mode=deb all` and `make mode=opt all`
+  in `src/`. Tests use both binaries (most use opt, a few use deb). Hand runs use `bin/opt` or
+  `bin/deb` directly, so a stale binary gives wrong conclusions.
+- Use test selectors and run only the tests that touch the changed code: `make test 30 31` or
+  `make test 03-07` in `test/`. The full suite takes more than 10 minutes.
+- If a fix changes results, say so in the commit. `make update NN` rewrites all references in
+  those test folders; keep them all (references of tests that passed before do the same job).
+- If the build fails to link with undefined symbols, the objects are stale (built against
+  another PETSc): run `make mode=deb clean_all` (or `mode=opt`) in `src/`, then rebuild.
+
 ## Status
 
 | # | Area | Files | ~Lines | Status | Date | Commit |
