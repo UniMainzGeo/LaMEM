@@ -320,6 +320,9 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 	// fill ghost points
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp_lith)
 
+	// set boundary ghost points (zero gradient, as for pressure)
+	PetscCall(FDSTAGSetBoundCenter(fs, jr->lp_lith));
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -409,6 +412,9 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 
 	// fill ghost points
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp_pore)
+
+	// set boundary ghost points (zero gradient, as for pressure)
+	PetscCall(FDSTAGSetBoundCenter(fs, jr->lp_pore));
 
 	PetscFunctionReturn(0);
 }

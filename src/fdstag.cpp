@@ -1948,6 +1948,53 @@ PetscErrorCode FDSTAGSetEdgeCornerCenter(FDSTAG *fs, Vec Center)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+PetscErrorCode FDSTAGSetBoundCenter(FDSTAG *fs, Vec Center)
+{
+	// set boundary ghost points of a ghosted cell vector by copying the boundary
+	// cell values (zero gradient), then set edges and corners
+	// periodic ghost points are not changed
+
+	PetscScalar ***lCenter;
+	PetscInt    mcx, mcy, mcz;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+
+	PetscFunctionBeginUser;
+
+	// set index boundaries in all directions
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+	mcz = fs->dsz.tcels - 1;
+
+	// access vector
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, Center, &lCenter));
+
+	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		if(!fs->dsx.periodic)
+		{
+			if(i == 0)   { lCenter[k][j][i-1] = lCenter[k][j][i]; }
+			if(i == mcx) { lCenter[k][j][i+1] = lCenter[k][j][i]; }
+		}
+		if(j == 0)   { lCenter[k][j-1][i] = lCenter[k][j][i]; }
+		if(j == mcy) { lCenter[k][j+1][i] = lCenter[k][j][i]; }
+		if(k == 0)   { lCenter[k-1][j][i] = lCenter[k][j][i]; }
+		if(k == mcz) { lCenter[k+1][j][i] = lCenter[k][j][i]; }
+	}
+	END_STD_LOOP
+
+	// restore access
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, Center, &lCenter));
+
+	// set edges and corners
+	PetscCall(FDSTAGSetEdgeCornerCenter(fs, Center));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 PetscErrorCode FDSTAGSetEdgeCornerFaces(FDSTAG *fs, Vec XFace, Vec YFace, Vec ZFace)
 {
 	PetscInt          mcx, mcy, mcz;

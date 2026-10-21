@@ -725,6 +725,68 @@ PetscErrorCode PVOutWriteTotDispl(OutVec* outvec)
 	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
+static PetscErrorCode PVOutPutAxialDir(OutBuf *outbuf, Vec cx, Vec cy, Vec lbcor, InterpFlags iflag, PetscScalar cf)
+{
+	// put horizontal axial direction (n and -n are the same) to output buffer
+	// cell directions are averaged to corners in doubled-angle form (cos 2a, sin 2a),
+	// since linear averaging of n and -n cancels out
+
+	FDSTAG      *fs;
+	Vec          lscor;
+	PetscScalar *x, *y, *c, *s, a;
+	PetscInt     ii, n;
+
+	PetscFunctionBeginUser;
+
+	fs = outbuf->fs;
+
+	PetscCall(DMGetLocalVectorClean(fs->DA_COR, &lscor));
+
+	// convert cell directions to doubled-angle form (including ghost points)
+	PetscCall(VecGetLocalSize(cx, &n));
+	PetscCall(VecGetArray(cx, &x));
+	PetscCall(VecGetArray(cy, &y));
+
+	for(ii = 0; ii < n; ii++)
+	{
+		a     = x[ii];
+		x[ii] = a*a - y[ii]*y[ii];
+		y[ii] = 2.0*a*y[ii];
+	}
+
+	PetscCall(VecRestoreArray(cx, &x));
+	PetscCall(VecRestoreArray(cy, &y));
+
+	// interpolate to corners
+	PetscCall(InterpCenterCorner(fs, cx, lbcor, iflag));
+	PetscCall(InterpCenterCorner(fs, cy, lscor, iflag));
+
+	// convert back to unit direction with x >= 0
+	PetscCall(VecGetLocalSize(lbcor, &n));
+	PetscCall(VecGetArray(lbcor, &c));
+	PetscCall(VecGetArray(lscor, &s));
+
+	for(ii = 0; ii < n; ii++)
+	{
+		if(c[ii] == 0.0 && s[ii] == 0.0) continue;
+
+		a     = atan2(s[ii], c[ii])/2.0;
+		c[ii] = cos(a);
+		s[ii] = sin(a);
+	}
+
+	PetscCall(VecRestoreArray(lbcor, &c));
+	PetscCall(VecRestoreArray(lscor, &s));
+
+	PetscCall(OutBufPut3DVecComp(outbuf, lbcor, 3, 0, cf, 0.0));
+	PetscCall(OutBufPut3DVecComp(outbuf, lscor, 3, 1, cf, 0.0));
+	PetscCall(OutBufZero3DVecComp(outbuf, 3, 2));
+
+	PetscCall(DMRestoreLocalVector(fs->DA_COR, &lscor));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteSHmax(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
@@ -739,10 +801,8 @@ PetscErrorCode PVOutWriteSHmax(OutVec* outvec)
 	// compute maximum horizontal compressive stress (SHmax) orientation
 	PetscCall(JacResGetSHmax(jr, cx, cy));
 
-	INTERPOLATE_ACCESS(cx, InterpCenterCorner, 3, 0, 0.0)
-	INTERPOLATE_ACCESS(cy, InterpCenterCorner, 3, 1, 0.0)
-
-	PetscCall(OutBufZero3DVecComp(outbuf, 3, 2));
+	// average axial directions to corners
+	PetscCall(PVOutPutAxialDir(outbuf, cx, cy, lbcor, iflag, cf));
 
 	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &cx));
 	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &cy));
@@ -764,10 +824,8 @@ PetscErrorCode PVOutWriteEHmax(OutVec* outvec)
 	// compute maximum horizontal extension rate (EHmax) orientation
 	PetscCall(JacResGetEHmax(jr, cx, cy));
 
-	INTERPOLATE_ACCESS(cx, InterpCenterCorner, 3, 0, 0.0)
-	INTERPOLATE_ACCESS(cy, InterpCenterCorner, 3, 1, 0.0)
-
-	PetscCall(OutBufZero3DVecComp(outbuf, 3, 2));
+	// average axial directions to corners
+	PetscCall(PVOutPutAxialDir(outbuf, cx, cy, lbcor, iflag, cf));
 
 	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &cx));
 	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &cy));

@@ -282,6 +282,7 @@ PetscErrorCode FDSTAGCombineVectors          (FDSTAG *fs, Vec gf, Vec gfx, Vec g
 PetscErrorCode FDSTAGSplitVectors            (FDSTAG *fs, Vec gf, Vec gfx, Vec gfy, Vec gfz, Vec gp);
 
 PetscErrorCode FDSTAGSetEdgeCornerCenter     (FDSTAG *fs, Vec Center);
+PetscErrorCode FDSTAGSetBoundCenter          (FDSTAG *fs, Vec Center);
 PetscErrorCode FDSTAGSetEdgeCornerFaces      (FDSTAG *fs, Vec XFace, Vec YFace, Vec ZFace);
 
 //---------------------------------------------------------------------------
