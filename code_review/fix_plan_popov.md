@@ -95,3 +95,16 @@ step, mostly markers) and dropped for now.
 ## Order of work
 
 One commit per group of A, then B, then C after discussion.
+
+## Group B, batch 1: inputs and BCs (2026-10-21, not committed)
+
+- S-009: new flag `velout_user` in BCCtx (restart format changes again). `BCGetVelins` computes
+  `velout` from mass balance in one place, only when `bvel_velout` is not given. The log prints
+  the outflow velocity when it is given by the user.
+- M-016: unknown `bvel_face` and `bvel_temperature_inflow` strings stop the run. `exy` with
+  no-slip on front/back is an error; no-slip on bottom/top for vx is now applied with `exy`.
+  Note: `info/options/input_file.dat` (option listing, not a test) sets both.
+- M-030: marker phases are checked right after setup (negative phase was used as an array index
+  in `ADVMarkSetTempPhase`); `nmark_sub < 1`, negative `nmark_lim`/`nmark_avd`, `nmin > nmax`
+  are rejected; `stagp_a = 0` is used as given (was replaced by 2/3).
+- `make test` passed (t37 FastScape broken as before).
