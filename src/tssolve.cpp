@@ -98,6 +98,15 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 	PetscPrintf(PETSC_COMM_WORLD, "Time stepping parameters:\n");
 	PetscPrintf(PETSC_COMM_WORLD, "   Simulation end time          : %g %s \n", ts->time_end*time, scal->lbl_time);
 	PetscPrintf(PETSC_COMM_WORLD, "   Maximum number of steps      : %" PetscInt_FMT " \n", ts->nstep_max);
+	if(ts->num_dtper)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Time step schedule ends at   : %g %s \n", ts->t_dtper[ts->num_dtper]*time, scal->lbl_time);
+
+		if(ts->time_end > ts->t_dtper[ts->num_dtper])
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "   Warning: run stops after the scheduled steps, before time_end\n");
+		}
+	}
 	PetscPrintf(PETSC_COMM_WORLD, "   Time step                    : %g %s \n", ts->dt      *time, scal->lbl_time);
 	PetscPrintf(PETSC_COMM_WORLD, "   Minimum time step            : %g %s \n", ts->dt_min  *time, scal->lbl_time);
 	PetscPrintf(PETSC_COMM_WORLD, "   Maximum time step            : %g %s \n", ts->dt_max  *time, scal->lbl_time);
@@ -335,6 +344,12 @@ PetscErrorCode TSSolGetPeriodSteps(
 	// actual number of steps
 	n = PetscMax(1, (PetscInt)round(n_try));
 
+	// check buffer size (linSpace writes n+1 values)
+	if(n >= _max_num_steps_)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Time step schedule has too many steps (maximum %" PetscInt_FMT ")", _max_num_steps_-1);
+	}
+
 	// make proposal for steps
 	linSpace(dt_start,dt_end,n+1,dt);
 
@@ -382,6 +397,12 @@ PetscErrorCode TSSolMakeSchedule(TSSol *ts)
 	PetscCall(PetscMalloc1((size_t)_max_num_steps_*sizeof(PetscScalar), &steps));
 	PetscCall(PetscMemzero(schedule, (size_t)_max_num_steps_*sizeof(PetscScalar)));
 
+	// check input
+	if(t[0] != 0.0)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "First entry of time_dt_periods must be 0.");
+	}
+
 	// loop through segments and build schedule
 	iter = 0; n = 0;
 	for(iSeg = 0; iSeg < num_seg; iSeg++)
@@ -404,6 +425,12 @@ PetscErrorCode TSSolMakeSchedule(TSSol *ts)
 		// get timesteps
 		PetscCall(PetscMemzero(steps, (size_t)_max_num_steps_*sizeof(PetscScalar)));
 		PetscCall(TSSolGetPeriodSteps(dt_start, dt_end, span, steps, n));
+
+		// check schedule size (last entry is added after the loop)
+		if(iter + n >= _max_num_steps_)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Time step schedule has too many steps (maximum %" PetscInt_FMT ")", _max_num_steps_-1);
+		}
 
 		// add to schedule
 		for(i = 0; i < n; i++)
@@ -445,16 +472,19 @@ PetscErrorCode TSSolAdjustSchedule(TSSol *ts, PetscScalar dt_cfl, PetscInt istep
 	// adjust current step
 	schedule[istep] -= diff;
 
+	// no next step in the schedule buffer
+	if(istep+1 >= _max_num_steps_) PetscFunctionReturn(0);
+
 	// adapt schedule
-	if(diff < 0.25*schedule[istep+1])
+	if(diff < 0.25*schedule[istep+1] || maxSteps+1 >= _max_num_steps_)
 	{
-		// make next target bigger
+		// make next target bigger (also if there is no space to insert a step)
 		schedule[istep+1] += diff;
 	}
 	else
 	{
 		// squeeze in new time step to close the gap
-		for(i = min(maxSteps, (PetscInt)(_max_num_steps_)-1); i > istep; i--)
+		for(i = maxSteps; i > istep; i--)
 		{
 			schedule[i+1] = schedule[i];
 		}

@@ -1476,7 +1476,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	Polygon2D      Polys[_max_polygons_];
 	PetscInt      *polyin, *polyin_sum;
 	PetscInt      *idx;
-	PetscScalar   *X, *PolyLen, *PolyIdx, *PolyX, *PolyFile;
+	PetscScalar   *X, *PolyLen, *PolyIdx, *PolyX, *PolyFile, *SxAll, *SyAll;
 	PetscInt       imark, imarkx, imarky, imarkz, icellx, icelly, icellz;
 	PetscScalar    dx, dy, dz, x, y, z;
 	PetscScalar    chLen;
@@ -1623,6 +1623,11 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	// read entire file
 	PetscCall(PetscBinaryRead(fd, PolyFile, Fsize, NULL, PETSC_SCALAR));
 
+	if(Fsize < 3)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Polygon file is truncated");
+	}
+
 	// read number of volumes
 	VolN = (PetscInt)(PolyFile[Fcount]); Fcount++;
 	Nmax = (PetscInt)(PolyFile[Fcount]); Fcount++;
@@ -1632,6 +1637,8 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	PetscCall(PetscMalloc((size_t)Nmax  *sizeof(PetscScalar),&PolyLen));
 	PetscCall(PetscMalloc((size_t)Nmax  *sizeof(PetscScalar),&PolyIdx));
 	PetscCall(PetscMalloc((size_t)Lmax*2*sizeof(PetscScalar),&PolyX));
+	PetscCall(PetscMalloc((size_t)Nmax  *sizeof(PetscScalar),&SxAll));
+	PetscCall(PetscMalloc((size_t)Nmax  *sizeof(PetscScalar),&SyAll));
 
 	// allocate temporary arrays
 	PetscCall(PetscMalloc((size_t)nidxmax*sizeof(PetscInt),&idx));
@@ -1646,11 +1653,25 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	// --- loop over all volumes ---
 	for(kvol = 0; kvol < VolN; kvol++)
 	{
+		if(Fcount + 4 > Fsize)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Polygon file is truncated");
+		}
+
 		// read volume header
 		Vol.dir   = (PetscInt)(PolyFile[Fcount]); Fcount++; // normal vector of polygon plane
 		Vol.phase = (PetscInt)(PolyFile[Fcount]); Fcount++; // phase that polygon defines
 		Vol.type  = (PetscInt)(PolyFile[Fcount]); Fcount++; // type of assigning the phases
 		Vol.num   = (PetscInt)(PolyFile[Fcount]); Fcount++; // number of polygon slices defining the volume
+
+		if(Vol.num < 0 || Vol.num > Nmax)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Polygon file: volume %" PetscInt_FMT " has %" PetscInt_FMT " polygons, maximum is %" PetscInt_FMT, kvol, Vol.num, Nmax);
+		}
+		if(Fcount + 2*Vol.num > Fsize)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Polygon file is truncated");
+		}
 
 		// define axes the span the polygon plane
 		if (Vol.dir==0)
@@ -1683,8 +1704,6 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 		}
 
 		// interpolate stretch parameters
-		PetscScalar SyAll[Vol.num];
-		PetscScalar SxAll[Vol.num];
 		if (kvol == VolID)
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"\nVarying volume %" PetscInt_FMT " (phase: %" PetscInt_FMT ", type: %" PetscInt_FMT ") \n",  VolID,  Vol.phase,  Vol.type);
@@ -1739,6 +1758,11 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 				}
 			}
 
+			if(numLev+1 > _max_polygons_)
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Polygon file: more than %" PetscInt_FMT " polygons in one slice", _max_polygons_);
+			}
+
 			// also read all those polygons
 			for(lpoly = 1; lpoly < numLev+1; lpoly++)
 			{
@@ -1750,6 +1774,15 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 			// loop over group of polygons and check which markers are in which polygon
 			for(lpoly = 0; lpoly < numLev+1; lpoly++)
 			{
+				if(Polys[lpoly].len < 0 || Polys[lpoly].len > Lmax)
+				{
+					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Polygon file: polygon has %" PetscInt_FMT " points, maximum is %" PetscInt_FMT, Polys[lpoly].len, Lmax);
+				}
+				if(Fcount + 2*Polys[lpoly].len > Fsize)
+				{
+					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Polygon file is truncated");
+				}
+
 				// check if slice is part of local proc
 				if(Polys[lpoly].gidx >= tstart[Vol.dir] && Polys[lpoly].gidx <= tend[Vol.dir])
 				{
@@ -1828,6 +1861,8 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	PetscCall(PetscFree(polyin_sum));
 	PetscCall(PetscFree(X));
 	PetscCall(PetscFree(PolyIdx));
+	PetscCall(PetscFree(SxAll));
+	PetscCall(PetscFree(SyAll));
 	PetscCall(PetscFree(PolyLen));
 	PetscCall(PetscFree(PolyX));
 	PetscCall(PetscFree(PolyFile));
