@@ -48,7 +48,10 @@ Testing:
   which is rejected in 2D. Subtest c now converges (8, 9 its; Galerkin only: 7, 9).
   t02 references made (`make update 02`); a changes only at round-off. Subtests b, c now use
   their own input files; added d (wBFBT + periodic, settings from FallingSpheres_wBFBT.dat):
-  13, 21 its. Next: M-061.
+  13, 21 its.
+  M-061 fixed: interpolate.cpp skips the x clamps when periodic (Y/Z face, center, YZ edge).
+  Checked by hand (block at x = 0..0.5): density at x = 0 and x = L is now 1.5, was 2 at x = 0.
+  t02 passes (no test checks output files).
   Fixed: bc.cpp printed the periodic line inside the no-slip mask line, without a newline.
   Also: MatDataRestrictParam3D clamps at the periodic seam (Im1++); a 4-rank SETERRQ in MG
   setup ended as "signal 9" with no message printed.

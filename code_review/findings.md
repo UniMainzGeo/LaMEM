@@ -125,7 +125,7 @@ Next free IDs: S-049, M-074, N-030
 | M-058 | minor | confirmed | parallel | medium | AVD.cpp:747-749,791-793 | AVD half-volume rule uses processor boundaries; nmax not halved | open |
 | M-059 | minor | confirmed | logic | medium | AVD.cpp:813-816,865-884,944-946 | AVD "edge" control volumes are face volumes; printed labels swapped | open |
 | M-060 | minor | confirmed | memory | medium | marker.cpp:1466,1622-1744 | Polygon file sizes not checked against buffers | open |
-| M-061 | minor | confirmed | logic | medium | interpolate.cpp:102,158,220,377 | Corner output at the periodic x seam uses one side only | open |
+| M-061 | minor | confirmed | logic | medium | interpolate.cpp:102,158,220,377 | Corner output at the periodic x seam uses one side only | fixed |
 | M-062 | minor | confirmed | physics | medium | marker.cpp:1013,1152,1215; phase_transition.cpp:1197,1339 | Halfspace temperatures use hard-coded kappa = 1e-6 (wrong in non-dim mode) | open |
 | M-063 | minor | confirmed | parallel | medium | subgrid.cpp:85,606-608; advect.cpp:1906; tools.cpp:293,798 | Rank-local hard errors can hang; sedimentation-phase error on fast uplift | open |
 | M-064 | minor | confirmed | logic | medium | phase_transition.cpp:883-905,922,1026-1029 | `ResetParam = APS` resets every step; side depends on type; broken for NotInAirBox | open |
@@ -1388,7 +1388,7 @@ Next free IDs: S-049, M-074, N-030
 - Where: interpolate.cpp:102, 158, 220, 377 (commit 6124aa7d)
 - What: in periodic mode `i == mx` never happens, so only the `i == 0` clamp fires and the
   corner value at x = 0 ignores ghost cell -1. Output only; velocity (`use_bound = 1`) is fine.
-- Status: open
+- Status: fixed (x clamps skipped when periodic; ghost -1 holds the wrapped value)
 
 ### M-062 [minor, confirmed] Halfspace temperatures use hard-coded kappa = 1e-6
 - Tags: minor, confirmed, physics, medium
