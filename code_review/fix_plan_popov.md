@@ -34,7 +34,7 @@ Testing:
 - S-009: "user velout given" flag; default stays mass-conserving.
 - S-029: fill boundary ghosts of lithostatic and pore pressure.
 - S-035, M-021, M-058, M-059: AVD marker control, one batch.
-- S-039: read solver-default inputs with command-line options applied.
+- S-039: read solver-default inputs with command-line options applied. Done (no clear).
 - M-016, M-030: reject typos and bad values.
 - M-051, M-053, M-063: one helper so a one-rank error stops all ranks (no hang). Done in
   batch 4: no hang (PETSc aborts all ranks); unchecked reads fixed.
@@ -171,3 +171,15 @@ One commit per group of A, then B, then C after discussion.
 - M-063: hang part not real (as above). The "Incorrect sedimentation phase" stop on fast uplift
   or overhangs is model behaviour: moved to C.
 - Tests: t01, t39 pass (t41 skipped, plugin not built). No results change.
+
+## Group B, S-039 (2026-10-22, not committed)
+
+- `setSolverOptions` no longer clears the options before `solverOptionsSetDefaults`. The defaults
+  now see the command line (grid, CPUs, `act_temp_diff`, solver block keys). The saved options are
+  still put back last, so the command line still wins over the defaults.
+- Keys inside `<SolverOptionsStart>` need the block index on the command line, e.g.
+  `-num_mg_levels[0] 2` (as for all block keys).
+- Checked on t02 with `-nel_x 12 ... -num_mg_levels[0] 4`: now stops with "Max. possible: 3"
+  (12 cells); `-act_temp_diff 1` now sets `ts_ksp_*`.
+- Tests: t02, t03, t07, t08, t19, t20, t28, t30 pass; t26 only dyndike_4core fails (no command-line
+  options, known issue). No results change.
