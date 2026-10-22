@@ -946,9 +946,6 @@ PetscErrorCode setSolverOptions(FB *fb)
 	// copy all command line and previously specified options to buffer
 	PetscCall(PetscOptionsGetAll(NULL, &all_options));
 
-	// remove command line options from database
-	PetscCall(PetscOptionsClear(NULL));
-
 	// set simplified solver options from the input file
 	PetscCall(solverOptionsSetDefaults(fb));
 
