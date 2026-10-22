@@ -99,8 +99,12 @@ PetscErrorCode InterpYFaceCorner(FDSTAG *fs, Vec YFace, Vec Corner, InterpFlags 
 		if(!iflag.use_bound)
 		{
 			// set ghost values on boundaries if not defined
-			if(i == 0)  { A1 = A2; A3 = A4; }
-			if(i == mx) { A2 = A1; A4 = A3; }
+			// periodic x: ghost cell -1 holds the wrapped value
+			if(!fs->dsx.periodic)
+			{
+				if(i == 0)  { A1 = A2; A3 = A4; }
+				if(i == mx) { A2 = A1; A4 = A3; }
+			}
 			if(k == 0)  { A1 = A3; A2 = A4; }
 			if(k == mz) { A3 = A1; A4 = A2; }
 		}
@@ -155,8 +159,12 @@ PetscErrorCode InterpZFaceCorner(FDSTAG *fs, Vec ZFace, Vec Corner, InterpFlags 
 		if(!iflag.use_bound)
 		{
 			// set ghost values on boundaries if not defined
-			if(i == 0)  { A1 = A2; A3 = A4; }
-			if(i == mx) { A2 = A1; A4 = A3; }
+			// periodic x: ghost cell -1 holds the wrapped value
+			if(!fs->dsx.periodic)
+			{
+				if(i == 0)  { A1 = A2; A3 = A4; }
+				if(i == mx) { A2 = A1; A4 = A3; }
+			}
 			if(j == 0)  { A1 = A3; A2 = A4; }
 			if(j == my) { A3 = A1; A4 = A2; }
 		}
@@ -216,8 +224,11 @@ PetscErrorCode InterpCenterCorner(FDSTAG *fs, Vec Center, Vec Corner, InterpFlag
 		if(!iflag.use_bound)
 		{
 			// check index bounds if ghost points are undefined
-			if(I1 == mx) I1--;
-			if(I2 == -1) I2++;
+			if(!fs->dsx.periodic)
+			{
+				if(I1 == mx) I1--;
+				if(I2 == -1) I2++;
+			}
 			if(J1 == my) J1--;
 			if(J2 == -1) J2++;
 			if(K1 == mz) K1--;
@@ -373,8 +384,9 @@ PetscErrorCode InterpYZEdgeCorner(FDSTAG *fs, Vec YZEdge, Vec Corner, InterpFlag
 	START_STD_LOOP
 	{
 		// set index bounds
-		I1 = i;   if(I1 == mx) I1--;
-		I2 = i-1; if(I2 == -1) I2++;
+		I1 = i;
+		I2 = i-1;
+		if(!fs->dsx.periodic) { if(I1 == mx) I1--; if(I2 == -1) I2++; }
 
 		// access basic source values
 		A1 = lYZEdge[k][j][I2];
