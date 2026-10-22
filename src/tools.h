@@ -31,6 +31,9 @@ PetscErrorCode VecReadRestart (Vec x, FILE *fp);
 
 PetscErrorCode VecWriteRestart(Vec x, FILE *fp);
 
+// read size bytes from file, stop if the file is truncated
+PetscErrorCode FileRead(void *buf, size_t size, FILE *fp);
+
 //---------------------------------------------------------------------------
 // Basic statistic functions
 //---------------------------------------------------------------------------

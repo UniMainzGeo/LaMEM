@@ -1511,8 +1511,8 @@ PetscErrorCode DynamicPhTr_ReadRestart(JacRes *jr, FILE *fp)
 			PetscCall(makeScalArray(&PhaseTrans->cbuffL, NULL, dsy->ncels+2));
 			PetscCall(makeScalArray(&PhaseTrans->cbuffR, NULL, dsy->ncels+2));
 
-			fread(PhaseTrans->cbuffL,  sizeof(PetscScalar)*(size_t)(dsy->ncels + 2), 1, fp);
-			fread(PhaseTrans->cbuffR,  sizeof(PetscScalar)*(size_t)(dsy->ncels + 2), 1, fp);
+			PetscCall(FileRead(PhaseTrans->cbuffL,  sizeof(PetscScalar)*(size_t)(dsy->ncels + 2), fp));
+			PetscCall(FileRead(PhaseTrans->cbuffR,  sizeof(PetscScalar)*(size_t)(dsy->ncels + 2), fp));
 
 
 			PhaseTrans->celly_xboundL = PhaseTrans->cbuffL + 1;

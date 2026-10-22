@@ -60,7 +60,7 @@ PetscErrorCode FBLoad(FB **pfb)
 		// read entire file into buffer
 		PetscCall(PetscMalloc((sz + 1)*sizeof(char), &fb->fbuf));
 
-		fread(fb->fbuf, sz*sizeof(char), 1, fp);
+		PetscCall(FileRead(fb->fbuf, sz*sizeof(char), fp));
 
 		fclose(fp);
 

@@ -76,11 +76,26 @@ PetscErrorCode VecReadRestart(Vec x, FILE *fp)
 	// get vector array
 	PetscCall(VecGetArray(x, &xarr));
 
-	// write to file
-	fread(xarr, sizeof(PetscScalar), (size_t)size, fp);
+	// read from file
+	PetscCall(FileRead(xarr, sizeof(PetscScalar)*(size_t)size, fp));
 
 	// restore vector array
 	PetscCall(VecRestoreArray(x, &xarr));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FileRead(void *buf, size_t size, FILE *fp)
+{
+	PetscFunctionBeginUser;
+
+	// nothing to read
+	if(!size) PetscFunctionReturn(0);
+
+	if(fread(buf, size, 1, fp) != 1)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_FILE_READ, "Cannot read %zu bytes from file (file is truncated or damaged)", size);
+	}
 
 	PetscFunctionReturn(0);
 }

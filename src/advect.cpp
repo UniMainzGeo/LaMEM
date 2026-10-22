@@ -349,7 +349,7 @@ PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
 	PetscCall(makeIntArray(&actx->markind, NULL, actx->markcap));
 
 	// read markers from disk
-	fread(actx->markers, (size_t)actx->nummark*sizeof(Marker), 1, fp);
+	PetscCall(FileRead(actx->markers, (size_t)actx->nummark*sizeof(Marker), fp));
 
 	// injected geometric primitives are part of the LaMEMLib blob that has already
 	// been read, only the function pointers have to be restored from the stored type

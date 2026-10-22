@@ -1147,7 +1147,7 @@ PetscErrorCode BCReadRestart(BCCtx *bc, FILE *fp)
 	// read fixed cell IDs
 	if(bc->fixCell)
 	{
-		fread(bc->fixCellFlag, (size_t)nCells, 1, fp);
+		PetscCall(FileRead(bc->fixCellFlag, (size_t)nCells, fp));
 	}
 
 	PetscFunctionReturn(0);
@@ -1256,19 +1256,18 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 
 	if(fp == NULL)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s\n", filename);
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot open input file %s\n", filename);
 	}
 
 	// check file size
-	stat(filename, &sb);
-
-	if((PetscInt)sb.st_size != bc->fs->nCells)
+	if(stat(filename, &sb) || (PetscInt)sb.st_size != bc->fs->nCells)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Wrong fixed cell file size %s\n", filename);
+		fclose(fp);
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong fixed cell file size %s\n", filename);
 	}
 
 	// read flags
-	fread(bc->fixCellFlag, (size_t)bc->fs->nCells, 1, fp);
+	PetscCall(FileRead(bc->fixCellFlag, (size_t)bc->fs->nCells, fp));
 
 	// close file
 	fclose(fp);

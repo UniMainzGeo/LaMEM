@@ -256,7 +256,7 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm, FB *fb)
 	}
 
 	// read LaMEM library database
-	fread(lm, sizeof(LaMEMLib), 1, fp);
+	PetscCall(FileRead(lm, sizeof(LaMEMLib), fp));
 
 	// setup cross-references between library objects
 	PetscCall(LaMEMLibSetLinks(lm));

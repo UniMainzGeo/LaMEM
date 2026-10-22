@@ -289,9 +289,9 @@ PetscErrorCode Discret1DReadRestart(Discret1D *ds, FILE *fp)
 	PetscCall(makeScalArray(&ds->nbuff,  NULL, ds->ncels + 3));
 	PetscCall(makeScalArray(&ds->cbuff,  NULL, ds->ncels + 2));
 
-	fread(ds->starts, sizeof(PetscInt   )*(size_t)(ds->nproc + 1), 1, fp);
-	fread(ds->nbuff,  sizeof(PetscScalar)*(size_t)(ds->ncels + 3), 1, fp);
-	fread(ds->cbuff,  sizeof(PetscScalar)*(size_t)(ds->ncels + 2), 1, fp);
+	PetscCall(FileRead(ds->starts, sizeof(PetscInt   )*(size_t)(ds->nproc + 1), fp));
+	PetscCall(FileRead(ds->nbuff,  sizeof(PetscScalar)*(size_t)(ds->ncels + 3), fp));
+	PetscCall(FileRead(ds->cbuff,  sizeof(PetscScalar)*(size_t)(ds->ncels + 2), fp));
 
 	ds->ncoor = ds->nbuff + 1;
 	ds->ccoor = ds->cbuff + 1;
