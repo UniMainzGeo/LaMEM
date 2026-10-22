@@ -932,9 +932,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	PetscPrintf(PETSC_COMM_WORLD, "Boundary condition parameters: \n");
 
-	PetscPrintf(PETSC_COMM_WORLD, "   No-slip boundary mask [lt rt ft bk bm tp]  : ");
+	if(periodic) { PetscPrintf(PETSC_COMM_WORLD, "   Periodic bc in x-direction                 @ \n"); }
 
-	if(periodic) { PetscPrintf(PETSC_COMM_WORLD, "   Periodic bc in x-direction                 @ "); }
+	PetscPrintf(PETSC_COMM_WORLD, "   No-slip boundary mask [lt rt ft bk bm tp]  : ");
 
 	for(jj = 0; jj < 6; jj++)
 	{

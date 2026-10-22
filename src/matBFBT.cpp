@@ -205,12 +205,12 @@ PetscErrorCode wBFBTAssemble(wBFBTData *P)
 		Kp1 = k+1; cfp[5] = 1.0; if(Kp1 > mcz) {                 Kp1--; if(bcp[k+1][j][i] != DBL_MAX) cfp[5] = -1.0; }
 
 		// get velocity SPC multipliers
-		cfv[0] = 1.0; if(!periodic) { if(bcvx[k][j][i]   != DBL_MAX) cfv[0] = 0.0; }
-		cfv[1] = 1.0; if(!periodic) { if(bcvx[k][j][i+1] != DBL_MAX) cfv[1] = 0.0; }
-		cfv[2] = 1.0;                 if(bcvy[k][j][i]   != DBL_MAX) cfv[2] = 0.0;
-		cfv[3] = 1.0;                 if(bcvy[k][j+1][i] != DBL_MAX) cfv[3] = 0.0;
-		cfv[4] = 1.0;                 if(bcvz[k][j][i]   != DBL_MAX) cfv[4] = 0.0;
-		cfv[5] = 1.0;                 if(bcvz[k+1][j][i] != DBL_MAX) cfv[5] = 0.0;
+		cfv[0] = 1.0; if(bcvx[k][j][i]   != DBL_MAX) cfv[0] = 0.0;
+		cfv[1] = 1.0; if(bcvx[k][j][i+1] != DBL_MAX) cfv[1] = 0.0;
+		cfv[2] = 1.0; if(bcvy[k][j][i]   != DBL_MAX) cfv[2] = 0.0;
+		cfv[3] = 1.0; if(bcvy[k][j+1][i] != DBL_MAX) cfv[3] = 0.0;
+		cfv[4] = 1.0; if(bcvz[k][j][i]   != DBL_MAX) cfv[4] = 0.0;
+		cfv[5] = 1.0; if(bcvz[k+1][j][i] != DBL_MAX) cfv[5] = 0.0;
 
 		// get viscosity scaling coefficients
 		cfe[0] = sqrt((eta[k][j][i] + eta[k][j][Im1])/2.0);

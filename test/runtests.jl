@@ -168,6 +168,21 @@ if should_run_test("t02_FB2_MG")
     @test perform_lamem_test(dir,ParamFile,"FB2_a_CoupledMG_deb", 
                             keywords=keywords, accuracy=acc, cores=4, deb=true, mpiexec=mpiexec, debug=false,
                                 create_expected_file=update_expected, clean_dir=clean_files)
+
+    # two matrix-free MG levels (needs 4 levels: coarse and next level stay assembled)
+    @test perform_lamem_test(dir,"FallingBlock_MatFreeMG.dat","FB2_b_MatFreeMG_deb",
+                            keywords=keywords, accuracy=acc, cores=4, deb=true, mpiexec=mpiexec, debug=false,
+                                create_expected_file=update_expected, clean_dir=clean_files)
+
+    # two matrix-free MG levels with periodic x boundary (periodic needs no-slip bottom)
+    @test perform_lamem_test(dir,"FallingBlock_MatFreeMG_Periodic.dat","FB2_c_MatFreeMG_Periodic_deb",
+                            keywords=keywords, accuracy=acc, cores=4, deb=true, mpiexec=mpiexec, debug=false,
+                                create_expected_file=update_expected, clean_dir=clean_files)
+
+    # wBFBT block solver with periodic x boundary
+    @test perform_lamem_test(dir,"FallingBlock_wBFBT_Periodic.dat","FB2_d_wBFBT_Periodic_deb",
+                            keywords=keywords, accuracy=acc, cores=4, deb=true, mpiexec=mpiexec, debug=false,
+                                create_expected_file=update_expected, clean_dir=clean_files)
 end
 end
 #---------------------------------------------------------------------------

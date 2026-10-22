@@ -636,8 +636,11 @@ PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 		// set velocity two-point constraints
 		SET_VEL_TPC(bcvx, i,   j-1, k, j, 0,   cf[1], cf[0])
 		SET_VEL_TPC(bcvx, i,   j,   k, j, mny, cf[0], cf[1])
-		SET_VEL_TPC(bcvy, i-1, j,   k, i, 0,   cf[3], cf[2])
-		SET_VEL_TPC(bcvy, i,   j,   k, i, mnx, cf[2], cf[3])
+		if(!fs->periodic)
+		{
+			SET_VEL_TPC(bcvy, i-1, j,   k, i, 0,   cf[3], cf[2])
+			SET_VEL_TPC(bcvy, i,   j,   k, i, mnx, cf[2], cf[3])
+		}
 
 		// get effective viscosity
 		eta = vetaxy[k][j][i];
@@ -680,8 +683,11 @@ PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 		// set velocity two-point constraints
 		SET_VEL_TPC(bcvx, i,   j,   k-1, k, 0,   cf[1], cf[0])
 		SET_VEL_TPC(bcvx, i,   j,   k,   k, mnz, cf[0], cf[1])
-		SET_VEL_TPC(bcvz, i-1, j,   k,   i, 0,   cf[3], cf[2])
-		SET_VEL_TPC(bcvz, i,   j,   k,   i, mnx, cf[2], cf[3])
+		if(!fs->periodic)
+		{
+			SET_VEL_TPC(bcvz, i-1, j,   k,   i, 0,   cf[3], cf[2])
+			SET_VEL_TPC(bcvz, i,   j,   k,   i, mnx, cf[2], cf[3])
+		}
 
 		// get effective viscosity
 		eta = vetaxz[k][j][i];
@@ -1302,10 +1308,10 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 		v[12] = -eta/dy/fdx; v[13] =  eta/dy/fdx; v[14] = -eta/dx/fdx; v[15] =  eta/dx/fdx; // fy_(i)   [sxy]
 
 		// set ghost point flags
-		idx[0] = 0; if(j == 0)   { idx[0] = -1; }
-		idx[1] = 0; if(j == mny) { idx[1] = -1; }
-		idx[2] = 0; if(i == 0)   { idx[2] = -1; }
-		idx[3] = 0; if(i == mnx) { idx[3] = -1; }
+		idx[0] = 0; if(j == 0)                    { idx[0] = -1; }
+		idx[1] = 0; if(j == mny)                  { idx[1] = -1; }
+		idx[2] = 0; if(i == 0   && !fs->periodic) { idx[2] = -1; }
+		idx[3] = 0; if(i == mnx && !fs->periodic) { idx[3] = -1; }
 
 		// apply two-point constraints on the ghost nodes
 		getTwoPointConstr(4, idx, pdofidx, cf);
@@ -1353,10 +1359,10 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 		v[12] = -eta/dz/fdx; v[13] =  eta/dz/fdx; v[14] = -eta/dx/fdx; v[15] =  eta/dx/fdx; // fz_(i)   [sxz]
 
 		// set ghost point flags
-		idx[0] = 0; if(k == 0)   { idx[0] = -1; }
-		idx[1] = 0; if(k == mnz) { idx[1] = -1; }
-		idx[2] = 0; if(i == 0)   { idx[2] = -1; }
-		idx[3] = 0; if(i == mnx) { idx[3] = -1; }
+		idx[0] = 0; if(k == 0)                    { idx[0] = -1; }
+		idx[1] = 0; if(k == mnz)                  { idx[1] = -1; }
+		idx[2] = 0; if(i == 0   && !fs->periodic) { idx[2] = -1; }
+		idx[3] = 0; if(i == mnx && !fs->periodic) { idx[3] = -1; }
 
 		// apply two-point constraints on the ghost nodes
 		getTwoPointConstr(4, idx, pdofidx, cf);
