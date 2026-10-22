@@ -1282,7 +1282,7 @@ Next free IDs: S-049, M-074, N-030
   readers ignore the return value of fread, so a truncated restart file loads garbage without
   any message.
 - Fix idea: broadcast the status and fail on all ranks; check fread counts.
-- Status: open
+- Status: fixed (batch 4): no hang, PETSc aborts all ranks; fread counts checked
 
 ### M-052 [minor, confirmed] Sign of `velin` on Right/Back faces flips depending on `bvel_face_out`
 - Tags: minor, confirmed, input, medium
@@ -1301,7 +1301,7 @@ Next free IDs: S-049, M-074, N-030
   file, wrong size) can hang the others. `stat` and `fread` results are not checked; `fp`
   is not closed on the size error. Same pattern as M-051.
 - Fix idea: collect the status with an MPI reduction and fail on all ranks; check counts.
-- Status: open
+- Status: fixed (batch 4): no hang, PETSc aborts all ranks; stat/fread checked, file closed
 
 ### M-054 [minor, possible] CompensatingInflow has no mass-balance check
 - Tags: minor, possible, input, medium
@@ -1405,7 +1405,7 @@ Next free IDs: S-049, M-074, N-030
 - What: "Empty control volume", "wrong phase" and `DirMake` errors are raised on one rank in
   collective code, so other ranks hang. subgrid.cpp:606 aborts with "Incorrect sedimentation
   phase" when the surface rises more than one cell per step or has overhangs.
-- Status: open
+- Status: hang part not real (PETSc aborts all ranks); sedimentation-phase stop moved to discuss (C)
 
 ### M-064 [minor, confirmed] `ResetParam = APS` is applied every step and inconsistently
 - Tags: minor, confirmed, logic, medium

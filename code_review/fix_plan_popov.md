@@ -36,7 +36,8 @@ Testing:
 - S-035, M-021, M-058, M-059: AVD marker control, one batch.
 - S-039: read solver-default inputs with command-line options applied.
 - M-016, M-030: reject typos and bad values.
-- M-051, M-053, M-063: one helper so a one-rank error stops all ranks (no hang).
+- M-051, M-053, M-063: one helper so a one-rank error stops all ranks (no hang). Done in
+  batch 4: no hang (PETSc aborts all ranks); unchecked reads fixed.
 - M-055, M-056, M-061: periodic seam and coarse-level BCs in matrix-free / MG.
 - M-060, M-066: buffer size checks.
 - M-069: average doubled-angle form.
@@ -55,7 +56,9 @@ Testing:
 8. With Garrett: M-046, M-067.
 9. Low value: M-009, M-023, M-054, M-057, N-008, N-014 (code or docs?), N-017, N-020.
 10. Delete dead code? N-009, N-010, N-015, dead parts of N-021, N-022.
-11. Nothing to do: M-019 (mitigated by `-snes_max_funcs unlimited`); N-028, N-029 (Boris: leave).
+11. M-063 (from B): "Incorrect sedimentation phase" stop in subgrid.cpp when the surface rises
+    more than one cell per step or has overhangs. Relax, or keep the stop?
+12. Nothing to do: M-019 (mitigated by `-snes_max_funcs unlimited`); N-028, N-029 (Boris: leave).
     Small clean-ups: N-002, N-007 (mostly Wenrong/Yun), N-011, N-018.
 
 ## Moved from A to C while fixing
@@ -153,3 +156,18 @@ One commit per group of A, then B, then C after discussion.
   iterations fail), with and without S-029; the old reference has none.
 - User: "this test was always a big mess". Needs a proper look (setup, solver, local
   iterations), not just a tolerance change. Stopped here on 2026-10-21.
+
+## Group B, batch 4: M-051, M-053, M-063 (2026-10-22, not committed)
+
+- The hangs are not real. An error that reaches `main` makes PETSc (3.24) call `MPI_Abort`, which
+  stops all ranks. Checked: failed `mkdir` in `DirMake` on 2 ranks (read-only run folder) stops at
+  once with exit code 83. So no "stop all ranks" helper is needed.
+- M-051: new `FileRead` (tools.cpp) reads a block and stops with "file is truncated or damaged"
+  on a short read (zero size is a no-op). All 11 `fread` calls use it (restart readers in
+  LaMEMLib, fdstag, bc, advect, phase_transition, `VecReadRestart`; input file in parsing).
+  Checked: t39 restart file cut by 100 bytes stops in `ADVReadRestart`.
+- M-053: `BCReadFixCell` checks the `stat` result, closes the file on the size error, reads with
+  `FileRead`; its rank-local errors use `PETSC_COMM_SELF`.
+- M-063: hang part not real (as above). The "Incorrect sedimentation phase" stop on fast uplift
+  or overhangs is model behaviour: moved to C.
+- Tests: t01, t39 pass (t41 skipped, plugin not built). No results change.
