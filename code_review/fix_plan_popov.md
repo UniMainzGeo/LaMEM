@@ -39,6 +39,19 @@ Testing:
 - M-051, M-053, M-063: one helper so a one-rank error stops all ranks (no hang). Done in
   batch 4: no hang (PETSc aborts all ranks); unchecked reads fixed.
 - M-055, M-056, M-061: periodic seam and coarse-level BCs in matrix-free / MG.
+  Batch 5 (2026-10-22), not committed: t02 subtests b (2 mat-free MG levels, 4 levels) and
+  c (same + periodic, no-slip bottom) added to runtests.jl, references not made yet.
+  M-055 fixed (matFree.cpp x checks skip periodic; matBFBT.cpp cfv guard removed);
+  -js_mat_free and wBFBT periodic converge.
+  M-056 fixed in 3D (matData.cpp MatDataRestrictBC3D: boundary ghost flags copied from the fine
+  grid, x skipped when periodic). 2D left as is: rebuilt coarse levels need matrix-free MG,
+  which is rejected in 2D. Subtest c now converges (8, 9 its; Galerkin only: 7, 9).
+  t02 references made (`make update 02`); a changes only at round-off. Subtests b, c now use
+  their own input files; added d (wBFBT + periodic, settings from FallingSpheres_wBFBT.dat):
+  13, 21 its. Next: M-061.
+  Fixed: bc.cpp printed the periodic line inside the no-slip mask line, without a newline.
+  Also: MatDataRestrictParam3D clamps at the periodic seam (Im1++); a 4-rank SETERRQ in MG
+  setup ended as "signal 9" with no message printed.
 - M-060, M-066: buffer size checks.
 - M-069: average doubled-angle form.
 - N-024, N-025, N-026: the parts Boris approved.
