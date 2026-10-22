@@ -58,6 +58,17 @@ Testing:
 - M-060, M-066: buffer size checks.
 - M-069: average doubled-angle form.
 - N-024, N-025, N-026: the parts Boris approved.
+  N-024 in progress (2026-10-22), not committed, builds clean, tests NOT run yet.
+  Done in src: parsing.cpp checks strtol (base 10) / strtod results, errors on extra values,
+  detects overlapping blocks, checks ftell, drops dead `&& fb`; options.cpp passes the whole
+  PETSc option line. Skipped: rank-0 hang (not real), paths with spaces / `=` in values.
+  Too strict: a scan of test/*.dat found trailing `;` (`temp_bot = 1300.0;`, 25 test inputs,
+  33 examples) and extra values (2D inputs with 3D values; bc.cpp:689 reads 1 value of
+  bvel_velin, :701 the full list). Plan (not yet confirmed): error only if nothing parses
+  or an integer is given as a real (`16.0`, `1e3`); allow other trailing characters; drop the
+  extra-values error. Real bug found: t26 dike_heating_kfac.dat / dike_heating_rhoA.dat have
+  `xbounds = [-15.0 15.0]`, old code read `[-15.0` as 0; fix inputs, update t26 references.
+  Then rescan all test inputs (run each for a few s, grep parser errors) and run the suite.
 
 ## C. Discuss first
 
