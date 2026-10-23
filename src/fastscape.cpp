@@ -89,7 +89,7 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 			if (!FSLib->non_uniform_grid)
 			{
 				PetscCall(getIntParam   (fb, _REQUIRED_, "extendedNodes",    &FSLib->extendedNodes,    1,  10000000)); // non-dimensional
-				if(FSLib->extendedNodes <= 2)   SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "extendedNodes must be ≥ 2");
+				if(FSLib->extendedNodes <= 2)   SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "extendedNodes must be > 2");
 			}
 		}
 		// refined grid
@@ -121,13 +121,12 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 		//-------------------------------
 		// Erosion process
 		//-------------------------------
-		// kf, kd can be set as an array
 		PetscCall(getScalarParam(fb, _REQUIRED_, "kf",                &FSLib->kf,               1,          1.0)); // m/yr
 		PetscCall(getScalarParam(fb, _REQUIRED_, "kfsed",             &FSLib->kfsed,            1,          1.0)); // m/yr
 		PetscCall(getScalarParam(fb, _REQUIRED_, "m",                 &FSLib->m,                1,          1.0)); // non-dimensional
 		PetscCall(getScalarParam(fb, _REQUIRED_, "n",                 &FSLib->n,                1,          1.0)); // non-dimensional
-		PetscCall(getScalarParam(fb, _REQUIRED_, "kd",                &FSLib->kd,               1,          1.0)); // m/yr
-		PetscCall(getScalarParam(fb, _REQUIRED_, "kdsed",             &FSLib->kdsed,            1,          1.0)); // m/yr
+		PetscCall(getScalarParam(fb, _REQUIRED_, "kd",                &FSLib->kd,               1,          1.0)); // m^2/yr
+		PetscCall(getScalarParam(fb, _REQUIRED_, "kdsed",             &FSLib->kdsed,            1,          1.0)); // m^2/yr
 		PetscCall(getScalarParam(fb, _REQUIRED_, "g",                 &FSLib->g,                1,          1.0)); // non-dimensional
 		PetscCall(getScalarParam(fb, _REQUIRED_, "gsed",              &FSLib->gsed,             1,          1.0)); // non-dimensional
 		PetscCall(getScalarParam(fb, _REQUIRED_, "p",                 &FSLib->p,                1,          1.0)); // non-dimensional
@@ -1469,7 +1468,7 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
 	dt      = ts->dt;
 	dt_scal = dt * scal->time;
 	dt_fs   = dt_scal * scalfs->time_fs; // (Myr) in LaMEM to (yr) in FastScape (GEO)
-	time_fs = ts->time * scal->time + dt_scal; // time after finishing surface processes
+	time_fs = (ts->time + dt) * scal->time; // time after finishing surface processes (same as LaMEM output folder)
 	step_fs = ts->istep;
 
 	// Gather topography and velocity

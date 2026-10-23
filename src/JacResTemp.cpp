@@ -64,7 +64,7 @@ PetscErrorCode JacResGetTempParam(
 
 	PetscInt    i, numPhases, AirPhase;
 	Material_t  *phases, *M;
-	Controls    ctrl;
+	Controls    *ctrl;
 	PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k, T_Nu;
 
 	PetscFunctionBeginUser;
@@ -82,7 +82,7 @@ PetscErrorCode JacResGetTempParam(
 	AirPhase  = jr->surf->AirPhase;
 
 	// access the control which contains switch for T-dep conductivity
-	ctrl      = jr->ctrl;
+	ctrl      = &jr->ctrl;
 
 	// average all phases
 	for(i = 0; i < numPhases; i++)
@@ -102,27 +102,22 @@ PetscErrorCode JacResGetTempParam(
 		rho_A  +=  cf*M->A*rho;
 
 		// Temperature-dependent conductivity: phase-dependent nusselt number
-		if(ctrl.useTk)
+		if(ctrl->useTk)
 		{
-			if(! M->nu_k)
-			{
-				// set Nusselt number = 1 if not defined
-				M->nu_k = 1.0;
-			}
-
-			nu_k += cf*M->nu_k;
+			// Nusselt number = 1 if not defined
+			nu_k += cf*(M->nu_k ? M->nu_k : 1.0);
 			T_Nu += cf*M->T_Nu;
 		}
 
 	}
 
 	// switch and temperature condition to use T-dep conductivity
-	if(ctrl.useTk && Tc <= T_Nu)
+	if(ctrl->useTk && Tc <= T_Nu)
 	{
 		k = k*nu_k;
 	}
 
-	if(ctrl.actDike && ctrl.dikeHeat)
+	if(ctrl->actDike && ctrl->dikeHeat)
 	{
 		PetscCall(Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A, y, J));
 	}
@@ -390,7 +385,6 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	SolVarDev   *svDev;
 	SolVarBulk  *svBulk;
 	PetscInt    periodic;
-	Controls    ctrl;
 	Vec         ldcen, ldxy, ldxz, ldyz;
 	Vec         lvx, lvy, lvz, lT;
 	PetscInt    iter, num, *list;
@@ -413,9 +407,6 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	bc    = jr->bc;
 	num   = bc->tNumSPC;
 	list  = bc->tSPCList;
-
-	// access controls
-	ctrl = jr->ctrl;
 
 	// set periodic flag
 	periodic = fs->periodic;

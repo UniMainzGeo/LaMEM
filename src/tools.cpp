@@ -601,34 +601,17 @@ void interpStretch(
     PetscScalar *SxAll,
     PetscScalar *SyAll)
 {
-	PetscInt     i,j,k;
-	PetscInt     maxSize = 0;
+	PetscInt     i;
 
 	// enter first value
 	SxAll[CtrlPoly[0]] = Sx[0];
 	SyAll[CtrlPoly[0]] = Sy[0];
 
-	// get maximum size for SxNew and SyNew
-	for (i=1; i < numCtrlPoly; i++)
-	{
-		if (CtrlPoly[i]-CtrlPoly[i-1]+1 > maxSize)
-		{
-			maxSize = CtrlPoly[i]-CtrlPoly[i-1]+1;
-		}
-	}
-
 	// interpolate the rest
 	for (i=1; i < numCtrlPoly; i++)
 	{
-		PetscScalar SxNew[maxSize];
-		PetscScalar SyNew[maxSize];
-		linSpace(Sx[i-1],Sx[i],CtrlPoly[i] - CtrlPoly[i-1] + 1, SxNew);
-		linSpace(Sy[i-1],Sy[i],CtrlPoly[i] - CtrlPoly[i-1] + 1, SyNew);
-		for (j = CtrlPoly[i-1], k = 0; j < CtrlPoly[i]+1; j++, k++)
-		{
-			SxAll[j] = SxNew[k];
-			SyAll[j] = SyNew[k];
-		}
+		linSpace(Sx[i-1],Sx[i],CtrlPoly[i] - CtrlPoly[i-1] + 1, SxAll + CtrlPoly[i-1]);
+		linSpace(Sy[i-1],Sy[i],CtrlPoly[i] - CtrlPoly[i-1] + 1, SyAll + CtrlPoly[i-1]);
 	}
 
 	// extend stretch to first and last polygon
@@ -660,59 +643,46 @@ void findCenterMass(
     PetscScalar &x_cen,
     PetscScalar &y_cen)
 {
-	PetscInt    i;
+	PetscInt    i, ip;
 	PetscScalar sumX = 0;
 	PetscScalar sumY = 0;
 	PetscScalar A = 0;
 	PetscScalar xc = 0;
 	PetscScalar yc = 0;
-	PetscScalar meanX, meanY;
-	PetscScalar xp[nN], yp[nN], a[nN];
-
-	// split coords into x and y
-	PetscScalar x[nN];
-	PetscScalar y[nN];
-	for (i=0; i < nN; i++)
-	{
-		x[i] = coords[2*i];
-		y[i] = coords[2*i+1];
-	}
+	PetscScalar meanX, meanY, x, y, xp, yp, a;
 
 	// get mean of all nodes
 	for (i=0; i < nN; i++)
 	{
-		sumX += x[i];
-		sumY += y[i];
+		sumX += coords[2*i];
+		sumY += coords[2*i+1];
 	}
 	meanX = sumX/ ((PetscScalar) nN);
 	meanY = sumY/ ((PetscScalar) nN);
 
-	// shift nodes by mean for better precision
+	// summations for CCW boundary (nodes shifted by mean for better precision)
 	for (i=0; i < nN; i++)
 	{
-		x[i] -= meanX;
-		y[i] -= meanY;
-	}
-
-	// summations for CCW boundary
-	for (i=0; i < nN; i++)
-	{
-		if (i == nN-1)
-		{
-			xp[i] = x[0];
-			yp[i] = y[0];
-		}
-		else
-		{
-			xp[i] = x[i+1];
-			yp[i] = y[i+1];
-		}
-		a[i]   =  x[i]*yp[i] - xp[i]*y[i];
-		xc    += (x[i]+xp[i])*a[i];
-		yc    += (y[i]+yp[i])*a[i];
-		A     +=  a[i];
+		ip  = (i == nN-1) ? 0 : i+1;
+		x   = coords[2*i]    - meanX;
+		y   = coords[2*i+1]  - meanY;
+		xp  = coords[2*ip]   - meanX;
+		yp  = coords[2*ip+1] - meanY;
+		a   =  x*yp - xp*y;
+		xc += (x+xp)*a;
+		yc += (y+yp)*a;
+		A  +=  a;
 	}
 	A = A/2;
+
+	// degenerate polygon (zero area): use mean of nodes
+	if (A == 0.0)
+	{
+		x_cen = meanX;
+		y_cen = meanY;
+		return;
+	}
+
 	xc = xc/(6*A);
 	yc = yc/(6*A);
 

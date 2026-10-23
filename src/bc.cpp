@@ -502,6 +502,16 @@ PetscErrorCode VelCylinderCreate(VelCylinder *velcyl, Scaling *scal, FB *fb)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Velocity cylinder should specify at least one velocity component");
 	}
 
+	if(velcyl->rad <= 0.0)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Velocity cylinder radius must be positive");
+	}
+
+	if(velcyl->baseX == velcyl->capX && velcyl->baseY == velcyl->capY && velcyl->baseZ == velcyl->capZ)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Velocity cylinder base and cap must differ");
+	}
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

@@ -69,7 +69,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	}
 #endif
 
-	// non-dimensional value of 1 [m/yr] (the input unit of prefactor_slope);
+	// value in [m/yr] (the input unit of prefactor_slope) of one non-dimensional velocity unit;
 	// in non-dimensional mode (utype == _NONE_) the input is taken as-is
 	unit_m_yr = scal->length_si/scal->time_si;
 	if(scal->utype != _NONE_) unit_m_yr *= 3600.0*24.0*365.25;
@@ -108,7 +108,6 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 		{
 			// sedimentation model parameters
 			PetscCall(getScalarParam(fb, _REQUIRED_, "marginO",          surf->marginO,    2,                 scal->length));
-			PetscCall(getScalarParam(fb, _REQUIRED_, "marginE",          surf->marginE,    2,                 scal->length));
 			PetscCall(getScalarParam(fb, _REQUIRED_, "marginE",          surf->marginE,    2,                 scal->length));
 			PetscCall(getScalarParam(fb, _REQUIRED_, "hUp",             &surf->hUp,        1,                 scal->length));
 			PetscCall(getScalarParam(fb, _REQUIRED_, "hDown",           &surf->hDown,      1,                 scal->length));
@@ -239,10 +238,6 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 	// access context
 	fs    = surf->jr->fs;
 	FSLib = surf->FSLib;
-
-	// set boundary type in x direction
-	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; bc_node = 1; }
-	else             { BC_TYPE_X = DM_BOUNDARY_NONE;     bc_node = 0; }
 
 	// set boundary type in x direction
 	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; bc_node = 1; }
@@ -1309,7 +1304,7 @@ PetscErrorCode FreeSurfAppSlopeErosion(FreeSurf *surf)
 	// compute & store average topography
 	PetscCall(FreeSurfGetAvgTopo(surf));
 
-	// non-dimensional value of 1 [m/yr] (the input unit of prefactor_slope) for printing
+	// value in [m/yr] (the input unit of prefactor_slope) of one non-dimensional velocity unit, for printing
 	unit_m_yr = scal->length_si/scal->time_si;
 	if(scal->utype != _NONE_) unit_m_yr *= 3600.0*24.0*365.25;
 

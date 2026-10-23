@@ -388,9 +388,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 				// get reference to material parameters table
 				mat = &phases[iphase];
 
-				// get and check pore pressure ratio of each phase
-				if(mat->rp<0.0)      mat->rp = 0.0;
-				else if(mat->rp>1.0) mat->rp = 1.0;
+				// get pore pressure ratio of each phase (range checked in phase.cpp)
 				rp = mat->rp;
 
 				// compute average pore pressure ratio
