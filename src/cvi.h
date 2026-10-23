@@ -97,7 +97,7 @@ PetscErrorCode ADVelCalcEffVel     (VelInterp *interp, PetscInt n, PetscScalar a
 
 // used for exchange
 PetscErrorCode ADVelExchange       (AdvVelCtx *vi);
-PetscErrorCode ADVelDeleteOutflow  (AdvVelCtx *vi);
+PetscErrorCode ADVelClampCoord     (AdvVelCtx *vi);
 PetscErrorCode ADVelMapToDomains   (AdvVelCtx *vi);
 PetscErrorCode ADVelExchangeNMark  (AdvVelCtx *vi);
 PetscErrorCode ADVelCreateMPIBuff  (AdvVelCtx *vi);

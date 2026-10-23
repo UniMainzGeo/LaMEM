@@ -946,7 +946,7 @@ if should_run_test("t15_RTI")
     q_num   = Compute_RT_growthrate_LaMEM(λ, ParamFile, dir)
     q_anal  = AnalyticalSolution_RTI_FreeSlip(λ)
 
-    @test  norm(q_num - q_anal) ≈ 0.001481104 rtol = 1e-3
+    @test  norm(q_num - q_anal) ≈ 0.0004146044 rtol = 1e-3
 
     # Plot 
     if create_plots

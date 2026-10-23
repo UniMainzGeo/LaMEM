@@ -563,6 +563,11 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 	{
 		// predefined profile
 		PetscCall(SetClapeyron_Eq(ph));
+
+		// optional overrides of the predefined parameters
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "clapeyron_slope",    ph->clapeyron_slope, ph->neq,    1.0));    // [MPa/K]
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "P0_clapeyron",       ph->P0_clapeyron,    ph->neq,    1.0));    // [Pa]
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "T0_clapeyron",       ph->T0_clapeyron,    ph->neq,    1.0));    // [Celsius]
 	}
 	else
 	{

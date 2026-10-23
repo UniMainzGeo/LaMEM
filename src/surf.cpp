@@ -279,19 +279,52 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 //---------------------------------------------------------------------------
 PetscErrorCode FreeSurfGetAvgTopo(FreeSurf *surf)
 {
-	PetscInt     Nx, Ny, Nz;
-	PetscScalar  avg_topo;
+	// compute area-weighted average topography (cell average of corner values)
+
+	FDSTAG      *fs;
+	Vec          ltopo;
+	PetscInt     i, j, nx, ny, sx, sy, level;
+	PetscScalar  dA, lsum[2], gsum[2], ***topo;
 
 	PetscFunctionBeginUser;
 
-	// compute & set average topography
-	PetscCall(VecSum(surf->gtopo, &avg_topo));
+	fs    = surf->jr->fs;
+	level = (PetscInt)fs->dsz.rank;
 
-	PetscCall(DMDAGetInfo(surf->DA_SURF, 0, &Nx, &Ny, &Nz, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+	// get ghosted topography
+	PetscCall(DMGetLocalVector(surf->DA_SURF, &ltopo));
 
-	avg_topo /= (PetscScalar)(Nx*Ny*Nz);
+	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, ltopo);
 
-	surf->avg_topo = avg_topo;
+	PetscCall(DMDAVecGetArray(surf->DA_SURF, ltopo, &topo));
+
+	// scan local cells (topography is stored once per z-rank, use bottom ranks only)
+	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, NULL, &nx, &ny, NULL));
+
+	lsum[0] = 0.0;
+	lsum[1] = 0.0;
+
+	if(!level)
+	{
+		for(j = sy; j < sy + ny; j++)
+		{
+			for(i = sx; i < sx + nx; i++)
+			{
+				dA = SIZE_CELL(i, sx, fs->dsx)*SIZE_CELL(j, sy, fs->dsy);
+
+				lsum[0] += dA*(topo[level][j][i] + topo[level][j][i+1] + topo[level][j+1][i] + topo[level][j+1][i+1])/4.0;
+				lsum[1] += dA;
+			}
+		}
+	}
+
+	PetscCall(DMDAVecRestoreArray(surf->DA_SURF, ltopo, &topo));
+
+	PetscCall(DMRestoreLocalVector(surf->DA_SURF, &ltopo));
+
+	PetscCallMPI(MPI_Allreduce(lsum, gsum, 2, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD));
+
+	surf->avg_topo = gsum[0]/gsum[1];
 
 	PetscFunctionReturn(0);
 }
@@ -457,8 +490,12 @@ PetscErrorCode FreeSurfGetVelComp(
 		// get topography
 		z = topo[level][j][i];
 
-		// check whether point belongs to domain
-		if(z >= bz && z < ez)
+		// clamp points outside the box to the bottom/top boundary
+		if(level == 0             && z < bz) z = bz;
+		if(level == dsz->nproc-1  && z > ez) z = ez;
+
+		// check whether point belongs to domain (top rank includes upper boundary)
+		if(z >= bz && (z < ez || (level == dsz->nproc-1 && z == ez)))
 		{
 			// find containing cell
 			PetscCall(Discret1DFindPoint(&fs->dsz, z, K));

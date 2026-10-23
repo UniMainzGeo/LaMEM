@@ -1340,7 +1340,7 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	PetscInt       i, j, ii, jj, kk, ind, nx, ny, nz, lx[3];
 	PetscInt       n, p, I, J, K;
 	PetscInt       ID, ineigh, Ii, Ji, Ki, indcell[27], nummark[27];
-	PetscInt       ninj = 0, nind = 0, sind = 0;
+	PetscInt       ninj = 0, nind = 0, sind = 0, ninj_tot;
 	PetscScalar    dx[3], xp[3], xc[3], xs[3], xe[3], *X;
 	PetscScalar    x, sumind = 0.0;
 	PetscScalar    cf_rand;
@@ -1387,15 +1387,15 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 			xp[2] = P->X[2];
 
 			// check position in cell
-			if ((xp[0] < xc[0]) && (xp[1] < xc[1]) && (xp[2] < xc[2])) numcorner[i].s[0]++; // LSW
-			if ((xp[0] > xc[0]) && (xp[1] < xc[1]) && (xp[2] < xc[2])) numcorner[i].s[1]++; // LSE
-			if ((xp[0] < xc[0]) && (xp[1] > xc[1]) && (xp[2] < xc[2])) numcorner[i].s[2]++; // LNW
-			if ((xp[0] > xc[0]) && (xp[1] > xc[1]) && (xp[2] < xc[2])) numcorner[i].s[3]++; // LNE
+			if ((xp[0] <  xc[0]) && (xp[1] <  xc[1]) && (xp[2] <  xc[2])) numcorner[i].s[0]++; // LSW
+			if ((xp[0] >= xc[0]) && (xp[1] <  xc[1]) && (xp[2] <  xc[2])) numcorner[i].s[1]++; // LSE
+			if ((xp[0] <  xc[0]) && (xp[1] >= xc[1]) && (xp[2] <  xc[2])) numcorner[i].s[2]++; // LNW
+			if ((xp[0] >= xc[0]) && (xp[1] >= xc[1]) && (xp[2] <  xc[2])) numcorner[i].s[3]++; // LNE
 
-			if ((xp[0] < xc[0]) && (xp[1] < xc[1]) && (xp[2] > xc[2])) numcorner[i].s[4]++; // USW
-			if ((xp[0] > xc[0]) && (xp[1] < xc[1]) && (xp[2] > xc[2])) numcorner[i].s[5]++; // USE
-			if ((xp[0] < xc[0]) && (xp[1] > xc[1]) && (xp[2] > xc[2])) numcorner[i].s[6]++; // UNW
-			if ((xp[0] > xc[0]) && (xp[1] > xc[1]) && (xp[2] > xc[2])) numcorner[i].s[7]++; // UNE
+			if ((xp[0] <  xc[0]) && (xp[1] <  xc[1]) && (xp[2] >= xc[2])) numcorner[i].s[4]++; // USW
+			if ((xp[0] >= xc[0]) && (xp[1] <  xc[1]) && (xp[2] >= xc[2])) numcorner[i].s[5]++; // USE
+			if ((xp[0] <  xc[0]) && (xp[1] >= xc[1]) && (xp[2] >= xc[2])) numcorner[i].s[6]++; // UNW
+			if ((xp[0] >= xc[0]) && (xp[1] >= xc[1]) && (xp[2] >= xc[2])) numcorner[i].s[7]++; // UNE
 		}
 	}
 
@@ -1411,6 +1411,10 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	// if no need for new markers
 	if (!ninj)
 	{
+		// print info (collective)
+		PetscCallMPI(MPI_Allreduce(&ninj, &ninj_tot, 1, MPIU_INT, MPI_SUM, actx->icomm));
+		PetscPrintf(PETSC_COMM_WORLD,"Marker control: (Corners ) injected %" PetscInt_FMT " markers\n", ninj_tot);
+
 		// clear memory
 		PetscCall(PetscFree(numcorner));
 
@@ -1433,6 +1437,10 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	// initialize the random number generator
 	PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &rctx));
 	PetscCall(PetscRandomSetFromOptions(rctx));
+
+	// different noise on every rank and time step
+	PetscCall(PetscRandomSetSeed(rctx, (unsigned long)(1 + actx->iproc + actx->nproc*actx->jr->ts->istep)));
+	PetscCall(PetscRandomSeed(rctx));
 
 	// inject markers in corners
 	for(i = 0; i < fs->nCells; i++)
@@ -1591,8 +1599,9 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	PetscCall(ADVMapMarkToCells(actx));
 
 	// print info
+	PetscCallMPI(MPI_Allreduce(&ninj, &ninj_tot, 1, MPIU_INT, MPI_SUM, actx->icomm));
 	PetscCall(PetscTime(&t1));
-	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%" PetscInt_FMT "]: (Corners ) injected %" PetscInt_FMT " markers in %1.4e s \n",actx->iproc, ninj, t1-t0);
+	PetscPrintf(PETSC_COMM_WORLD,"Marker control: (Corners ) injected %" PetscInt_FMT " markers in %1.4e s \n", ninj_tot, t1-t0);
 
 	// clear
 	PetscCall(PetscFree(numcorner));

@@ -201,8 +201,8 @@ PetscErrorCode ADVelRungeKuttaStep(AdvVelCtx *vi, PetscScalar dt, PetscScalar a,
 	// 1. New position
 	PetscCall(ADVelAdvectCoord(vi->interp, vi->nmark, dt, type));
 
-	// 2. Delete marker outflow if it happens
-	PetscCall(ADVelDeleteOutflow(vi));
+	// 2. Keep intermediate positions inside the box
+	PetscCall(ADVelClampCoord(vi));
 
 	// 3. Exchange markers for interpolation
 	PetscCall(ADVelExchange(vi));
@@ -474,55 +474,34 @@ PetscErrorCode ADVelCollectIndices(AdvCtx *actx, AdvVelCtx *vi)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode ADVelDeleteOutflow(AdvVelCtx *vi)
+PetscErrorCode ADVelClampCoord(AdvVelCtx *vi)
 {
-	// check if advected positions are within the box bounds
+	// clamp intermediate positions into the box (upper bound is excluded)
 
-	PetscInt  i, lrank, ndel;
-	PetscInt  grank;
-	FDSTAG    *fs;
+	FDSTAG      *fs;
+	Discret1D   *ds[3];
+	PetscScalar  b, e;
+	PetscInt     i, d;
 
 	PetscFunctionBeginUser;
 
 	fs = vi->fs;
 
-	// scan all markers
-	for(i = 0, ndel = 0; i < vi->nmark; i++)
+	ds[0] = &fs->dsx;
+	ds[1] = &fs->dsy;
+	ds[2] = &fs->dsz;
+
+	for(d = 0; d < 3; d++)
 	{
-		// get global & local ranks of a marker
-		PetscCall(FDSTAGGetPointRanks(fs, vi->interp[i].x, &lrank, &grank));
+		b = ds[d]->gcrdbeg;
+		e = ds[d]->gcrdend - fs->gtol*(ds[d]->gcrdend - ds[d]->gcrdbeg)/(PetscScalar)ds[d]->tcels;
 
-		// count markers outside
-		if(grank == -1) ndel++;
-	}
-
-	// if no need for deletion return
-	if (!ndel) PetscFunctionReturn(0);
-
-	// save points to exclude
-	vi->ndel    = ndel;
-
-	// allocate storage
-	PetscCall(PetscMalloc((size_t)ndel *sizeof(PetscInt), &vi->idel));
-
-	// save markers indices to be deleted
-	for(i = 0, ndel = 0; i < vi->nmark; i++)
-	{
-		// get global & local ranks of a marker
-		PetscCall(FDSTAGGetPointRanks(fs, vi->interp[i].x, &lrank, &grank));
-
-		// save markers outside
-		if(grank == -1)
+		for(i = 0; i < vi->nmark; i++)
 		{
-			vi->idel[ndel++] = i;
+			if(vi->interp[i].x[d] < b) vi->interp[i].x[d] = b;
+			if(vi->interp[i].x[d] > e) vi->interp[i].x[d] = e;
 		}
 	}
-
-	// delete outside markers
-	PetscCall(ADVelCollectGarbage(vi));
-
-	// clear
-	PetscCall(PetscFree(vi->idel));
 
 	PetscFunctionReturn(0);
 }

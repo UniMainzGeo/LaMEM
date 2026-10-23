@@ -2025,11 +2025,16 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	PetscInt    top_open, bot_open;
 	PetscScalar ***bcvx,  ***bcvy, ***bcvz;
 	PetscScalar z, bot, top, vel, velin, velout,relax_dist, velbot, veltop, time;
+	PetscScalar dA, lflux[2], gflux[2];
 
 	PetscFunctionBeginUser;
 
 	// check whether constraint is activated
 	if(!bc->face) PetscFunctionReturn(0);
+
+	// net inflow and total boundary flux (CompensatingInflow balance check)
+	lflux[0] = 0.0;
+	lflux[1] = 0.0;
 
 	// update inflow velocity value for current timestep
 	PetscCall(BCGetVelins(bc));
@@ -2122,10 +2127,14 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 			vel = 0.0;
 			if(z <= top && z >= bot) vel = velin;
 
-			if(i == 0)   { bcvx[k][j][i] = vel; }
+			dA = SIZE_CELL(j, sy, fs->dsy)*SIZE_CELL(k, sz, fs->dsz);
+
+			if(i == 0)   { bcvx[k][j][i] = vel; lflux[0] += vel*dA; lflux[1] += PetscAbsScalar(vel*dA); }
 			if(i == mnx)
 			{
 				bcvx[k][j][i] = -vel + (2.0*velin_net); // right boundary (compensating inflow)
+
+				lflux[0] -= bcvx[k][j][i]*dA; lflux[1] += PetscAbsScalar(bcvx[k][j][i]*dA);
 			}
 		}
 		END_STD_LOOP
@@ -2194,8 +2203,25 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 
 			if(k == 0   && !bot_open) { bcvz[k][j][i] = vel; }
 			if(k == mnz && !top_open) { bcvz[k][j][i] = vel; }
+
+			dA = SIZE_CELL(i, sx, fs->dsx)*SIZE_CELL(j, sy, fs->dsy);
+
+			if(k == 0   && !bot_open) { lflux[0] += vel*dA; lflux[1] += PetscAbsScalar(vel*dA); }
+			if(k == mnz && !top_open) { lflux[0] -= vel*dA; lflux[1] += PetscAbsScalar(vel*dA); }
 		}
 		END_STD_LOOP
+
+		// closed box must have zero net inflow
+		if(!top_open && !bot_open)
+		{
+			PetscCallMPI(MPI_Allreduce(lflux, gflux, 2, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD));
+
+			if(PetscAbsScalar(gflux[0]) > 1e-6*gflux[1])
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "CompensatingInflow: net inflow is not balanced (%g of total boundary flux); set bvel_velbot / bvel_veltop or open the top boundary (open_top_bound)\n",
+					(double)(gflux[0]/gflux[1]));
+			}
+		}
 	}
 
 	// restore access
