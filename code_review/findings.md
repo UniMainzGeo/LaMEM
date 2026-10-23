@@ -73,7 +73,7 @@ Next free IDs: S-049, M-074, N-030
 | M-006 | minor | confirmed | input, parallel | quick | surf.cpp:1711-1754 | Initial surface perturbation: unscaled inputs, NaN with noise only | open |
 | M-007 | minor | confirmed | physics | quick | surf.cpp:1651, 1662 | Topographic diffusion boundary is not zero-flux | open |
 | M-008 | minor | confirmed | logic | quick | surf.cpp:1004, 1068, 1346 | Erosion and sedimentation levels overshoot by up to one step | open |
-| M-009 | minor | possible | logic | quick | surf.cpp:461 | Surface outside the box silently gets zero velocity | open |
+| M-009 | minor | possible | logic | quick | surf.cpp:461 | Surface outside the box silently gets zero velocity | fixed |
 | M-010 | minor | confirmed | memory | quick | fastscape.cpp:1234-1317, 3100 | Memory leaks in FastScape code | open |
 | M-011 | minor | possible | logic | quick | fastscape.cpp:1055 | Non-uniform FastScape interpolation can skip a node | open |
 | M-012 | minor | confirmed | logic, memory | quick | tools.cpp:628 | `interpStretch` can leave stretch factors unset after the last control polygon | open |
@@ -87,7 +87,7 @@ Next free IDs: S-049, M-074, N-030
 | M-020 | minor | confirmed | memory | quick | advect.cpp:1485-1539 | ADVCheckCorners reads an empty buffer when the cell and its local neighbours are empty | open |
 | M-021 | minor | confirmed | logic | quick | AVD.cpp:753-754,1136-1137 | AVD never refills empty volumes and at most doubles sparse ones | open |
 | M-022 | minor | confirmed | logic | quick | AVD.cpp:830-833 | `FindPointInCell` returns an error code as a cell index | open |
-| M-023 | minor | confirmed | logic | quick | cvi.cpp:204-205 | RK2 deletes markers whose midpoint leaves the domain | open |
+| M-023 | minor | confirmed | logic | quick | cvi.cpp:204-205 | RK2 deletes markers whose midpoint leaves the domain | fixed |
 | M-024 | minor | confirmed | logic | quick | subgrid.cpp:673; LaMEMLib.cpp:731-734 | `ADVGetSedPhase` uses stale cell numbers when called for passive tracers | open |
 | M-025 | minor | confirmed | memory | quick | marker.cpp:604-642 | Temperature-file setup loops over the wrong marker count; index can run out of range | open |
 | M-026 | minor | confirmed | memory | quick | marker.cpp:294 | `ADVMarkSave` crashes when the save path has no '/'; APS not saved | open |
@@ -118,10 +118,10 @@ Next free IDs: S-049, M-074, N-030
 | M-051 | minor | confirmed | parallel, restart | medium | tools.cpp:80, 293-322; fdstag.cpp:292-294 | Rank-0-only errors can hang; restart reads aren't checked | open |
 | M-052 | minor | confirmed | input | medium | bc.cpp:2103-2123, 2167-2187 | Sign of `velin` on Right/Back faces flips depending on `bvel_face_out` | open |
 | M-053 | minor | confirmed | parallel, input | medium | bc.cpp:1229-1274, 1148 | Fixed-cell file read: unchecked fread/stat, one-rank errors hang, file not closed on error | open |
-| M-054 | minor | possible | input | medium | bc.cpp:2132-2142, 2213-2223 | CompensatingInflow has no mass-balance check (needs user `velbot`/`veltop`) | open |
+| M-054 | minor | possible | input | medium | bc.cpp:2132-2142, 2213-2223 | CompensatingInflow has no mass-balance check (needs user `velbot`/`veltop`) | fixed |
 | M-055 | minor | confirmed | logic | medium | matFree.cpp:637-684, 1304-1309, 1355-1360; matBFBT.cpp:208-209 | Matrix-free operator and diagonal treat the periodic x seam as a free-slip wall | open |
 | M-056 | minor | confirmed | logic | medium | matData.cpp:642-645, 808-811 | Rediscretized coarse levels lose no-slip and pressure BCs on boundary ghosts | open |
-| M-057 | minor | confirmed | parallel | medium | advect.cpp:1368-1568 | ADVCheckCorners depends on CPU count, reuses the same seed, misses markers on the centre plane | open |
+| M-057 | minor | confirmed | parallel | medium | advect.cpp:1368-1568 | ADVCheckCorners depends on CPU count, reuses the same seed, misses markers on the centre plane | fixed |
 | M-058 | minor | confirmed | parallel | medium | AVD.cpp:747-749,791-793 | AVD half-volume rule uses processor boundaries; nmax not halved | open |
 | M-059 | minor | confirmed | logic | medium | AVD.cpp:813-816,865-884,944-946 | AVD "edge" control volumes are face volumes; printed labels swapped | open |
 | M-060 | minor | confirmed | memory | medium | marker.cpp:1466,1622-1744 | Polygon file sizes not checked against buffers | open |
@@ -150,19 +150,19 @@ Next free IDs: S-049, M-074, N-030
 | N-005 | note | confirmed | cleanup | quick | meltParam.cpp | Whole file is dead code (no callers) | open |
 | N-006 | note | confirmed | logic | quick | phase.cpp:1471,1479 | PrintMatProp prints wrong values under some labels | open |
 | N-007 | note | confirmed | cleanup | quick | surf.cpp, fastscape.cpp | Small clean-ups (duplicate reads, wrong comments/units, folder name rounding) | open |
-| N-008 | note | confirmed | physics | quick | surf.cpp:288-292 | Average topography is a plain node average | open |
+| N-008 | note | confirmed | physics | quick | surf.cpp:288-292 | Average topography is a plain node average | fixed |
 | N-009 | note | confirmed | cleanup | quick | Tensor.cpp:112-318, 493-603 | ISA / eigenvalue code is unused and has latent bugs | open |
 | N-010 | note | confirmed | cleanup | quick | fdstag.cpp:80-83 | Non-unit bias is rejected, so all bias code is dead | open |
 | N-011 | note | confirmed | input | quick | bc.cpp:2405-2411, 2234, 2369 | Velocity cylinder/box edge cases: NaN axis, skipped at initial guess unlike other BCs | open |
 | N-012 | note | confirmed | cleanup | quick | bc.h, bc.cpp (various) | Wrong comments and messages, debug print every step, small clean-ups | open |
 | N-013 | note | possible | logic | quick | AVD.cpp:1123-1125 | AVD point with no cells gives NaN coordinates | open |
-| N-014 | note | confirmed | input | quick | input_file.dat:747-749; phase_transition.cpp:562-580 | Docs say Clapeyron parameters overwrite a predefined law; they are ignored | open |
+| N-014 | note | confirmed | input | quick | input_file.dat:747-749; phase_transition.cpp:562-580 | Docs say Clapeyron parameters overwrite a predefined law; they are ignored | fixed |
 | N-015 | note | confirmed | cleanup | quick | objFunct.cpp; adjoint.cpp:3684-4150 | Dead code: whole ObjFunct module and the pointwise FD kernels | open |
 | N-016 | note | confirmed | physics | medium | JacResAux.cpp:357 | `gw_level_type = surf` gives a flat water table at the mean topography | open |
-| N-017 | note | possible | physics | medium | phase.cpp:888-1352 | Experiment type of the creep profiles not checked against the sources | open |
+| N-017 | note | possible | physics | medium | phase.cpp:888-1352 | Experiment type of the creep profiles not checked against the sources | non-issue |
 | N-018 | note | confirmed | memory | medium | tools.cpp:608-609, 658-662 | Polygon helpers use stack arrays and can divide by zero | open |
 | N-019 | note | confirmed | logic | medium | nlsolve.cpp:216-238 | Newton/Picard switch: divergence test uses initial residual; max-Newton gives one Picard step | open |
-| N-020 | note | confirmed | physics | medium | lsolve.cpp, matrix.cpp, matAux.cpp | `jp_pgamma` means different things per solver; inv_eta Schur with penalty drops the eta term | open |
+| N-020 | note | confirmed | physics | medium | lsolve.cpp, matrix.cpp, matAux.cpp | `jp_pgamma` means different things per solver; inv_eta Schur with penalty drops the eta term | non-issue |
 | N-021 | note | confirmed | cleanup | medium | nlsolve, lsolve, multigrid, matData, matFree (various) | Option overrides, stale comments, dead test code, small clean-ups | open |
 | N-022 | note | confirmed | cleanup | medium | marker, advect, AVD, cvi, subgrid (various) | Dead code, wrong comments and log lines, small clean-ups | open |
 | N-023 | note | confirmed | cleanup | medium | phase_transition.cpp, dike.cpp (various) | Dead code, misleading names and comments, small clean-ups | open |

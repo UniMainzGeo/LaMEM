@@ -95,6 +95,12 @@ Testing:
 7. Intended? M-047, M-049, N-003, N-016, N-019.
 8. With Garrett: M-046, M-067.
 9. Low value: M-009, M-023, M-054, M-057, N-008, N-014 (code or docs?), N-017, N-020.
+   Done 2026-10-23: M-009 surface z clamped to box on bottom/top ranks; M-023 RK2 midpoint clamped
+   (not deleted); M-054 closed box with unbalanced CompensatingInflow stops with an error (Anton:
+   imbalance not allowed); M-057 seed per rank and step, `>=` on upper side, total count printed;
+   N-008 area-weighted avg_topo; N-014 Clapeyron parameters override a predefined law.
+   N-017, N-020: non-issues (Anton). References updated: t22, t27, t32, t34; t15 RTI error
+   0.00148 -> 0.00041 (closer to analytical). Only dyndike fails (known).
 10. Delete dead code? N-009, N-010, N-015, dead parts of N-021, N-022.
 11. M-063 (from B): "Incorrect sedimentation phase" stop in subgrid.cpp when the surface rises
     more than one cell per step or has overhangs. Relax, or keep the stop?
