@@ -12,45 +12,45 @@ Next free IDs: S-049, M-074, N-030
 
 | ID | Severity | Confidence | Kind | Effort | Where | Title | Status |
 |----|----------|------------|------|--------|-------|-------|--------|
-| S-001 | major | confirmed | memory | quick | JacRes.cpp:1524 | `init_pres` without `fix_phase` reads `phRat[-1]` | open |
+| S-001 | major | confirmed | memory | quick | JacRes.cpp:1524 | `init_pres` without `fix_phase` reads `phRat[-1]` | fixed |
 | S-002 | major | possible | physics | quick | constEq.cpp:587-592 | Softening length scale `Lm` looks inverted (Le/Lm instead of Lm/Le) | open |
-| S-003 | major | confirmed | physics | quick | phase.cpp:1049 | Profile "Diabase-Caristan_1982" has activation volume Vn = 1 m^3/mol | open |
-| S-004 | major | confirmed | logic | quick | surf.cpp:1444-1462 | Sediment model 2 uses values left over from the previous node | open |
+| S-003 | major | confirmed | physics | quick | phase.cpp:1049 | Profile "Diabase-Caristan_1982" has activation volume Vn = 1 m^3/mol | fixed |
+| S-004 | major | confirmed | logic | quick | surf.cpp:1444-1462 | Sediment model 2 uses values left over from the previous node | fixed |
 | S-005 | major | confirmed | restart | quick | fastscape.cpp:2910, 2747 | FastScape restart loses basement and silt fraction if their output is off | open |
-| S-006 | major | confirmed | logic | quick | fdstag.cpp:550-551 | Grid stretching moves the global box about 0, not about `bg_ref_point` | open |
-| S-007 | major | confirmed | logic | quick | fdstag.cpp:727-737 | CFL time step ignores negative velocities on non-uniform grids | open |
+| S-006 | major | confirmed | logic | quick | fdstag.cpp:550-551 | Grid stretching moves the global box about 0, not about `bg_ref_point` | fixed |
+| S-007 | major | confirmed | logic | quick | fdstag.cpp:727-737 | CFL time step ignores negative velocities on non-uniform grids | fixed |
 | S-008 | major | confirmed | physics | quick | bc.cpp:723, 1087, 1121 | `bvel_temperature_constant` is scaled with the time unit, not as a temperature | open |
-| S-009 | major | confirmed | logic | quick | bc.cpp:1680-1725, 2054 | User `bvel_velout` is always overwritten by the mass-balance value | open |
-| S-010 | major | confirmed | logic | quick | bc.cpp:692-697, 1690-1700 | `velin_num_periods = 1` sets the inflow velocity to zero and ignores net periods | open |
-| S-011 | major | confirmed | restart | quick | bc.cpp:1704-1715 | After restart, net-only inflow adds the net offset twice (function `static`) | open |
+| S-009 | major | confirmed | logic | quick | bc.cpp:1680-1725, 2054 | User `bvel_velout` is always overwritten by the mass-balance value | fixed |
+| S-010 | major | confirmed | logic | quick | bc.cpp:692-697, 1690-1700 | `velin_num_periods = 1` sets the inflow velocity to zero and ignores net periods | fixed |
+| S-011 | major | confirmed | restart | quick | bc.cpp:1704-1715 | After restart, net-only inflow adds the net offset twice (function `static`) | fixed |
 | S-012 | major | confirmed | physics | quick | bc.cpp:3125-3134 | 3D Gaussian plume inflow is not mass-conserving (missing radius² factor) | open |
-| S-013 | major | confirmed | logic | quick | advect.cpp:1217-1228 | Garbage collection deletes the wrong markers when the AVD delete list is unsorted | open |
+| S-013 | major | confirmed | logic | quick | advect.cpp:1217-1228 | Garbage collection deletes the wrong markers when the AVD delete list is unsorted | fixed |
 | S-014 | major | confirmed | parallel | quick | cvi.cpp:1305-1414 | STAGP interpolation treats processor boundaries as domain walls | open |
 | S-015 | major | confirmed | logic | quick | marker.cpp:2358 | Oblique ridge axis is wrong unless the front edge is at y = 0 | open |
 | S-016 | major | confirmed | input | quick | marker.cpp:984 | Layer `rand_ampl` is divided by the max phase ID instead of the length scale | open |
 | S-017 | major | confirmed | input, memory | quick | marker.cpp:1996-2094 | Phase diagram load fails silently (density 0); size not checked against buffer | open |
-| S-018 | major | confirmed | input, memory | quick | tools.cpp:627; marker.cpp:1687 | Polygon stretch factors after the last control polygon are left unset | open |
-| S-019 | major | confirmed | logic | quick | advect.cpp:222-234; marker.cpp:210-260 | `rand_noiseGP` moves markers after cell mapping without remapping | open |
+| S-018 | major | confirmed | input, memory | quick | tools.cpp:627; marker.cpp:1687 | Polygon stretch factors after the last control polygon are left unset | fixed |
+| S-019 | major | confirmed | logic | quick | advect.cpp:222-234; marker.cpp:210-260 | `rand_noiseGP` moves markers after cell mapping without remapping | fixed |
 | S-020 | major | confirmed | logic | quick | phase_transition.cpp:756-763,811-812,870 | Box with `PhaseOutside = -1` (as documented) sets marker phase to -1 and stops the run | open |
 | S-021 | major | confirmed | input | quick | phase_transition.cpp:85,100-119,227-259,667-711 | Typos in `Type`, `Parameter_transition`, `Name_Clapeyron` and bad `ID` are silently accepted | open |
 | S-022 | major | confirmed | logic, memory | quick | dike.cpp:1312,1331 | Dike stress time averaging loops `i < sx+ny` instead of `sx+nx` | open |
-| S-023 | major | confirmed | physics | quick | dike.cpp:463-479 | Dike heating scales the whole cell conductivity by the dike fraction | open |
-| S-024 | major | confirmed | physics | quick | passive_tracer.cpp:560-561 | Passive tracer pressure and temperature are read half a cell too high | open |
+| S-023 | major | confirmed | physics | quick | dike.cpp:463-479 | Dike heating scales the whole cell conductivity by the dike fraction | fixed |
+| S-024 | major | confirmed | physics | quick | passive_tracer.cpp:560-561 | Passive tracer pressure and temperature are read half a cell too high | fixed |
 | S-025 | major | confirmed | logic | quick | adjoint.cpp:2342-2470 | Observation points in the same cell overwrite each other's weights | open |
 | S-026 | major | confirmed | logic | quick | adjoint.cpp:632-662 | Bounds: 0 means "no bound", and one bound pins every other parameter | open |
 | S-027 | major | confirmed | memory | quick | adjoint.cpp:1159,1438,1534 | `fcconv` is written past its end (TAO not limited by `Inversion_maxit`; off by one without TAO) | open |
 | S-028 | major | confirmed | memory | quick | objFunct.h:85; adjoint.cpp:1294-1450 | `factor2array[51]` is indexed up to 100 parameters | open |
-| S-029 | major | confirmed | physics | medium | JacResAux.cpp:244-321 | Lithostatic and pore pressure are zero in boundary ghost cells, so boundary edges get half the value | open |
+| S-029 | major | confirmed | physics | medium | JacResAux.cpp:244-321 | Lithostatic and pore pressure are zero in boundary ghost cells, so boundary edges get half the value | fixed |
 | S-030 | major | possible | physics | medium | JacResTemp.cpp:520-522 | Adiabatic heating sees a fake pressure jump at boundaries with inflow or outflow | open |
 | S-031 | major | confirmed | logic | medium | constEq.cpp:1008-1060 | Phase diagram lookup reads one pressure row too low, and its edges are wrong | open |
 | S-032 | major | confirmed | physics | medium | surf.cpp:1229-1253 | Slope-dependent erosion never erodes peaks and ridges (centered gradient) | open |
 | S-033 | major | possible | physics | medium | surf.cpp:1203-1211 | Slope-erosion sub-step limit isn't a stability limit | open |
 | S-034 | major | confirmed | logic | medium | LaMEMLib.cpp:765; fastscape.cpp:1599 | With FastScape, max-angle smoothing is undone every step | open |
-| S-035 | major | confirmed | logic | medium | AVD.cpp:1192-1199 | AVD deletion ignores the Voronoi volumes (`tclaimed` is always 0) | open |
+| S-035 | major | confirmed | logic | medium | AVD.cpp:1192-1199 | AVD deletion ignores the Voronoi volumes (`tclaimed` is always 0) | fixed |
 | S-036 | major | confirmed | physics | medium | phase_transition.cpp:592-594,667-711 | Clapeyron laws are wrong in SI units (C read as K, MPa/K read as Pa/K) | open |
 | S-037 | major | confirmed | logic | medium | phase_transition.cpp:1303,1322,1334 | NotInAirBox uses only the first segment's `zbounds` | open |
 | S-038 | major | confirmed | logic | medium | passive_tracer.cpp:585-607, 904-938, 1032-1049 | Passive tracers use a stale marker-to-cell list (after marker exchange) | open |
-| S-039 | major | confirmed | input | medium | options.cpp:944-950, 126-162, 251-252 | Command-line options are ignored while solver defaults (MG levels, grid, thermal) are set | open |
+| S-039 | major | confirmed | input | medium | options.cpp:944-950, 126-162, 251-252 | Command-line options are ignored while solver defaults (MG levels, grid, thermal) are set | fixed |
 | S-040 | major | confirmed | physics | medium | adjoint.cpp:2357-2380,1639-1663 | Point-velocity cost isn't the point misfit, and its adjoint gradient doesn't match it | open |
 | S-041 | major | confirmed | physics | medium | adjoint.cpp:860-880,3455-3520 | Strain-rate targets aren't scaled, and the strain-rate derivative is incomplete | open |
 | S-042 | major | confirmed | parallel | medium | adjoint.cpp:1744-1749 | `Adjoint_AdvectPoint` moves points on one CPU only, and again in every forward run | open |
@@ -69,43 +69,43 @@ Next free IDs: S-049, M-074, N-030
 | M-002 | minor | confirmed | physics | quick | JacRes.cpp:558-602 | Top pressure shift isn't area-weighted and silently overwrites `p_shift` | open |
 | M-003 | minor | confirmed | logic | quick | constEq.cpp:734-742 | `Phase_Melt` density ignores the `mfmax` cap | open |
 | M-004 | minor | confirmed | logic | quick | phase.cpp:223-232 | Healing defaults are set only when printing is on | open |
-| M-005 | minor | confirmed | logic | quick | surf.cpp:1531 | Sediment model 3 assumes the box starts at x = 0 | open |
+| M-005 | minor | confirmed | logic | quick | surf.cpp:1531 | Sediment model 3 assumes the box starts at x = 0 | fixed |
 | M-006 | minor | confirmed | input, parallel | quick | surf.cpp:1711-1754 | Initial surface perturbation: unscaled inputs, NaN with noise only | open |
 | M-007 | minor | confirmed | physics | quick | surf.cpp:1651, 1662 | Topographic diffusion boundary is not zero-flux | open |
-| M-008 | minor | confirmed | logic | quick | surf.cpp:1004, 1068, 1346 | Erosion and sedimentation levels overshoot by up to one step | open |
+| M-008 | minor | confirmed | logic | quick | surf.cpp:1004, 1068, 1346 | Erosion and sedimentation levels overshoot by up to one step | fixed |
 | M-009 | minor | possible | logic | quick | surf.cpp:461 | Surface outside the box silently gets zero velocity | fixed |
 | M-010 | minor | confirmed | memory | quick | fastscape.cpp:1234-1317, 3100 | Memory leaks in FastScape code | open |
 | M-011 | minor | possible | logic | quick | fastscape.cpp:1055 | Non-uniform FastScape interpolation can skip a node | open |
-| M-012 | minor | confirmed | logic, memory | quick | tools.cpp:628 | `interpStretch` can leave stretch factors unset after the last control polygon | open |
+| M-012 | minor | confirmed | logic, memory | quick | tools.cpp:628 | `interpStretch` can leave stretch factors unset after the last control polygon | fixed |
 | M-013 | minor | confirmed | input | quick | bc.cpp:848 | Phase 0 can't be used as permeable / plume mantle inflow phase | open |
 | M-014 | minor | confirmed | logic | quick | bc.cpp:2097-2099, 2161-2163 | `relax_dist = 0` with `bvel_face_out` gives NaN when a cell center is exactly at top/bot | open |
 | M-015 | minor | confirmed | physics | quick | bc.cpp:1480-1519, 3005-3017 | Plume temperature: different Gaussian width in BC and on injected markers; unset Tbot used as -1 | open |
-| M-016 | minor | confirmed | input | quick | bc.cpp:675-679, 712-713, 1784-1802 | Typos in BC options are silently ignored; `exy` silently drops no-slip on vx | open |
-| M-017 | minor | confirmed | logic | quick | matData.cpp:497-498, 529-530, 561-562 | Coarse edge viscosity at upper boundaries averages in zero ghost cells | open |
-| M-018 | minor | confirmed | logic | quick | nlsolve.cpp:430-515 | Some SNES/KSP failure reasons are not printed or not treated as severe | open |
-| M-019 | minor | possible | logic | quick | nlsolve.cpp:284 | MFFD mat-vecs count as SNES function calls; long Newton runs may hit max_funcs | wontfix |
-| M-020 | minor | confirmed | memory | quick | advect.cpp:1485-1539 | ADVCheckCorners reads an empty buffer when the cell and its local neighbours are empty | open |
-| M-021 | minor | confirmed | logic | quick | AVD.cpp:753-754,1136-1137 | AVD never refills empty volumes and at most doubles sparse ones | open |
-| M-022 | minor | confirmed | logic | quick | AVD.cpp:830-833 | `FindPointInCell` returns an error code as a cell index | open |
+| M-016 | minor | confirmed | input | quick | bc.cpp:675-679, 712-713, 1784-1802 | Typos in BC options are silently ignored; `exy` silently drops no-slip on vx | fixed |
+| M-017 | minor | confirmed | logic | quick | matData.cpp:497-498, 529-530, 561-562 | Coarse edge viscosity at upper boundaries averages in zero ghost cells | fixed |
+| M-018 | minor | confirmed | logic | quick | nlsolve.cpp:430-515 | Some SNES/KSP failure reasons are not printed or not treated as severe | fixed |
+| M-019 | minor | possible | logic | quick | nlsolve.cpp:284 | MFFD mat-vecs count as SNES function calls; long Newton runs may hit max_funcs | won't fix |
+| M-020 | minor | confirmed | memory | quick | advect.cpp:1485-1539 | ADVCheckCorners reads an empty buffer when the cell and its local neighbours are empty | fixed |
+| M-021 | minor | confirmed | logic | quick | AVD.cpp:753-754,1136-1137 | AVD never refills empty volumes and at most doubles sparse ones | not an issue |
+| M-022 | minor | confirmed | logic | quick | AVD.cpp:830-833 | `FindPointInCell` returns an error code as a cell index | fixed |
 | M-023 | minor | confirmed | logic | quick | cvi.cpp:204-205 | RK2 deletes markers whose midpoint leaves the domain | fixed |
 | M-024 | minor | confirmed | logic | quick | subgrid.cpp:673; LaMEMLib.cpp:731-734 | `ADVGetSedPhase` uses stale cell numbers when called for passive tracers | open |
-| M-025 | minor | confirmed | memory | quick | marker.cpp:604-642 | Temperature-file setup loops over the wrong marker count; index can run out of range | open |
-| M-026 | minor | confirmed | memory | quick | marker.cpp:294 | `ADVMarkSave` crashes when the save path has no '/'; APS not saved | open |
-| M-027 | minor | confirmed | logic | quick | advect.cpp:1089 | Periodic x-shift uses `>` while the rank test uses `>=` | open |
+| M-025 | minor | confirmed | memory | quick | marker.cpp:604-642 | Temperature-file setup loops over the wrong marker count; index can run out of range | fixed |
+| M-026 | minor | confirmed | memory | quick | marker.cpp:294 | `ADVMarkSave` crashes when the save path has no '/'; APS not saved | partly fixed |
+| M-027 | minor | confirmed | logic | quick | advect.cpp:1089 | Periodic x-shift uses `>` while the rank test uses `>=` | fixed |
 | M-028 | minor | confirmed | physics | quick | advect.cpp:2053; bc.cpp:2952 | Adiabatic gradient uses \|z - Ztop\|, so rock above the reference level is heated | open |
 | M-029 | minor | confirmed | input | quick | marker.cpp:1193-1200 | Ridge spreading rate can silently be 0 | open |
-| M-030 | minor | confirmed | input | quick | marker.cpp:378; advect.cpp:156-180; cvi.cpp:1239 | Marker input not checked (negative phase, nmark_sub, nmin > nmax, avd <= 0, stagp_a = 0) | open |
-| M-031 | minor | confirmed | memory | quick | cvi.cpp:800,826-828 | Memory leak of `vi->markind` in `ADVelReAllocStorage` | open |
+| M-030 | minor | confirmed | input | quick | marker.cpp:378; advect.cpp:156-180; cvi.cpp:1239 | Marker input not checked (negative phase, nmark_sub, nmin > nmax, avd <= 0, stagp_a = 0) | fixed |
+| M-031 | minor | confirmed | memory | quick | cvi.cpp:800,826-828 | Memory leak of `vi->markind` in `ADVelReAllocStorage` | fixed |
 | M-032 | minor | confirmed | memory | quick | dike.cpp:352,673 | Dikes without free surface read `phRat[-1]` | open |
 | M-033 | minor | possible | logic | quick | dike.cpp:753-754,1095 | Dynamic dike can produce NaN (no neighbour within `filty`, or zero lithosphere thickness) | open |
 | M-034 | minor | confirmed | restart | quick | dike.cpp:219,1588,1593 | Restart with dikes re-reads time stepping and resets the averaging counter | open |
 | M-035 | minor | confirmed | input | quick | dike.cpp:212,306-345,1230 | Dike opening silently 0 without `bvel_velin`; `magPwidth` not scaled | open |
 | M-036 | minor | confirmed | logic, memory | quick | passive_tracer.cpp:599, 370, 607, 1049 | Tracer melt phase search checks the wrong marker; empty search reads past the list | open |
-| M-037 | minor | confirmed | input | quick | tssolve.cpp:56, 61 | CFL and CFLMAX range checks can never trigger | open |
-| M-038 | minor | confirmed | parallel | quick | options.cpp:482 | Automatic coarse-grid CPU count uses the local, not the total, cell count | open |
+| M-037 | minor | confirmed | input | quick | tssolve.cpp:56, 61 | CFL and CFLMAX range checks can never trigger | fixed |
+| M-038 | minor | confirmed | parallel | quick | options.cpp:482 | Automatic coarse-grid CPU count uses the local, not the total, cell count | fixed |
 | M-039 | minor | confirmed | logic | quick | paraViewOutPassiveTracers.cpp:32 | `out_ptr` overwrites the `Passive_Tracer` switch after tracers are set up | open |
-| M-040 | minor | confirmed | memory | quick | paraViewOutBin.cpp:770-772 | `UpdatePVDFile` uses the file name after `free` in its error message | open |
-| M-041 | minor | possible | restart | quick | paraViewOutBin.cpp:766-797 | After a restart from an older checkpoint, .pvd files keep old entries after `</VTKFile>` | open |
+| M-040 | minor | confirmed | memory | quick | paraViewOutBin.cpp:770-772 | `UpdatePVDFile` uses the file name after `free` in its error message | fixed |
+| M-041 | minor | possible | restart | quick | paraViewOutBin.cpp:766-797 | After a restart from an older checkpoint, .pvd files keep old entries after `</VTKFile>` | fixed |
 | M-042 | minor | confirmed | logic | quick | adjoint.cpp:920-947 | `Adjoint_ScaleCostFunction = Var` uses only the last point | open |
 | M-043 | minor | confirmed | physics | quick | adjoint.cpp:3024-3040,3080-3095 | Scaling-law exponents are wrong for `log10` parameters | open |
 | M-044 | minor | confirmed | logic | quick | adjoint.cpp:1866,1995,1328 | A parameter value of 0 gives a zero FD step (division by zero) | open |
@@ -115,25 +115,25 @@ Next free IDs: S-049, M-074, N-030
 | M-048 | minor | confirmed | input | medium | phase.cpp:798-803; marker.cpp:523 | Phase temperature `T = 0` (°C) is treated as "not set" | open |
 | M-049 | minor | possible | physics | medium | constEq.cpp:603-626, 697, 756 | Shear and bulk moduli averaged with non-elastic phases counted as 0 | open |
 | M-050 | minor | confirmed | logic | medium | surf.cpp:1167, 1223, 1643 | Slope erosion and topographic diffusion ignore periodic x | open |
-| M-051 | minor | confirmed | parallel, restart | medium | tools.cpp:80, 293-322; fdstag.cpp:292-294 | Rank-0-only errors can hang; restart reads aren't checked | open |
+| M-051 | minor | confirmed | parallel, restart | medium | tools.cpp:80, 293-322; fdstag.cpp:292-294 | Rank-0-only errors can hang; restart reads aren't checked | fixed |
 | M-052 | minor | confirmed | input | medium | bc.cpp:2103-2123, 2167-2187 | Sign of `velin` on Right/Back faces flips depending on `bvel_face_out` | open |
-| M-053 | minor | confirmed | parallel, input | medium | bc.cpp:1229-1274, 1148 | Fixed-cell file read: unchecked fread/stat, one-rank errors hang, file not closed on error | open |
+| M-053 | minor | confirmed | parallel, input | medium | bc.cpp:1229-1274, 1148 | Fixed-cell file read: unchecked fread/stat, one-rank errors hang, file not closed on error | fixed |
 | M-054 | minor | possible | input | medium | bc.cpp:2132-2142, 2213-2223 | CompensatingInflow has no mass-balance check (needs user `velbot`/`veltop`) | fixed |
-| M-055 | minor | confirmed | logic | medium | matFree.cpp:637-684, 1304-1309, 1355-1360; matBFBT.cpp:208-209 | Matrix-free operator and diagonal treat the periodic x seam as a free-slip wall | open |
-| M-056 | minor | confirmed | logic | medium | matData.cpp:642-645, 808-811 | Rediscretized coarse levels lose no-slip and pressure BCs on boundary ghosts | open |
+| M-055 | minor | confirmed | logic | medium | matFree.cpp:637-684, 1304-1309, 1355-1360; matBFBT.cpp:208-209 | Matrix-free operator and diagonal treat the periodic x seam as a free-slip wall | fixed |
+| M-056 | minor | confirmed | logic | medium | matData.cpp:642-645, 808-811 | Rediscretized coarse levels lose no-slip and pressure BCs on boundary ghosts | partly fixed |
 | M-057 | minor | confirmed | parallel | medium | advect.cpp:1368-1568 | ADVCheckCorners depends on CPU count, reuses the same seed, misses markers on the centre plane | fixed |
-| M-058 | minor | confirmed | parallel | medium | AVD.cpp:747-749,791-793 | AVD half-volume rule uses processor boundaries; nmax not halved | open |
-| M-059 | minor | confirmed | logic | medium | AVD.cpp:813-816,865-884,944-946 | AVD "edge" control volumes are face volumes; printed labels swapped | open |
-| M-060 | minor | confirmed | memory | medium | marker.cpp:1466,1622-1744 | Polygon file sizes not checked against buffers | open |
+| M-058 | minor | confirmed | parallel | medium | AVD.cpp:747-749,791-793 | AVD half-volume rule uses processor boundaries; nmax not halved | fixed |
+| M-059 | minor | confirmed | logic | medium | AVD.cpp:813-816,865-884,944-946 | AVD "edge" control volumes are face volumes; printed labels swapped | fixed |
+| M-060 | minor | confirmed | memory | medium | marker.cpp:1466,1622-1744 | Polygon file sizes not checked against buffers | fixed |
 | M-061 | minor | confirmed | logic | medium | interpolate.cpp:102,158,220,377 | Corner output at the periodic x seam uses one side only | fixed |
 | M-062 | minor | confirmed | physics | medium | marker.cpp:1013,1152,1215; phase_transition.cpp:1197,1339 | Halfspace temperatures use hard-coded kappa = 1e-6 (wrong in non-dim mode) | open |
-| M-063 | minor | confirmed | parallel | medium | subgrid.cpp:85,606-608; advect.cpp:1906; tools.cpp:293,798 | Rank-local hard errors can hang; sedimentation-phase error on fast uplift | open |
+| M-063 | minor | confirmed | parallel | medium | subgrid.cpp:85,606-608; advect.cpp:1906; tools.cpp:293,798 | Rank-local hard errors can hang; sedimentation-phase error on fast uplift | partly fixed |
 | M-064 | minor | confirmed | logic | medium | phase_transition.cpp:883-905,922,1026-1029 | `ResetParam = APS` resets every step; side depends on type; broken for NotInAirBox | open |
 | M-065 | minor | confirmed | logic | medium | phase_transition.cpp:851-864 | `BoxVicinity` uses y-size for z, and stale or zero bounds for NotInAirBox | open |
-| M-066 | minor | confirmed | memory | medium | tssolve.cpp:381-423, 457-462 | Time-step schedule can overflow its 2000-entry arrays and cuts nstep_max | open |
+| M-066 | minor | confirmed | memory | medium | tssolve.cpp:381-423, 457-462 | Time-step schedule can overflow its 2000-entry arrays and cuts nstep_max | fixed |
 | M-067 | minor | confirmed | logic | medium | LaMEMLib.cpp:713, phase_transition.cpp:967 | Time-step restart (CFLMAX) repeats phase transitions, so moving boxes move twice | open |
 | M-068 | minor | confirmed | logic, input | medium | passive_tracer.cpp:262, 420-797, 63-91 | Passive tracer APS never updated, IDs wrong when nx != ny, typos silently mean "Always" | open |
-| M-069 | minor | confirmed | physics | medium | outFunct.cpp:742-743, 767-768; JacResAux.cpp | SHmax/EHmax direction vectors are averaged to corners, which breaks near north-south | open |
+| M-069 | minor | confirmed | physics | medium | outFunct.cpp:742-743, 767-768; JacResAux.cpp | SHmax/EHmax direction vectors are averaged to corners, which breaks near north-south | fixed |
 | M-070 | minor | confirmed | memory | medium | adjoint.cpp:204-389 | `AllMaterialParameters` scan: writes past arrays, checks only the first block | open |
 | M-071 | minor | confirmed | logic | medium | adjoint.cpp:1935,1947,1995-2024 | Adjoint solve leaves the forward KSP on the `as_` prefix and cells in a perturbed state | open |
 | M-072 | minor | confirmed | cleanup | medium | adjoint.cpp:1123-1132,62-66 | `SyntheticForwardRun` saves a zero vector; the `OFdef = 0` path doesn't exist | open |
@@ -151,27 +151,27 @@ Next free IDs: S-049, M-074, N-030
 | N-006 | note | confirmed | logic | quick | phase.cpp:1471,1479 | PrintMatProp prints wrong values under some labels | open |
 | N-007 | note | confirmed | cleanup | quick | surf.cpp, fastscape.cpp | Small clean-ups (duplicate reads, wrong comments/units, folder name rounding) | fixed |
 | N-008 | note | confirmed | physics | quick | surf.cpp:288-292 | Average topography is a plain node average | fixed |
-| N-009 | note | confirmed | cleanup | quick | Tensor.cpp:112-318, 493-603 | ISA / eigenvalue code is unused and has latent bugs | open |
-| N-010 | note | confirmed | cleanup | quick | fdstag.cpp:80-83 | Non-unit bias is rejected, so all bias code is dead | open |
+| N-009 | note | confirmed | cleanup | quick | Tensor.cpp:112-318, 493-603 | ISA / eigenvalue code is unused and has latent bugs | fixed |
+| N-010 | note | confirmed | cleanup | quick | fdstag.cpp:80-83 | Non-unit bias is rejected, so all bias code is dead | fixed |
 | N-011 | note | confirmed | input | quick | bc.cpp:2405-2411, 2234, 2369 | Velocity cylinder/box edge cases: NaN axis, skipped at initial guess unlike other BCs | fixed |
 | N-012 | note | confirmed | cleanup | quick | bc.h, bc.cpp (various) | Wrong comments and messages, debug print every step, small clean-ups | open |
-| N-013 | note | possible | logic | quick | AVD.cpp:1123-1125 | AVD point with no cells gives NaN coordinates | open |
+| N-013 | note | possible | logic | quick | AVD.cpp:1123-1125 | AVD point with no cells gives NaN coordinates | fixed |
 | N-014 | note | confirmed | input | quick | input_file.dat:747-749; phase_transition.cpp:562-580 | Docs say Clapeyron parameters overwrite a predefined law; they are ignored | fixed |
-| N-015 | note | confirmed | cleanup | quick | objFunct.cpp; adjoint.cpp:3684-4150 | Dead code: whole ObjFunct module and the pointwise FD kernels | open |
+| N-015 | note | confirmed | cleanup | quick | objFunct.cpp; adjoint.cpp:3684-4150 | Dead code: whole ObjFunct module and the pointwise FD kernels | fixed |
 | N-016 | note | confirmed | physics | medium | JacResAux.cpp:357 | `gw_level_type = surf` gives a flat water table at the mean topography | open |
-| N-017 | note | possible | physics | medium | phase.cpp:888-1352 | Experiment type of the creep profiles not checked against the sources | non-issue |
+| N-017 | note | possible | physics | medium | phase.cpp:888-1352 | Experiment type of the creep profiles not checked against the sources | not an issue |
 | N-018 | note | confirmed | memory | medium | tools.cpp:608-609, 658-662 | Polygon helpers use stack arrays and can divide by zero | fixed |
 | N-019 | note | confirmed | logic | medium | nlsolve.cpp:216-238 | Newton/Picard switch: divergence test uses initial residual; max-Newton gives one Picard step | open |
-| N-020 | note | confirmed | physics | medium | lsolve.cpp, matrix.cpp, matAux.cpp | `jp_pgamma` means different things per solver; inv_eta Schur with penalty drops the eta term | non-issue |
-| N-021 | note | confirmed | cleanup | medium | nlsolve, lsolve, multigrid, matData, matFree (various) | Option overrides, stale comments, dead test code, small clean-ups | open |
-| N-022 | note | confirmed | cleanup | medium | marker, advect, AVD, cvi, subgrid (various) | Dead code, wrong comments and log lines, small clean-ups | open |
+| N-020 | note | confirmed | physics | medium | lsolve.cpp, matrix.cpp, matAux.cpp | `jp_pgamma` means different things per solver; inv_eta Schur with penalty drops the eta term | not an issue |
+| N-021 | note | confirmed | cleanup | medium | nlsolve, lsolve, multigrid, matData, matFree (various) | Option overrides, stale comments, dead test code, small clean-ups | partly fixed |
+| N-022 | note | confirmed | cleanup | medium | marker, advect, AVD, cvi, subgrid (various) | Dead code, wrong comments and log lines, small clean-ups | partly fixed |
 | N-023 | note | confirmed | cleanup | medium | phase_transition.cpp, dike.cpp (various) | Dead code, misleading names and comments, small clean-ups | open |
-| N-024 | note | confirmed | input | medium | parsing.cpp (various) | Input parsing: silent bad numbers, octal integers, dropped values, rank-0 error hang | open |
-| N-025 | note | confirmed | cleanup | medium | options.cpp, tssolve.cpp, scaling.cpp, LaMEMLib.cpp, docs | Output and time-step quirks, labels, docs | open |
-| N-026 | note | confirmed | cleanup | medium | outFunct.cpp, paraViewOutBin.cpp, paraViewOutAVD.cpp, paraViewOutPassiveTracers.cpp | Output quirks: names, stale residual, dead vectors, unchecked inputs | open |
+| N-024 | note | confirmed | input | medium | parsing.cpp (various) | Input parsing: silent bad numbers, octal integers, dropped values, rank-0 error hang | fixed |
+| N-025 | note | confirmed | cleanup | medium | options.cpp, tssolve.cpp, scaling.cpp, LaMEMLib.cpp, docs | Output and time-step quirks, labels, docs | partly fixed |
+| N-026 | note | confirmed | cleanup | medium | outFunct.cpp, paraViewOutBin.cpp, paraViewOutAVD.cpp, paraViewOutPassiveTracers.cpp | Output quirks: names, stale residual, dead vectors, unchecked inputs | partly fixed |
 | N-027 | note | confirmed | input | medium | adjoint.cpp (several) | Adjoint input and small quirks | open |
-| N-028 | note | confirmed | physics | design | JacRes.cpp:1086-1103 | FSSA only stabilizes the diagonal terms | wontfix |
-| N-029 | note | confirmed | physics | design | subgrid.cpp:528-606 | Rock/air phase change keeps old stress, APS and T | wontfix |
+| N-028 | note | confirmed | physics | design | JacRes.cpp:1086-1103 | FSSA only stabilizes the diagonal terms | won't fix |
+| N-029 | note | confirmed | physics | design | subgrid.cpp:528-606 | Rock/air phase change keeps old stress, APS and T | won't fix |
 
 ## Details
 
@@ -188,7 +188,7 @@ Next free IDs: S-049, M-074, N-030
   cell. If that value is 1.0, the cell's pressure is not initialized. Cells that are skipped
   keep whatever was in the work vector from `DMGetGlobalVector`, which isn't zeroed.
 - Fix idea: `if(fixPhase == -1 || svCell[iter].phRat[fixPhase] != 1.0)`, and `VecZeroEntries(gp)`.
-- Status: open
+- Status: fixed (group A)
 
 ### S-002 [major, possible] Softening length scale `Lm` looks inverted
 - Tags: major, possible, physics, quick
@@ -209,7 +209,7 @@ Next free IDs: S-049, M-074, N-030
   At 1 GPa, P*V/RT is about 1e5, so `exp(-Q)` is 0 and dislocation creep is switched off
   everywhere except at the surface. All the other profiles use 0 or ~1e-5.
 - Fix idea: probably `0` (the source in the comment gives no V). Check the reference.
-- Status: open
+- Status: fixed (group A)
 
 ### S-004 [major, confirmed] Sediment model 2 uses values left over from the previous node
 - Tags: major, confirmed, logic, quick
@@ -220,7 +220,7 @@ Next free IDs: S-049, M-074, N-030
 - Why it matters: wrong sediment thickness next to the margin, and the result depends on loop
   order, so also on how the domain is split across CPUs.
 - Fix idea: set both values in every branch (probably both = InitLevel + hUp in the first two).
-- Status: open
+- Status: fixed (group A)
 
 ### S-005 [major, confirmed] FastScape restart loses basement and silt fraction if their output is off
 - Tags: major, confirmed, restart, quick
@@ -246,7 +246,7 @@ Next free IDs: S-049, M-074, N-030
   passive tracers, the FastScape ranges and the uniform-grid CFL step. No test hits this:
   t18 sets a ref point but uses simple shear only.
 - Fix idea: gcrdbeg += eps*(gcrdbeg - ref); same for gcrdend.
-- Status: open
+- Status: fixed (group A); test with non-zero `bg_ref_point` not yet added
 
 ### S-007 [major, confirmed] CFL time step ignores negative velocities on non-uniform grids
 - Tags: major, confirmed, logic, quick
@@ -258,7 +258,7 @@ Next free IDs: S-049, M-074, N-030
   sphere, where vz < 0), the time step can be far too large and markers can jump more than a
   cell. The CFLMAX restart check uses the same function, so it doesn't catch this either.
 - Fix idea: idt = PetscAbsScalar(v)/h.
-- Status: open
+- Status: fixed (group A)
 
 ### S-008 [major, confirmed] `bvel_temperature_constant` is scaled with the time unit, not as a temperature
 - Tags: major, confirmed, physics, quick
@@ -278,7 +278,7 @@ Next free IDs: S-049, M-074, N-030
   `velout = -velin*(top-bot)/(bot-bz)`. The `bvel_velout` input read in BCCreate is never used.
 - Why it matters: a documented input has no effect, silently.
 - Fix idea: keep a flag for "user velout given" and only recompute when it is not set.
-- Status: open
+- Status: fixed (group B, batch 1)
 
 ### S-010 [major, confirmed] `velin_num_periods = 1` sets the inflow velocity to zero and ignores net periods
 - Tags: major, confirmed, logic, quick
@@ -290,7 +290,7 @@ Next free IDs: S-049, M-074, N-030
 - Why it matters: a natural input ("1 period") gives zero inflow with no message.
 - Fix idea: use `VelNumPeriods > 1` in that branch (and in the first test), or read the array
   for any value >= 1.
-- Status: open
+- Status: fixed (group A)
 
 ### S-011 [major, confirmed] After restart, net-only inflow adds the net offset twice
 - Tags: major, confirmed, restart, quick
@@ -301,7 +301,7 @@ Next free IDs: S-049, M-074, N-030
   `base + net`, and the fresh `static` takes that as the base. Result: `base + 2*net`.
 - Why it matters: restarted runs use a different inflow velocity than the original run.
 - Fix idea: store the base value in BCCtx (set once in BCCreate) instead of a `static`.
-- Status: open
+- Status: fixed (group A)
 
 ### S-012 [major, confirmed] 3D Gaussian plume inflow is not mass-conserving (missing radius² factor)
 - Tags: major, confirmed, physics, quick
@@ -325,7 +325,7 @@ Next free IDs: S-049, M-074, N-030
 - Why it matters: when a rank deletes more markers in AVD control than it adds, markers that
   should go survive and unrelated markers vanish. Phases are silently lost or duplicated.
 - Fix idea: sort `idel` before the loop, as `ADVCollectGarbageVec` in subgrid.cpp:419-420 now does.
-- Status: open
+- Status: fixed (group A)
 
 ### S-014 [major, confirmed] STAGP interpolation treats processor boundaries as domain walls
 - Tags: major, confirmed, parallel, quick
@@ -335,7 +335,7 @@ Next free IDs: S-049, M-074, N-030
 - Why it matters: `interp = stagp` gives different marker paths for different CPU counts.
 - Fix idea: test global indices (`sx+IN == 0`, `sx+IN == global nx`). The comment "ONLY FOR
   FREE SLIP BC" (cvi.cpp:1298) is not enforced either.
-- Status: open
+- Status: open (moved from A to C: needs 2 ghost layers or another stencil)
 
 ### S-015 [major, confirmed] Oblique ridge axis is wrong unless the front edge is at y = 0
 - Tags: major, confirmed, logic, quick
@@ -378,7 +378,7 @@ Next free IDs: S-049, M-074, N-030
   order and unknown VolID are not checked; PolyID is read but unused.
 - Why it matters: polygon bodies get random sizes.
 - Fix idea: always fill up to numPoly-1; check 1 <= Pos <= Vol.num, increasing, VolID valid.
-- Status: open
+- Status: fixed (group A)
 
 ### S-019 [major, confirmed] `rand_noiseGP` moves markers after cell mapping without remapping
 - Tags: major, confirmed, logic, quick
@@ -388,7 +388,7 @@ Next free IDs: S-049, M-074, N-030
 - Why it matters: `cellnum` is stale, so the first projection puts phase and T in the wrong
   cell; CheckMarkers misses it; markers off-rank cause "non-local marker" aborts.
 - Fix idea: call `ADVMapMarkToCells` after the perturbation, or clamp to the cell.
-- Status: open
+- Status: fixed (group A): perturbed coordinate kept in host cell
 
 ### S-020 [major, confirmed] Box with `PhaseOutside = -1` sets marker phase to -1
 - Tags: major, confirmed, logic, quick
@@ -461,7 +461,7 @@ Next free IDs: S-049, M-074, N-030
 - Why it matters: P-T paths are the main use of passive tracers. With 1 km cells the pressure is
   off by about rho*g*dz/2 (~15 MPa) and the temperature by half a cell of the gradient (~10 K).
 - Fix idea: use `KK` and `ccz` for p and T (same as for x and y).
-- Status: open
+- Status: fixed (group A)
 
 ### S-025 [major, confirmed] Observation points in the same cell overwrite each other's weights
 - Tags: major, confirmed, logic, quick
@@ -527,7 +527,7 @@ Next free IDs: S-049, M-074, N-030
 - Fix idea: after computing them, fill the outside ghosts by copying the nearest interior
   cell (a zero-gradient copy, same as SET_TPC with no constraint), then call
   FDSTAGSetEdgeCornerCenter.
-- Status: open
+- Status: fixed (group B, batch 3)
 
 ### S-030 [major, possible] Adiabatic heating sees a fake pressure jump at boundaries
 - Tags: major, possible, physics, medium
@@ -610,7 +610,7 @@ Next free IDs: S-049, M-074, N-030
 - Why it matters: the whole AVD computation is wasted for deletion; markers in sparse parts of
   a crowded volume can be removed and leave holes.
 - Fix idea: count claimed cells per point before sorting (share the code with the inject path).
-- Status: open
+- Status: fixed (AVD batch)
 
 ### S-036 [major, confirmed] Clapeyron laws are wrong in SI units
 - Tags: major, confirmed, physics, medium
@@ -664,7 +664,7 @@ Next free IDs: S-049, M-074, N-030
   command line. Command-line overrides are common in parameter sweeps and in LaMEM.jl.
 - Fix idea: read the solver-option inputs before clearing, or clear only after the defaults are
   computed (insert defaults first, then re-insert the saved options as now).
-- Status: open
+- Status: fixed (group B): no options clear in setSolverOptions
 
 ### S-040 [major, confirmed] Point-velocity cost isn't the point misfit, and its adjoint gradient doesn't match it
 - Tags: major, confirmed, physics, medium
@@ -837,7 +837,7 @@ Next free IDs: S-049, M-074, N-030
   and rate2 at the right edge only if bx = 0. The comment above it (Gemmer Gaussian) is
   copied from model 2 and is wrong: this is a linear ramp. Unlike model 1, there's no level check.
 - Fix idea: use (x - bx).
-- Status: open
+- Status: fixed (group A)
 
 ### M-006 [minor, confirmed] Initial surface perturbation options have unit and NaN problems
 - Tags: minor, confirmed, input, parallel, quick
@@ -864,7 +864,7 @@ Next free IDs: S-049, M-074, N-030
 - What: a node just above the erosion level is lowered by the full rate*dt, so it can end up to
   rate*dt below the level. Sedimentation does the same thing in the other direction.
 - Fix idea: clamp to the level, e.g. z = max(z - dz, level).
-- Status: open
+- Status: fixed (group A)
 
 ### M-009 [minor, possible] Surface outside the box silently gets zero velocity
 - Tags: minor, possible, logic, quick
@@ -873,7 +873,7 @@ Next free IDs: S-049, M-074, N-030
   rank, so its velocity is 0. FreeSurfAdvectTopo doesn't clamp, and FastScape clamps to exactly
   the top (fastscape.cpp:1957, 2093), which is excluded by `z < ez`.
 - Fix idea: clamp z into [bz, ez] on the top/bottom ranks before the lookup, or warn.
-- Status: open
+- Status: fixed (group C, low value)
 
 ### M-010 [minor, confirmed] Memory leaks in FastScape code
 - Tags: minor, confirmed, memory, quick
@@ -899,7 +899,7 @@ Next free IDs: S-049, M-074, N-030
   10-slice volume), slices after it get no Sx/Sy. Those are uninitialized stack values that
   stretchPolygon then uses.
 - Fix idea: compare with numPoly-1, or simply always fill the tail.
-- Status: open
+- Status: fixed (group A)
 
 ### M-013 [minor, confirmed] Phase 0 can't be used as permeable / plume mantle inflow phase
 - Tags: minor, confirmed, input, quick
@@ -939,7 +939,7 @@ Next free IDs: S-049, M-074, N-030
   `else` branch that applies no-slip on vx at front/back/bottom/top is skipped, so those
   no-slip flags are silently ignored for vx.
 - Fix idea: error on unknown strings; warn or error when `noslip` and `exy` are combined.
-- Status: open
+- Status: fixed (group B, batch 1)
 
 ### M-017 [minor, confirmed] Coarse edge viscosity at upper boundaries averages in zero ghost cells
 - Tags: minor, confirmed, logic, quick
@@ -954,7 +954,7 @@ Next free IDs: S-049, M-074, N-030
   Gives a worse coarse operator near the top boundary; matters with an open top, where the
   shear term at the top edge does not cancel.
 - Fix idea: `if(I >= mnx) I--;` (same for J, K), matching the clamp in matBFBT.cpp:141.
-- Status: open
+- Status: fixed (group A)
 
 ### M-018 [minor, confirmed] Some SNES/KSP failure reasons are not printed or not treated as severe
 - Tags: minor, confirmed, logic, quick
@@ -964,7 +964,7 @@ Next free IDs: S-049, M-074, N-030
   `KSP_DIVERGED_PC_FAILED` (e.g. zero pivot in LU, failed coarse solve) is not in the severe
   list, so with `-snes_continue_on_fail` the run goes on with a broken preconditioner.
 - Fix idea: add the missing cases; treat `KSP_DIVERGED_PC_FAILED` as severe.
-- Status: open
+- Status: fixed (group A)
 
 ### M-019 [minor, possible] MFFD mat-vecs count as SNES function calls
 - Tags: minor, possible, logic, quick
@@ -986,14 +986,14 @@ Next free IDs: S-049, M-074, N-030
 - Why it matters: crash or garbage marker in emptied in/outflow regions, more likely at rank
   corners.
 - Fix idea: skip the corner (or use a default phase) when n == 0.
-- Status: open
+- Status: fixed (group A)
 
 ### M-021 [minor, confirmed] AVD never refills empty volumes
 - Tags: minor, confirmed, logic, quick
 - Where: AVD.cpp:753-754, 1136-1137 (commit 6124aa7d)
 - What: `ninj += min(nmin-n, n)`: with n = 0 nothing is injected, and at most n per pass.
 - Why it matters: under `mctrl = avd` an empty volume stays empty, with no warning.
-- Status: open
+- Status: not an issue (AVD batch): no parent marker for an empty volume; sparse ones fill over steps
 
 ### M-022 [minor, confirmed] `FindPointInCell` returns an error code as a cell index
 - Tags: minor, confirmed, logic, quick
@@ -1003,7 +1003,7 @@ Next free IDs: S-049, M-074, N-030
 - Why it matters: a non-local marker silently corrupts data (`numMarkCell[]`, AVD.cpp:908)
   instead of stopping.
 - Fix idea: return the index through an argument; return `PetscErrorCode`.
-- Status: open
+- Status: fixed (group A)
 
 ### M-023 [minor, confirmed] RK2 deletes markers whose midpoint leaves the domain
 - Tags: minor, confirmed, logic, quick
@@ -1012,7 +1012,7 @@ Next free IDs: S-049, M-074, N-030
   wall also counts as outside (`x >= ex`).
 - Why it matters: markers near walls with large dt are lost even if the final position is inside.
 - Fix idea: clamp the midpoint to the domain.
-- Status: open
+- Status: fixed (group C, low value)
 
 ### M-024 [minor, confirmed] `ADVGetSedPhase` uses stale cell numbers for passive tracers
 - Tags: minor, confirmed, logic, quick
@@ -1029,7 +1029,7 @@ Next free IDs: S-049, M-074, N-030
   `msetup = files` the counts can differ (write past nummark/markcap, or markers left unset).
   `Ix+1` reads out of range when xp == ex.
 - Fix idea: loop to `actx->nummark`; clamp indices to [0, n-2].
-- Status: open
+- Status: fixed (group A)
 
 ### M-026 [minor, confirmed] `ADVMarkSave` crashes when the save path has no '/'
 - Tags: minor, confirmed, memory, quick
@@ -1037,7 +1037,7 @@ Next free IDs: S-049, M-074, N-030
 - What: `(*strrchr(path, '/')) = '\0'` dereferences NULL for `mark_save_file = mdb`. The file
   is written with header -1, so APS is dropped. (Possible: restart with `msetup = files` may
   fail the exact-markers-per-cell check.)
-- Status: open
+- Status: partly fixed (group A): APS still not saved
 
 ### M-027 [minor, confirmed] Periodic x-shift uses `>` while the rank test uses `>=`
 - Tags: minor, confirmed, logic, quick
@@ -1045,7 +1045,7 @@ Next free IDs: S-049, M-074, N-030
 - What: a marker with X[0] == ex is sent to the wrap neighbour but not shifted; that rank
   aborts with "Non-local point". Needs exact equality, so rare.
 - Fix idea: `X[0] >= ex`.
-- Status: open
+- Status: fixed (group A)
 
 ### M-028 [minor, confirmed] Adiabatic gradient uses |z - Ztop|
 - Tags: minor, confirmed, physics, quick
@@ -1070,13 +1070,13 @@ Next free IDs: S-049, M-074, N-030
 - What: negative phase IDs pass (out-of-range read at marker.cpp:536, caught later in
   `ADVCheckMarkPhases`); `nmark_sub <= 0`, `nmin > nmax`, `nmark_avd <= 0`, bad
   `nmark_lim` are accepted; `stagp_a = 0` is silently replaced by 2/3.
-- Status: open
+- Status: fixed (group B, batch 1)
 
 ### M-031 [minor, confirmed] Memory leak in `ADVelReAllocStorage`
 - Tags: minor, confirmed, memory, quick
 - Where: cvi.cpp:800, 826-828 (commit 6124aa7d)
 - What: `vi->cellnum` is freed but `vi->markind` is overwritten without `PetscFree`.
-- Status: open
+- Status: fixed (group A)
 
 ### M-032 [minor, confirmed] Dikes without free surface read `phRat[-1]`
 - Tags: minor, confirmed, memory, quick
@@ -1134,7 +1134,7 @@ Next free IDs: S-049, M-074, N-030
 - Where: src/tssolve.cpp:56, 61 (commit 6124aa7d)
 - What: `if(ts->CFL < 0.0 && ts->CFL > 1.0)` is never true; should be `||`. Same for CFLMAX.
   CFL > 1 or negative values are accepted.
-- Status: open
+- Status: fixed (group A)
 
 ### M-038 [minor, confirmed] Automatic coarse-grid CPU count uses the local cell count
 - Tags: minor, confirmed, parallel, quick
@@ -1143,7 +1143,7 @@ Next free IDs: S-049, M-074, N-030
   `coarse_num_local_cells` is the count on one rank, so the result is almost always 1 and the
   whole coarse grid goes to one CPU, however large it is.
 - Fix idea: multiply by the number of ranks (total coarse cells).
-- Status: open
+- Status: fixed (group A)
 
 ### M-039 [minor, confirmed] `out_ptr` overwrites the `Passive_Tracer` switch after tracers are set up
 - Tags: minor, confirmed, logic, quick
@@ -1169,7 +1169,7 @@ Next free IDs: S-049, M-074, N-030
   .pvd file, which opens it with "r+b"), the error message reads freed memory, which can print
   garbage or crash.
 - Fix idea: move `free(fname)` after the check (as in the other open calls).
-- Status: open
+- Status: fixed (group A)
 
 ### M-041 [minor, possible] After a restart from an older checkpoint, .pvd files keep old entries after `</VTKFile>`
 - Tags: minor, possible, restart, quick
@@ -1181,7 +1181,7 @@ Next free IDs: S-049, M-074, N-030
 - Why it matters: the .pvd file isn't valid XML for a while (or for good, if the new run is
   shorter). ParaView may refuse it or ignore the tail; not tested.
 - Fix idea: truncate the file after writing the closing tags (`ftruncate(fileno(fp), ftell(fp))`).
-- Status: open
+- Status: fixed (group A)
 
 ### M-042 [minor, confirmed] `Adjoint_ScaleCostFunction = Var` uses only the last point
 - Tags: minor, confirmed, logic, quick
@@ -1312,7 +1312,7 @@ Next free IDs: S-049, M-074, N-030
   uniform shift of both sides, not as a net inflow as the name suggests.
 - Why it matters: a closed box with net inflow has no incompressible solution.
 - Fix idea: check the balance at setup, or compute `velbot` from it; document `velin_net`.
-- Status: open
+- Status: fixed (group C, low value)
 
 ### M-055 [minor, confirmed] Matrix-free operator treats the periodic x seam as a free-slip wall
 - Tags: minor, confirmed, logic, medium
@@ -1329,7 +1329,7 @@ Next free IDs: S-049, M-074, N-030
   Nothing blocks this combination, and no test covers it.
 - Fix idea: skip the x-direction checks when `fs->periodic` is set (as JacRes does), or
   refuse periodic + matrix-free at setup.
-- Status: open
+- Status: fixed (group B, batch 5)
 
 ### M-056 [minor, confirmed] Rediscretized coarse levels lose no-slip and pressure BCs on boundary ghosts
 - Tags: minor, confirmed, logic, medium
@@ -1344,7 +1344,7 @@ Next free IDs: S-049, M-074, N-030
   affected (they use R*A*P).
 - Fix idea: copy the fine ghost constraint flags to the coarse ghosts (e.g. check the fine
   ghost at the matching boundary position).
-- Status: open
+- Status: partly fixed (group B, batch 5): 3D fixed, 2D left (needs matrix-free MG)
 
 ### M-057 [minor, confirmed] ADVCheckCorners depends on CPU count; same seed; centre-plane gap
 - Tags: minor, confirmed, parallel, medium
@@ -1354,7 +1354,7 @@ Next free IDs: S-049, M-074, N-030
   are injected into non-empty corners; the count is printed for rank 0 only.
 - Fix idea: use ghost markers or document; seed once per rank; use `>=` on one side; reduce
   the count.
-- Status: open
+- Status: fixed (group C, low value)
 
 ### M-058 [minor, confirmed] AVD half-volume rule uses processor boundaries
 - Tags: minor, confirmed, parallel, medium
@@ -1364,7 +1364,7 @@ Next free IDs: S-049, M-074, N-030
   volumes.
 - Why it matters: marker control depends on CPU count; boundary volumes can hold twice the
   density before deletion.
-- Status: open
+- Status: fixed (AVD batch)
 
 ### M-059 [minor, confirmed] AVD "edge" control volumes are face volumes; labels swapped
 - Tags: minor, confirmed, logic, medium
@@ -1373,7 +1373,7 @@ Next free IDs: S-049, M-074, N-030
   on a face, not an edge. The log prints dir 0 as "XYED" and dir 2 as "YZED", the reverse of
   lines 695-697.
 - Why it matters: volumes around shear-stress points are never checked; log is misleading.
-- Status: open
+- Status: fixed (AVD batch)
 
 ### M-060 [minor, confirmed] Polygon file sizes not checked against buffers
 - Tags: minor, confirmed, memory, medium
@@ -1381,7 +1381,7 @@ Next free IDs: S-049, M-074, N-030
 - What: `Polys[_max_polygons_]` (10) overflows with more polygons in one slice; `Vol.num`,
   `len`, `Fcount` are not checked against the allocated sizes; VLAs `SxAll[Vol.num]`.
 - Why it matters: a bad or old geomIO file overwrites memory.
-- Status: open
+- Status: fixed (group B, batch 2)
 
 ### M-061 [minor, confirmed] Corner output at the periodic x seam uses one side only
 - Tags: minor, confirmed, logic, medium
@@ -1405,7 +1405,7 @@ Next free IDs: S-049, M-074, N-030
 - What: "Empty control volume", "wrong phase" and `DirMake` errors are raised on one rank in
   collective code, so other ranks hang. subgrid.cpp:606 aborts with "Incorrect sedimentation
   phase" when the surface rises more than one cell per step or has overhangs.
-- Status: hang part not real (PETSc aborts all ranks); sedimentation-phase stop moved to discuss (C)
+- Status: partly fixed: hang part not real (PETSc aborts all ranks); sedimentation-phase stop moved to discuss (C)
 
 ### M-064 [minor, confirmed] `ResetParam = APS` is applied every step and inconsistently
 - Tags: minor, confirmed, logic, medium
@@ -1452,7 +1452,7 @@ Next free IDs: S-049, M-074, N-030
   The comment says the first `time_dt_periods` entry must be 0, but this is not checked.
 - Fix idea: check the total step count against `_max_num_steps_` (or allocate dynamically); keep
   the last `step_dt_periods` value after the schedule ends instead of cutting `nstep_max`.
-- Status: open
+- Status: fixed (group B, batch 2)
 
 ### M-067 [minor, confirmed] Time-step restart repeats phase transitions
 - Tags: minor, confirmed, logic, medium
@@ -1490,7 +1490,7 @@ Next free IDs: S-049, M-074, N-030
   axis. Output only.
 - Fix idea: average the doubled-angle form (cos 2θ, sin 2θ) and convert back, or write the field
   as cell data.
-- Status: open
+- Status: fixed (group B, batch 3)
 
 ### M-070 [minor, confirmed] `AllMaterialParameters` scan: writes past arrays, checks only the first block
 - Tags: minor, confirmed, memory, medium
@@ -1574,7 +1574,7 @@ Next free IDs: S-049, M-074, N-030
   `eta0+e0+n` together with `Bn`, and `Bn` is then overwritten. The error messages claim
   the parameters must be unique.
 - Fix idea: reject (eta && Bd) and (eta0 && Bn).
-- Status: open
+- Status: open (moved from A to C: `eta && Bd` accepted on purpose for restarts)
 
 ### N-005 [note, confirmed] meltParam.cpp is dead code
 - Tags: note, confirmed, cleanup, quick
@@ -1609,7 +1609,7 @@ Next free IDs: S-049, M-074, N-030
 - Where: src/surf.cpp:288-292
 - What: `avg_topo` is the mean over nodes, not weighted by area. On non-uniform grids,
   infinitely fast erosion (model 1) doesn't keep the volume.
-- Status: open
+- Status: fixed (group C, low value)
 
 ### N-009 [note, confirmed] ISA / eigenvalue code is unused and has latent bugs
 - Tags: note, confirmed, cleanup, quick
@@ -1669,7 +1669,7 @@ Next free IDs: S-049, M-074, N-030
 - Where: AVD.cpp:1123-1125 (commit 6124aa7d)
 - What: division by `hclaim` with no guard; `hclaim = 0` only if a point owns no AVD cells
   (unlikely).
-- Status: open
+- Status: fixed (group A)
 
 ### N-014 [note, confirmed] Docs say Clapeyron parameters overwrite a predefined law
 - Tags: note, confirmed, input, quick
@@ -1679,7 +1679,7 @@ Next free IDs: S-049, M-074, N-030
   `clapeyron_slope`, `P0_clapeyron`, `T0_clapeyron` marked "overwrite". The code reads
   these only for `user-defined`, so they are ignored.
 - Fix idea: read them as optional overrides after `SetClapeyron_Eq`, or fix the docs.
-- Status: open
+- Status: fixed (group C, low value)
 
 ### N-015 [note, confirmed] Dead code: whole ObjFunct module and the pointwise FD kernels
 - Tags: note, confirmed, cleanup, quick
@@ -1709,7 +1709,7 @@ Next free IDs: S-049, M-074, N-030
 - What: each profile sets `_UniAxial_` or `_SimpleShear_`, and that changes the prefactor
   by up to 3^((n+1)/2)/2 vs 2^(n-1). For example, the HK2003 laws are marked simple shear,
   but most of their data are triaxial. Needs a check against each paper.
-- Status: open
+- Status: not an issue (group C, Anton)
 
 ### N-018 [note, confirmed] Polygon helpers use stack arrays and can divide by zero
 - Tags: note, confirmed, memory, medium
@@ -1741,7 +1741,7 @@ Next free IDs: S-049, M-074, N-030
   difference for large `pgamma`. Also: assembled Picard rows for constrained DOFs are
   identity, matrix-free rows are zero (works only because those residuals are always zero).
 - Fix idea: document `jp_pgamma` per solver type; consider `-(1+pgamma)*eta`.
-- Status: open
+- Status: not an issue (group C, Anton)
 
 ### N-021 [note, confirmed] Option overrides, stale comments, dead code, small clean-ups
 - Tags: note, confirmed, cleanup, medium
@@ -1821,7 +1821,7 @@ Next free IDs: S-049, M-074, N-030
     are not detected.
   - `PetscOptionsReadFromFile` keeps only the first token after the key, so options with several
     values (separated by spaces) are cut silently.
-- Status: open
+- Status: fixed (group B): approved parts; parser relaxed
 
 ### N-025 [note, confirmed] Output and time-step quirks, labels, docs
 - Tags: note, confirmed, cleanup, medium
@@ -1839,7 +1839,7 @@ Next free IDs: S-049, M-074, N-030
   - `lbl_heat_production` says `[W/m3]` but the unit is power/mass, W/kg (scaling.cpp:188, 246).
     "WRNING! ... scaling is employed" has a typo and no newline (scaling.cpp:123).
   - GettingStarted.md:49-60 says `nstep_out` sets the number of time steps; it is `nstep_max`.
-- Status: open
+- Status: partly fixed (group B): labels/typos fixed; fix_dt, dt_out, time_end trimming left for C
 
 ### N-026 [note, confirmed] Output quirks: names, stale residual, dead vectors, unchecked inputs
 - Tags: note, confirmed, cleanup, medium
@@ -1861,7 +1861,7 @@ Next free IDs: S-049, M-074, N-030
   - `out_avd_ref <= 0` isn't rejected (division by zero, paraViewOutAVD.cpp:365). A rank with no
     markers reads `points[-1]` (paraViewOutAVD.cpp:909).
   - Marker, tracer and AVD files are written one value per `fwrite` (slow for many markers).
-- Status: open
+- Status: partly fixed (group B): energ_res, pShift, AVD, outputs fixed; fwrite per value and total_pressure edges left
 
 ### N-027 [note, confirmed] Adjoint input and small quirks
 - Tags: note, confirmed, input, medium

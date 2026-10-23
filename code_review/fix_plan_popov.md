@@ -251,13 +251,16 @@ One commit per group of A, then B, then C after discussion.
 - Non-converged local rheology iterations are now an error (`checkConvConstEq`), not a warning.
 - Cause of the warnings in tests: `lmaxit = 8` (t16 PhaseTransNotInAirBox_move, t25, t26 x5,
   t27); removed with all other `lmaxit`/`lrtol` lines (t37 set the defaults). Defaults are used.
-- t16 PhaseTransNotInAirBox_move ("fails to converge", now removed from runtests.jl): Newton
+- t16 PhaseTransNotInAirBox_move ("fails to converge" in runtests.jl): Newton
   stalled at an absolute floor ~0.027. Temperature is updated in every nonlinear iteration
   (`SNESLineSearchPreCheck`) and conductivity / heat source jumped in T (useTk at T_Nu, dike at
   T_sol), so T kept flipping. With rtol 1e-4 it converges only with both features off.
 - Fix: `RAMP` (tools.h) smooths the jumps over +-10 C. useTk applied per phase with its own
   T_Nu (was averaged with 0 for phases without T_Nu). S-023 fixed (dike kfac, assigned to Garrett
-  Ito, taken over). With rtol 1e-4 every step now converges in 8-13 iterations.
-- t26 heat_rhoA and variableM keep their "fails to converge" comments (had lmaxit = 8; may be
-  obsolete).
+  Ito, taken over). With rtol 1e-4 steps 1-8 now converge in 8-13 iterations, but from step 13
+  Newton still stalls near |F| ~ 1e-2, so this test keeps rtol 2.5e-2 and its loose check
+  (comment in runtests.jl says why). Open: find the remaining floor.
+- Workarounds from f37db09c / N-024 / S-029 removed: t26 heat_rhoA and variableM back to
+  nonlinear rtol 1e-3 (were 5e-2, 1e-2) and the usual checks; kfac atol back to 1e-4;
+  dyndike maxit back to 50. t26 references updated; t16, t26 pass.
 - Tests: t16, t25, t26, t27, t37 pass. Results change: references of t16, t26, t27 updated.
