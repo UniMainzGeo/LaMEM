@@ -573,7 +573,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	FDSTAG     *fs;
 	BCCtx      *bc;
 	SolVarCell *svCell;
-	PetscInt    periodic;
+	PetscInt    periodic, Tdep;
 	Vec         ldcen;
 	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
@@ -582,7 +582,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar dx, dy, dz;
 	PetscScalar v[7], cf[6], kc, rho_Cp(0.0), invdt, Tc;
-	PetscScalar dTc, kp, km, rho_Ap, rho_Am, dkc, drho_A;
+	PetscScalar dTc, kp, km, rho_Ap, rho_Am, dkc, drho_A(0.0);
 	MatStencil  row[1], col[7];
 	Vec         lT, ldk;
 	PetscScalar ***lk, ***dk, ***bcT, ***buff, ***T;
@@ -606,6 +606,9 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	// temperature perturbation for derivatives of conductivity and heat source
 	dTc = jr->ctrl.TPert;
 
+	// conductivity or heat source depend on temperature (otherwise derivatives are zero)
+	Tdep = jr->ctrl.useTk || (jr->ctrl.actDike && jr->ctrl.dikeHeat);
+
 	// initialize maximum cell index in all directions
 	mx = fs->dsx.tcels - 1;
 	my = fs->dsy.tcels - 1;
@@ -621,7 +624,10 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, lT, &T));
 
 	SCATTER_FIELD(fs->DA_CEN, ldcen, GET_KC)
-	SCATTER_FIELD(fs->DA_CEN, ldk,   GET_DKC)
+	if(Tdep)
+	{
+		SCATTER_FIELD(fs->DA_CEN, ldk, GET_DKC)
+	}
 
 	// clear matrix coefficients
 	PetscCall(MatZeroEntries(jr->Att));
@@ -653,11 +659,16 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, Tc, ycell, jcell));
 
 		// derivatives of conductivity and heat source (T-dependent conductivity, dike heating)
-		PetscCall(JacResGetTempParam(jr, svCell->phRat, NULL, NULL, &rho_Ap, Tc + dTc, ycell, jcell));
-		PetscCall(JacResGetTempParam(jr, svCell->phRat, NULL, NULL, &rho_Am, Tc - dTc, ycell, jcell));
+		// (ldk is zero if not computed)
+		if(Tdep)
+		{
+			PetscCall(JacResGetTempParam(jr, svCell->phRat, NULL, NULL, &rho_Ap, Tc + dTc, ycell, jcell));
+			PetscCall(JacResGetTempParam(jr, svCell->phRat, NULL, NULL, &rho_Am, Tc - dTc, ycell, jcell));
 
-		dkc    = dk[k][j][i]/2.0;
-		drho_A = (rho_Ap - rho_Am)/(2.0*dTc);
+			drho_A = (rho_Ap - rho_Am)/(2.0*dTc);
+		}
+
+		dkc = dk[k][j][i]/2.0;
 
 		// check index bounds and TPC multipliers
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { if(!periodic) { Im1++; if(bcT[k][j][i-1] != DBL_MAX) cf[0] = -1.0; } }
