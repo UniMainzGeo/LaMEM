@@ -449,7 +449,7 @@ Next free IDs: S-049, M-074, N-030
 - Why it matters: conductivity is far too low in every partly-dike cell (dike edges are
   always partly filled), which changes the thermal structure around the dike.
 - Fix idea: `kfac = (1 - phRat[dike]) + phRat[dike]*factor`, applied once after the loop.
-- Status: open
+- Status: fixed (2026-10-23, Anton): as in the fix idea; jumps at T_sol/T_liq also smoothed
 
 ### S-024 [major, confirmed] Passive tracer pressure and temperature are read half a cell too high
 - Tags: major, confirmed, physics, quick

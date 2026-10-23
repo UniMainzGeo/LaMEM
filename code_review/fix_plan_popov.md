@@ -193,17 +193,11 @@ One commit per group of A, then B, then C after discussion.
   shared helper `PVOutPutAxialDir` in outFunct.cpp.
 - Full suite before reference update: 107 pass, 5 fail (above), t37 broken as before.
 
-### MAJOR open issue: t26 dyndike_4core test is not reliable
+### RESOLVED (2026-10-23): t26 dyndike_4core test was not reliable
 
-- Before S-029 the reference already needed exactly 50 = maxit nonlinear iterations at step 4
-  (just converged). With S-029 it hits maxit; `nonlinear_tolerances` maxit raised 50 -> 80 in
-  `dyndike_4core.dat` (not committed), then 51 and 48 iterations.
-- Steps 4-5 are not reproducible between runs on 4 ranks (steps 1-3 agree to 1e-12, steps 4-5
-  differ by 5-15% in |Div|_inf), so the updated reference passes only sometimes.
-- The run prints ~1000 "Number of diverged points : ~72000" warnings (local plasticity
-  iterations fail), with and without S-029; the old reference has none.
-- User: "this test was always a big mess". Needs a proper look (setup, solver, local
-  iterations), not just a tolerance change. Stopped here on 2026-10-21.
+- Cause: `lmaxit = 8` in the input. Bisection needs ~20 steps for `lrtol = 1e-6`, so ~72000
+  points "diverged" per iteration and Newton hit maxit. See "Local iterations" below.
+- Now 17-27 nonlinear iterations per step, three 4-rank runs agree to 6 digits; passes.
 
 ## Group B, batch 4: M-051, M-053, M-063 (2026-10-22, not committed)
 
@@ -251,3 +245,19 @@ One commit per group of A, then B, then C after discussion.
   `_DISP_`, commented test block in subgrid.cpp removed.
 - Tests: t02, t06-t08, t11, t15, t16, t19, t37 pass; t26 only dyndike_4core fails (known issue).
   No results change.
+
+## Local iterations and temperature coupling (2026-10-23, not committed)
+
+- Non-converged local rheology iterations are now an error (`checkConvConstEq`), not a warning.
+- Cause of the warnings in tests: `lmaxit = 8` (t16 PhaseTransNotInAirBox_move, t25, t26 x5,
+  t27); removed with all other `lmaxit`/`lrtol` lines (t37 set the defaults). Defaults are used.
+- t16 PhaseTransNotInAirBox_move ("fails to converge", now removed from runtests.jl): Newton
+  stalled at an absolute floor ~0.027. Temperature is updated in every nonlinear iteration
+  (`SNESLineSearchPreCheck`) and conductivity / heat source jumped in T (useTk at T_Nu, dike at
+  T_sol), so T kept flipping. With rtol 1e-4 it converges only with both features off.
+- Fix: `RAMP` (tools.h) smooths the jumps over +-10 C. useTk applied per phase with its own
+  T_Nu (was averaged with 0 for phases without T_Nu). S-023 fixed (dike kfac, assigned to Garrett
+  Ito, taken over). With rtol 1e-4 every step now converges in 8-13 iterations.
+- t26 heat_rhoA and variableM keep their "fails to converge" comments (had lmaxit = 8; may be
+  obsolete).
+- Tests: t16, t25, t26, t27, t37 pass. Results change: references of t16, t26, t27 updated.
