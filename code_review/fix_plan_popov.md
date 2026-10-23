@@ -6,13 +6,23 @@ the code before it is fixed. Fixes that change results are reported; reference o
 updated silently.
 
 Testing:
-- Always build LaMEM in both modes after a change: `make mode=deb all` and `make mode=opt all`
-  in `src/`. Tests use both binaries (most use opt, a few use deb). Hand runs use `bin/opt` or
-  `bin/deb` directly, so a stale binary gives wrong conclusions.
+- Always build LaMEM in both modes after a change: `make mode=deb surf=scape all` and
+  `make mode=opt surf=scape all` in `src/`. Tests use both binaries (most use opt, a few use
+  deb). Hand runs use `bin/opt` or `bin/deb` directly, so a stale binary gives wrong conclusions.
 - Use test selectors and run only the tests that touch the changed code: `make test 30 31` or
   `make test 03-07` in `test/`. Run the full suite (>10 min) only when asked.
 - `make update NN` rewrites all references in those test folders. Keep them all (no need to
   revert the ones whose tests passed before; they do the same job).
+
+## Status (2026-10-23)
+
+- A: done, committed (14425854..876978e4; S-006 test not added, M-026 APS not saved).
+- B: done, committed (see each batch below for the commits).
+- C: items 9, 10, 12 done; S-023 and the local-iteration / T-coupling work done; t16 and
+  t26 convergence workarounds removed. Open: C items 1-8, 11 (M-063), 13, S-014, N-004.
+- Lowest priority: S-006 test.
+- Older notes below say "t37 FastScape broken" or "dyndike fails (known)": both are resolved
+  (t37 needs `surf=scape`, see CLAUDE.md; dyndike fixed with the lmaxit removal).
 
 ## A. Fix right away (small, clear, local)
 
@@ -31,16 +41,19 @@ Testing:
 
 ## B. Fix next (more work, clear fix)
 
-- S-009: "user velout given" flag; default stays mass-conserving.
-- S-029: fill boundary ghosts of lithostatic and pore pressure.
-- S-035, M-021, M-058, M-059: AVD marker control, one batch.
-- S-039: read solver-default inputs with command-line options applied. Done (no clear).
-- M-016, M-030: reject typos and bad values.
+All done and committed.
+
+- S-009: "user velout given" flag; default stays mass-conserving. Done (b7aa6557).
+- S-029: fill boundary ghosts of lithostatic and pore pressure. Done (c7ce5d27).
+- S-035, M-021, M-058, M-059: AVD marker control, one batch. Done (329482cf).
+- S-039: read solver-default inputs with command-line options applied. Done (90dfb957, no clear).
+- M-016, M-030: reject typos and bad values. Done (b7aa6557).
 - M-051, M-053, M-063: one helper so a one-rank error stops all ranks (no hang). Done in
-  batch 4: no hang (PETSc aborts all ranks); unchecked reads fixed.
+  batch 4 (f7cc8f88): no hang (PETSc aborts all ranks); unchecked reads fixed. M-063 rest in C.
 - M-055, M-056, M-061: periodic seam and coarse-level BCs in matrix-free / MG.
-  Batch 5 (2026-10-22), not committed: t02 subtests b (2 mat-free MG levels, 4 levels) and
-  c (same + periodic, no-slip bottom) added to runtests.jl, references not made yet.
+  Batch 5 (2026-10-22), committed 7ffd9332 (M-055, M-056), 9a8c9eab (M-061): t02 subtests
+  b (2 mat-free MG levels, 4 levels) and c (same + periodic, no-slip bottom) added to
+  runtests.jl.
   M-055 fixed (matFree.cpp x checks skip periodic; matBFBT.cpp cfv guard removed);
   -js_mat_free and wBFBT periodic converge.
   M-056 fixed in 3D (matData.cpp MatDataRestrictBC3D: boundary ghost flags copied from the fine
@@ -55,10 +68,9 @@ Testing:
   Fixed: bc.cpp printed the periodic line inside the no-slip mask line, without a newline.
   Also: MatDataRestrictParam3D clamps at the periodic seam (Im1++); a 4-rank SETERRQ in MG
   setup ended as "signal 9" with no message printed.
-- M-060, M-066: buffer size checks.
-- M-069: average doubled-angle form.
-- N-024, N-025, N-026: the parts Boris approved.
-  N-024 in progress (2026-10-23), not committed, builds clean, tests done, ready to commit.
+- M-060, M-066: buffer size checks. Done (d9c7978e).
+- M-069: average doubled-angle form. Done (c7ce5d27).
+- N-024, N-025, N-026: the parts Boris approved. Done (59bf2236, 9977c260).
   Done in src: parsing.cpp checks strtol (base 10) / strtod results, detects overlapping
   blocks, checks ftell, drops dead `&& fb`; options.cpp passes the whole PETSc option line.
   Relaxed (agreed 2026-10-23): error only if nothing parses, or an integer is given as a real
@@ -101,13 +113,18 @@ Testing:
    N-008 area-weighted avg_topo; N-014 Clapeyron parameters override a predefined law.
    N-017, N-020: non-issues (Anton). References updated: t22, t27, t32, t34; t15 RTI error
    0.00148 -> 0.00041 (closer to analytical). Only dyndike fails (known).
+   Committed 9125982e.
 10. Delete dead code? N-009, N-010, N-015, dead parts of N-021, N-022.
+    Done 2026-10-23 (3c04c606), see "Group C, dead code" below.
 11. M-063 (from B): "Incorrect sedimentation phase" stop in subgrid.cpp when the surface rises
     more than one cell per step or has overhangs. Relax, or keep the stop?
 12. Nothing to do: M-019 (mitigated by `-snes_max_funcs unlimited`); N-028, N-029 (Boris: leave).
     Small clean-ups: N-002, N-007 (mostly Wenrong/Yun), N-011, N-018.
     Done 2026-10-23: M-019, N-028, N-029 marked won't fix. N-002, N-007, N-011 (input checks
-    only; initial-guess skip of boxes/cylinders kept), N-018 fixed.
+    only; initial-guess skip of boxes/cylinders kept), N-018 fixed. Committed a868c954.
+13. Left from B (N-025, N-026): fix_dt schedule one step late, dt_out without effect when
+    nstep_out = 1, no dt trimming at time_end / output times; one value per fwrite in
+    marker/tracer/AVD files, total_pressure edge values.
 
 ## Moved from A to C while fixing
 
@@ -119,7 +136,7 @@ Testing:
 
 ## Status of A (2026-10-20)
 
-Done, not committed: S-001, S-003, S-004, S-006 (test not yet added), S-007, S-010, S-011,
+Done, committed 14425854..876978e4: S-001, S-003, S-004, S-006 (test not yet added), S-007, S-010, S-011,
 S-013, S-018/M-012, S-019 (perturbed coordinate kept in host cell), S-024, M-005, M-008,
 M-017, M-018, M-020, M-022, M-025, M-026 (APS still not saved), M-027, M-031, M-037, M-038,
 M-040, M-041, N-013. S-011 adds a field to BCCtx, so older restart files no longer load.
@@ -133,7 +150,8 @@ step, mostly markers) and dropped for now.
   in AVD.h, `< 0` checks added. The 3 topography loops in `AdjointPointInPro` tested `z` against
   the global box, so with more than one rank in z they stopped with "Non-local marker"; they now
   test the local box, as in `surf.cpp`.
-- AVD batch from B (not committed):
+- `FindPointInCellAdjoint` fix committed f8fb5175.
+- AVD batch from B (committed 329482cf):
   - S-035: delete path now counts claimed cells per point; smallest Voronoi volumes go first.
   - M-058: one helper `AVDGetLimitsMV`; `nmax` is reduced like `nmin`. Per-rank half-volumes
     kept on purpose (a volume cut by a rank boundary is half-size on each rank).
@@ -156,7 +174,7 @@ step, mostly markers) and dropped for now.
 
 One commit per group of A, then B, then C after discussion.
 
-## Group B, batch 1: inputs and BCs (2026-10-21, not committed)
+## Group B, batch 1: inputs and BCs (2026-10-21, committed b7aa6557)
 
 - S-009: new flag `velout_user` in BCCtx (restart format changes again). `BCGetVelins` computes
   `velout` from mass balance in one place, only when `bvel_velout` is not given. The log prints
@@ -169,7 +187,7 @@ One commit per group of A, then B, then C after discussion.
   are rejected; `stagp_a = 0` is used as given (was replaced by 2/3).
 - `make test` passed (t37 FastScape broken as before).
 
-## Group B, batch 2: buffer checks (2026-10-21, not committed)
+## Group B, batch 2: buffer checks (2026-10-21, committed d9c7978e)
 
 - M-066: schedule size is checked against `_max_num_steps_` (also in `TSSolGetPeriodSteps`,
   which writes n+1 values); first `time_dt_periods` entry must be 0; `TSSolAdjustSchedule`
@@ -181,7 +199,7 @@ One commit per group of A, then B, then C after discussion.
   at most `_max_polygons_` per slice; VLAs `SxAll`/`SyAll` replaced by heap arrays.
 - Tests: t30, t31 pass (selected tests only).
 
-## Group B, batch 3: S-029, M-069 (2026-10-21, not committed)
+## Group B, batch 3: S-029, M-069 (2026-10-21, committed c7ce5d27)
 
 - S-029: new `FDSTAGSetBoundCenter` (fdstag.cpp) copies boundary cell values to the outside
   ghosts (zero gradient, as for pressure; periodic x ghosts kept), then calls
@@ -199,7 +217,7 @@ One commit per group of A, then B, then C after discussion.
   points "diverged" per iteration and Newton hit maxit. See "Local iterations" below.
 - Now 17-27 nonlinear iterations per step, three 4-rank runs agree to 6 digits; passes.
 
-## Group B, batch 4: M-051, M-053, M-063 (2026-10-22, not committed)
+## Group B, batch 4: M-051, M-053, M-063 (2026-10-22, committed f7cc8f88)
 
 - The hangs are not real. An error that reaches `main` makes PETSc (3.24) call `MPI_Abort`, which
   stops all ranks. Checked: failed `mkdir` in `DirMake` on 2 ranks (read-only run folder) stops at
@@ -214,7 +232,7 @@ One commit per group of A, then B, then C after discussion.
   or overhangs is model behaviour: moved to C.
 - Tests: t01, t39 pass (t41 skipped, plugin not built). No results change.
 
-## Group B, S-039 (2026-10-22, not committed)
+## Group B, S-039 (2026-10-22, committed 90dfb957)
 
 - `setSolverOptions` no longer clears the options before `solverOptionsSetDefaults`. The defaults
   now see the command line (grid, CPUs, `act_temp_diff`, solver block keys). The saved options are
@@ -226,7 +244,7 @@ One commit per group of A, then B, then C after discussion.
 - Tests: t02, t03, t07, t08, t19, t20, t28, t30 pass; t26 only dyndike_4core fails (no command-line
   options, known issue). No results change.
 
-## Group C, dead code: N-009, N-010, N-015, N-021, N-022 (2026-10-23, not committed)
+## Group C, dead code: N-009, N-010, N-015, N-021, N-022 (2026-10-23, committed 3c04c606)
 
 - N-009: `Tensor2RNEigen`, `getISA`, `Tensor2RSSpectral` removed.
 - N-010 (user: remove fully): `bias_x/y/z` no longer read; `biases` arrays, the "deprecated"
@@ -246,7 +264,7 @@ One commit per group of A, then B, then C after discussion.
 - Tests: t02, t06-t08, t11, t15, t16, t19, t37 pass; t26 only dyndike_4core fails (known issue).
   No results change.
 
-## Local iterations and temperature coupling (2026-10-23, not committed)
+## Local iterations and temperature coupling (2026-10-23, committed ac3eda06, 235f3424, a2f65f5b)
 
 - Non-converged local rheology iterations are now an error (`checkConvConstEq`), not a warning.
 - Cause of the warnings in tests: `lmaxit = 8` (t16 PhaseTransNotInAirBox_move, t25, t26 x5,
@@ -259,7 +277,7 @@ One commit per group of A, then B, then C after discussion.
   T_Nu (was averaged with 0 for phases without T_Nu). S-023 fixed (dike kfac, assigned to Garrett
   Ito, taken over). With rtol 1e-4 steps 1-8 now converge in 8-13 iterations, but from step 13
   Newton still stalls near |F| ~ 1e-2, so this test keeps rtol 2.5e-2 and its loose check
-  (comment in runtests.jl says why). Open: find the remaining floor.
+  (comment in runtests.jl says why). Open: find the remaining floor (found, see next item).
 - Remaining floor found (2026-10-23): the temperature matrix (`JacResGetTempMat`) had no
   derivatives of k(T) and of the dike heat source. With the steep ramps (nu_k = 5 and kfac over
   20 C) the T update alone fell into a 2-cycle (|ge| 0.0129 / 0.0142), which kept Newton at
@@ -268,7 +286,7 @@ One commit per group of A, then B, then C after discussion.
   t16 PhaseTransNotInAirBox_move back to its original settings (rtol 1e-3, maxit 20) and the
   usual t16 checks; linear maxit 20 -> 50 (needed ~23). All 20 steps converge in 6-14
   iterations, final |eRes| ~1e-7 (was ~2e-3). Results change: references of t16, t26, t27
-  updated. Tests: t12, t16, t26, t27, t28 pass.
+  updated. Tests: t12, t16, t26, t27, t28 pass. Committed a2f65f5b.
 - Ramp half-width (10 C) and derivative perturbation (1e-3 C) are now inputs `T_ramp` and
   `T_pert` (Controls, JacRes.cpp; listed in info/options/input_file.dat). Defaults unchanged,
   no results change.
