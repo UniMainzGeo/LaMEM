@@ -425,6 +425,8 @@
     act_dike        = 1              # dike activation flag (additonal term in divergence)
     useTk           = 1              # switch to use T-dependent conductivity, 0: not active
     dikeHeat        = 1		     # switch to use Behn & Ito heat source in the dike
+    T_ramp          = 10.0           # half-width of ramps that smooth T-jumps (T-dependent conductivity, dike heat) [C]
+    T_pert          = 1e-3           # temperature perturbation for derivatives in the temperature matrix [C]
     adiabatic_gradient = 1.0         # activate adiabatic gradient in dike region
     Compute_velocity_gradient = 1    # compute the velocity gradient tensor 1: active, 0: not active. If active, it automatically activates the output in the .pvd file
     Phasetrans      = 0              # take phase transitions on particles into account (see  <PhaseTransitionStart>/ <PhaseTransitionEnd> below)

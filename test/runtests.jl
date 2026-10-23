@@ -1003,9 +1003,6 @@ if should_run_test("t16_PhaseTransitions")
                             create_expected_file=update_expected, clean_dir=clean_files)
 
     # Test dike feature using optimized LaMEM
-    # Newton stalls near |F| ~ 1e-2 from step 13 on (thermo-mechanical coupling), hence loose tolerances
-    keywords = ("|mRes|_2",)
-    acc      = ((rtol=1, atol=5e-2),)
     @test perform_lamem_test(dir,"PhaseTransNotInAirBox_move.dat","PhaseTransNotInAirBox_move",
                             keywords=keywords, accuracy=acc, cores=2, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)                 

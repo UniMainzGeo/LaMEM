@@ -387,7 +387,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 	nPtr = 0;
 	nD   = 0;
 	kfac = 1.0;
-	dT   = 10.0/jr->scal->temperature; // half-width of solidus and liquidus ramps
+	dT   = jr->ctrl.TRamp; // half-width of solidus and liquidus ramps
 
 	for(nPtr=0; nPtr<numPhtr; nPtr++)   // loop over all phase transitions blocks
 	{

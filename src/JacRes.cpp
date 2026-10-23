@@ -63,6 +63,8 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->actTemp      =  0;            // diffusion is not active by default (otherwise we have to define thermal properties in all cases)
 	ctrl->printNorms   =  0;            // print norms of velocity/pressure/temperature?
 	ctrl->Adiabatic_gr = 0.0;
+	ctrl->TRamp        = 10.0;
+	ctrl->TPert        = 1e-3;
 
 	if(scal->utype != _NONE_)
 	{
@@ -112,6 +114,8 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "act_dike",        &ctrl->actDike,         1, 1));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "useTk",           &ctrl->useTk,           1, 1));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "dikeHeat",        &ctrl->dikeHeat,        1, 1));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "T_ramp",          &ctrl->TRamp,           1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "T_pert",          &ctrl->TPert,           1, 1.0));
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
@@ -209,6 +213,16 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	}
 
 
+	if(ctrl->TRamp < 0.0)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Temperature ramp half-width must be non-negative (T_ramp)");
+	}
+
+	if(ctrl->TPert <= 0.0)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Temperature perturbation must be positive (T_pert)");
+	}
+
 	if(!ctrl->actTemp) ctrl->shearHeatEff = 0.0;
 
 	if(ctrl->biot < 0.0 || ctrl->biot > 1.0)
@@ -284,6 +298,9 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->Phasetrans)     PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions are active            @ \n");
 	if(ctrl->Passive_Tracer) PetscPrintf(PETSC_COMM_WORLD, "   Passive Tracers are active              @ \n");
 	if(ctrl->useTk)          PetscPrintf(PETSC_COMM_WORLD, "   Use Temperature-dependent conductivity  @ \n");
+	if(ctrl->useTk || (ctrl->actDike && ctrl->dikeHeat))
+	                         PetscPrintf(PETSC_COMM_WORLD, "   Temperature ramp half-width             : %g %s \n", ctrl->TRamp, scal->lbl_temperature);
+	if(ctrl->actTemp)        PetscPrintf(PETSC_COMM_WORLD, "   Temperature perturbation (derivatives)  : %g %s \n", ctrl->TPert, scal->lbl_temperature);
 	PetscPrintf(PETSC_COMM_WORLD, "   Ground water level type                 : ");
 	if     (ctrl->gwType == _GW_NONE_)  PetscPrintf(PETSC_COMM_WORLD, "none \n");
 	else if(ctrl->gwType == _GW_TOP_)   PetscPrintf(PETSC_COMM_WORLD, "top of the domain \n");
@@ -313,6 +330,8 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->steadyTempStep /=  scal->time;
 	ctrl->pShift         /=  scal->stress;
 	ctrl->Adiabatic_gr   = (ctrl->Adiabatic_gr/scal->temperature)*scal->length;
+	ctrl->TRamp          /=  scal->temperature;
+	ctrl->TPert          /=  scal->temperature;
 
 	// create Jacobian & residual evaluation context
 	PetscCall(JacResCreateData(jr));
