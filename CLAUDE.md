@@ -2,9 +2,11 @@
 
 ## Build
 
-- Build LaMEM in both modes after every change: `make mode=deb all` and `make mode=opt all`
-  in `src/`. The tests use both binaries (most use opt, a few use deb), and hand runs of
-  `bin/opt/LaMEM` or `bin/deb/LaMEM` with a stale build give wrong conclusions.
+- Build LaMEM in both modes after every change: `make mode=deb surf=scape all` and
+  `make mode=opt surf=scape all` in `src/` (`surf=scape` enables FastScape, needed by t37;
+  run `clean_all` after changing it). The tests use both binaries (most use opt, a few use
+  deb), and hand runs of `bin/opt/LaMEM` or `bin/deb/LaMEM` with a stale build give wrong
+  conclusions.
 - If linking fails with undefined symbols, the objects are stale (built against another PETSc):
   run `make mode=deb clean_all` (or `mode=opt`) in `src/`, then rebuild.
 
