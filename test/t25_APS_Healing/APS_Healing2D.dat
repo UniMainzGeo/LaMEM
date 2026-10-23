@@ -92,7 +92,6 @@
 	act_dike       = 0 		# activate dike flag
 	act_therm_exp  = 0              # thermal expansion activation flag
 	act_temp_diff   = 0              # temperature diffusion activation flag
-	lmaxit          = 8             # maximum number of local rheology iterations
 
 #===============================================================================
 # Model setup & advection

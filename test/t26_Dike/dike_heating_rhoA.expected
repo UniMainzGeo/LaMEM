@@ -14,7 +14,7 @@ Total number of options added: 0
 -js_ksp_converged_reason # (source: code)
 -js_ksp_max_it 50 # (source: code)
 -js_ksp_monitor # (source: code)
--js_ksp_rtol 1e-05 # (source: code)
+-js_ksp_rtol 1.0000000000000001e-05 # (source: code)
 -js_ksp_type fgmres # (source: code)
 -nel_y 2 # (source: code)
 -nstep_max 2 # (source: code)
@@ -31,9 +31,9 @@ Total number of options added: 0
 -snes_newton_maxit 20 # (source: code)
 -snes_newton_rtol 1.2 # (source: code)
 -snes_picard_minit 5 # (source: code)
--snes_picard_rtol 0.003 # (source: code)
--snes_rtol 0.05 # (source: code)
--snes_stol 1e-32 # (source: code)
+-snes_picard_rtol 0.0030000000000000001 # (source: code)
+-snes_rtol 0.050000000000000003 # (source: code)
+-snes_stol 1.0000000000000001e-32 # (source: code)
 -ts_ksp_atol_auto # (source: code)
 -ts_ksp_converged_reason # (source: code)
 -ts_ksp_max_it 500 # (source: code)
@@ -43,7 +43,7 @@ Total number of options added: 0
 #End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Oct 22 2026 - Time: 17:44:32 	    
+     Compiled: Date: Oct 23 2026 - Time: 18:49:27 	    
      Version : 3.4.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -154,7 +154,7 @@ Solution parameters & controls:
    Minimum friction                        : 1. [deg] 
    Ultimate yield stress                   : 1e+09 [Pa] 
    Max. melt fraction (viscosity, density) : 1.    
-   Rheology iteration number               : 8  
+   Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
 --------------------------------------------------------------------------
@@ -171,7 +171,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00199762 sec)
+Reading geometric primitives ... done (0.00202495 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : testrhoA_Heat_M1 
@@ -212,7 +212,7 @@ Preconditioner parameters:
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.23657 (sec)
+SNES solution time      : 0.235414 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -223,7 +223,7 @@ Residual summary:
    Energy: 
       |eRes|_2  = 5.898589514357e-03 
 --------------------------------------------------------------------------
-Saving output ... done (0.0586551 sec)
+Saving output ... done (0.0591576 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -231,83 +231,51 @@ Current time        : 0.00000000 [Myr]
 Tentative time step : 0.00100000 [Myr] 
 --------------------------------------------------------------------------
 Phase_Transition ... 
-done (0.00618636 sec)
+done (0.0061139 sec)
 --------------------------------------------------------------------------
-*****************************************************************************
-Warning! Number of diverged points : 17722 
-Average iteration count            : 6 
-*****************************************************************************
-  0 SNES Function norm 4.570942287831e-01
+  0 SNES Function norm 4.570471457553e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 4.570942287831e-01
-    1 KSP Residual norm 6.223143922526e-04
-    2 KSP Residual norm 3.882542427129e-07
+    0 KSP Residual norm 4.570471457553e-01
+    1 KSP Residual norm 6.223140909410e-04
+    2 KSP Residual norm 3.882466515825e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.198494181603e-02
-  1 KSP Residual norm 3.860271999302e-17
+  0 KSP Residual norm 1.198494163796e-02
+  1 KSP Residual norm 3.778769514059e-17
   Linear ts_ solve converged due to CONVERGED_ATOL iterations 1
-*****************************************************************************
-Warning! Number of diverged points : 17722 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18361 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18361 
-Average iteration count            : 6 
-*****************************************************************************
-  1 SNES Function norm 4.702873873995e-02
-  1 PICARD ||F||/||F0||=1.028863e-01 
+  1 SNES Function norm 4.697990352601e-02
+  1 PICARD ||F||/||F0||=1.027901e-01 
     Residual norms for js_ solve.
-    0 KSP Residual norm 4.702873873995e-02
-    1 KSP Residual norm 1.647468802337e-06
-    2 KSP Residual norm 1.157903961464e-09
+    0 KSP Residual norm 4.697990352601e-02
+    1 KSP Residual norm 1.647475228433e-06
+    2 KSP Residual norm 1.157929230055e-09
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 2.005782778856e-04
-  1 KSP Residual norm 4.947339271314e-16
+  0 KSP Residual norm 2.005197564012e-04
+  1 KSP Residual norm 4.947321726388e-16
   Linear ts_ solve converged due to CONVERGED_ATOL iterations 1
-*****************************************************************************
-Warning! Number of diverged points : 18375 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18286 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18286 
-Average iteration count            : 6 
-*****************************************************************************
-  2 SNES Function norm 1.205294302502e-03
+  2 SNES Function norm 1.215474796696e-03
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 2
-SNES solution time      : 0.256472 (sec)
+SNES solution time      : 0.307142 (sec)
 --------------------------------------------------------------------------
-*****************************************************************************
-Warning! Number of diverged points : 18286 
-Average iteration count            : 6 
-*****************************************************************************
 Residual summary: 
    Continuity: 
-      |Div|_inf = 5.233620631091e-10 
-      |Div|_2   = 1.157903960907e-09 
+      |Div|_inf = 5.235189095755e-10 
+      |Div|_2   = 1.157929230173e-09 
    Momentum: 
-      |mRes|_2  = 1.205294302501e-03 
+      |mRes|_2  = 1.215474796695e-03 
    Energy: 
-      |eRes|_2  = 7.080715605006e-05 
+      |eRes|_2  = 7.064184475632e-05 
 --------------------------------------------------------------------------
 Actual time step : 0.00100 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 39 markers in 4.6143e-03 s 
+Marker control: (Corners ) injected 39 markers in 4.5214e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0549519 sec)
+Saving output ... done (0.0542106 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
@@ -315,72 +283,44 @@ Current time        : 0.00100000 [Myr]
 Tentative time step : 0.00110000 [Myr] 
 --------------------------------------------------------------------------
 Phase_Transition ... 
-done (0.0062383 sec)
+done (0.00611357 sec)
 --------------------------------------------------------------------------
-*****************************************************************************
-Warning! Number of diverged points : 18731 
-Average iteration count            : 6 
-*****************************************************************************
-  0 SNES Function norm 7.979838272980e-03
+  0 SNES Function norm 7.992993969809e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 7.979838272980e-03
-    1 KSP Residual norm 3.210249981378e-07
-    2 KSP Residual norm 2.930491999648e-10
+    0 KSP Residual norm 7.992993969809e-03
+    1 KSP Residual norm 3.210927363620e-07
+    2 KSP Residual norm 2.931118046064e-10
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.199863346369e-02
-  1 KSP Residual norm 6.032864297623e-16
+  0 KSP Residual norm 1.199862488278e-02
+  1 KSP Residual norm 6.033169839465e-16
   Linear ts_ solve converged due to CONVERGED_ATOL iterations 1
-*****************************************************************************
-Warning! Number of diverged points : 18693 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18611 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18612 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18614 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18614 
-Average iteration count            : 6 
-*****************************************************************************
-  1 SNES Function norm 1.219349853286e-04
+  1 SNES Function norm 1.194521114751e-04
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.163813 (sec)
+SNES solution time      : 0.209453 (sec)
 --------------------------------------------------------------------------
-*****************************************************************************
-Warning! Number of diverged points : 18614 
-Average iteration count            : 6 
-*****************************************************************************
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.384062777582e-10 
-      |Div|_2   = 2.928005162423e-10 
+      |Div|_inf = 1.383724476146e-10 
+      |Div|_2   = 2.928547752235e-10 
    Momentum: 
-      |mRes|_2  = 1.219349853282e-04 
+      |mRes|_2  = 1.194521114747e-04 
    Energy: 
-      |eRes|_2  = 1.294224662448e-04 
+      |eRes|_2  = 1.294176718104e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00110 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 41 markers in 4.9654e-03 s 
+Marker control: (Corners ) injected 41 markers in 4.5890e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0514832 sec)
+Saving output ... done (0.0508408 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 1.04196 (sec) 
+Total solution time : 1.14842 (sec) 
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
 -jp_pc_factor_mat_solver_type mumps # (source: code)
@@ -391,7 +331,7 @@ Total solution time : 1.04196 (sec)
 -js_ksp_converged_reason # (source: code)
 -js_ksp_max_it 50 # (source: code)
 -js_ksp_monitor # (source: code)
--js_ksp_rtol 1e-05 # (source: code)
+-js_ksp_rtol 1.0000000000000001e-05 # (source: code)
 -js_ksp_type fgmres # (source: code)
 -nel_y 2 # (source: code)
 -nstep_max 2 # (source: code)
@@ -408,9 +348,9 @@ Total solution time : 1.04196 (sec)
 -snes_newton_maxit 20 # (source: code)
 -snes_newton_rtol 1.2 # (source: code)
 -snes_picard_minit 5 # (source: code)
--snes_picard_rtol 0.003 # (source: code)
--snes_rtol 0.05 # (source: code)
--snes_stol 1e-32 # (source: code)
+-snes_picard_rtol 0.0030000000000000001 # (source: code)
+-snes_rtol 0.050000000000000003 # (source: code)
+-snes_stol 1.0000000000000001e-32 # (source: code)
 -ts_ksp_atol_auto # (source: code)
 -ts_ksp_converged_reason # (source: code)
 -ts_ksp_max_it 500 # (source: code)

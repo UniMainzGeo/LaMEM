@@ -114,6 +114,15 @@ static inline PetscScalar ODDROOT(PetscScalar x, PetscScalar a)
 	else        return  pow( x, a);
 }
 
+// linear ramp from 0 (x <= x0 - dx) to 1 (x >= x0 + dx)
+static inline PetscScalar RAMP(PetscScalar x, PetscScalar x0, PetscScalar dx)
+{
+	if(x <= x0 - dx) return 0.0;
+	if(x >= x0 + dx) return 1.0;
+
+	return (x - x0 + dx)/(2.0*dx);
+}
+
 //---------------------------------------------------------------------------
 // Polygon location functions
 //---------------------------------------------------------------------------

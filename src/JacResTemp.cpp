@@ -65,7 +65,7 @@ PetscErrorCode JacResGetTempParam(
 	PetscInt    i, numPhases, AirPhase;
 	Material_t  *phases, *M;
 	Controls    *ctrl;
-	PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k, T_Nu;
+	PetscScalar cf, k, kc, rho, rho_Cp, rho_A, density, dT;
 
 	PetscFunctionBeginUser;
 
@@ -73,13 +73,12 @@ PetscErrorCode JacResGetTempParam(
 	k         = 0.0;
 	rho_Cp    = 0.0;
 	rho_A     = 0.0;
-	nu_k      = 0.0;
-	T_Nu      = 0.0;
 
 	numPhases = jr->dbm->numPhases;
 	phases    = jr->dbm->phases;
 	density   = jr->scal->density;
 	AirPhase  = jr->surf->AirPhase;
+	dT        = 10.0/jr->scal->temperature; // half-width of T-dependent conductivity ramp
 
 	// access the control which contains switch for T-dep conductivity
 	ctrl      = &jr->ctrl;
@@ -97,24 +96,17 @@ PetscErrorCode JacResGetTempParam(
 			rho = 1.0/density;
 		}
 
-		k      +=  cf*M->k;
-		rho_Cp +=  cf*M->Cp*rho;
-		rho_A  +=  cf*M->A*rho;
+		kc      =  M->k;
 
-		// Temperature-dependent conductivity: phase-dependent nusselt number
-		if(ctrl->useTk)
+		// Temperature-dependent conductivity: phase Nusselt number below T_Nu (smoothed over 2*dT)
+		if(ctrl->useTk && M->nu_k)
 		{
-			// Nusselt number = 1 if not defined
-			nu_k += cf*(M->nu_k ? M->nu_k : 1.0);
-			T_Nu += cf*M->T_Nu;
+			kc *= 1.0 + (M->nu_k - 1.0)*(1.0 - RAMP(Tc, M->T_Nu, dT));
 		}
 
-	}
-
-	// switch and temperature condition to use T-dep conductivity
-	if(ctrl->useTk && Tc <= T_Nu)
-	{
-		k = k*nu_k;
+		k      +=  cf*kc;
+		rho_Cp +=  cf*M->Cp*rho;
+		rho_A  +=  cf*M->A*rho;
 	}
 
 	if(ctrl->actDike && ctrl->dikeHeat)

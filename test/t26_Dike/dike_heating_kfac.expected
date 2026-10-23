@@ -31,9 +31,9 @@ Total number of options added: 0
 -snes_newton_maxit 20 # (source: code)
 -snes_newton_rtol 1.2 # (source: code)
 -snes_picard_minit 5 # (source: code)
--snes_picard_rtol 1e-05 # (source: code)
+-snes_picard_rtol 1.0000000000000001e-05 # (source: code)
 -snes_rtol 0.001 # (source: code)
--snes_stol 1e-32 # (source: code)
+-snes_stol 1.0000000000000001e-32 # (source: code)
 -ts_ksp_atol_auto # (source: code)
 -ts_ksp_converged_reason # (source: code)
 -ts_ksp_max_it 500 # (source: code)
@@ -43,7 +43,7 @@ Total number of options added: 0
 #End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Oct 22 2026 - Time: 17:44:32 	    
+     Compiled: Date: Oct 23 2026 - Time: 18:49:27 	    
      Version : 3.4.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -155,7 +155,7 @@ Solution parameters & controls:
    Minimum friction                        : 1. [deg] 
    Ultimate yield stress                   : 1e+09 [Pa] 
    Max. melt fraction (viscosity, density) : 1.    
-   Rheology iteration number               : 8  
+   Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
 --------------------------------------------------------------------------
@@ -172,7 +172,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00200189 sec)
+Reading geometric primitives ... done (0.00201882 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : testHeatM0 
@@ -228,7 +228,7 @@ Preconditioner parameters:
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.24044 (sec)
+SNES solution time      : 0.238754 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -239,7 +239,7 @@ Residual summary:
    Energy: 
       |eRes|_2  = 8.401197032529e-03 
 --------------------------------------------------------------------------
-Saving output ... done (0.0589982 sec)
+Saving output ... done (0.0583482 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -247,305 +247,154 @@ Current time        : 0.00000000 [Myr]
 Tentative time step : 0.00100000 [Myr] 
 --------------------------------------------------------------------------
 Phase_Transition ... 
-done (0.00633619 sec)
+done (0.00599128 sec)
 --------------------------------------------------------------------------
-*****************************************************************************
-Warning! Number of diverged points : 17848 
-Average iteration count            : 6 
-*****************************************************************************
-  0 SNES Function norm 3.430011730731e-01
+  0 SNES Function norm 3.424185801965e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.430011730731e-01
-    1 KSP Residual norm 5.783860594901e-04
-    2 KSP Residual norm 1.956669799270e-07
+    0 KSP Residual norm 3.424185801965e-01
+    1 KSP Residual norm 5.783856637609e-04
+    2 KSP Residual norm 1.956648370929e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 3.601913925420e-01
-  1 KSP Residual norm 4.412881384757e-02
-  2 KSP Residual norm 1.573173747003e-02
-  3 KSP Residual norm 7.243285922597e-03
-  4 KSP Residual norm 1.773079531750e-03
-  5 KSP Residual norm 2.530718388174e-04
-  6 KSP Residual norm 1.037645990271e-04
-  7 KSP Residual norm 4.043028455500e-05
-  8 KSP Residual norm 8.859669867906e-06
-  9 KSP Residual norm 3.262404922451e-06
- 10 KSP Residual norm 1.130144774285e-06
- 11 KSP Residual norm 3.115206560807e-07
- 12 KSP Residual norm 9.585049412572e-08
- 13 KSP Residual norm 3.440988642318e-08
- 14 KSP Residual norm 1.187194798507e-08
- 15 KSP Residual norm 4.346401344263e-09
- 16 KSP Residual norm 1.464733846911e-09
+  0 KSP Residual norm 3.601913958834e-01
+  1 KSP Residual norm 4.412881245462e-02
+  2 KSP Residual norm 1.573173751934e-02
+  3 KSP Residual norm 7.243285772634e-03
+  4 KSP Residual norm 1.773079504746e-03
+  5 KSP Residual norm 2.530718268585e-04
+  6 KSP Residual norm 1.037645965535e-04
+  7 KSP Residual norm 4.043028399013e-05
+  8 KSP Residual norm 8.859669748627e-06
+  9 KSP Residual norm 3.262404854672e-06
+ 10 KSP Residual norm 1.130144746780e-06
+ 11 KSP Residual norm 3.115206535123e-07
+ 12 KSP Residual norm 9.585049538649e-08
+ 13 KSP Residual norm 3.440988605280e-08
+ 14 KSP Residual norm 1.187194798554e-08
+ 15 KSP Residual norm 4.346401402512e-09
+ 16 KSP Residual norm 1.464733850491e-09
   Linear ts_ solve converged due to CONVERGED_RTOL iterations 16
-*****************************************************************************
-Warning! Number of diverged points : 17848 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 17848 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 17848 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 17848 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 17848 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 17848 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 17848 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 17848 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 17848 
-Average iteration count            : 6 
-*****************************************************************************
-  1 SNES Function norm 9.049270007448e-02
-  1 PICARD ||F||/||F0||=2.638262e-01 
+  1 SNES Function norm 9.010106766882e-02
+  1 PICARD ||F||/||F0||=2.631314e-01 
     Residual norms for js_ solve.
-    0 KSP Residual norm 9.049270007448e-02
-    1 KSP Residual norm 4.169253805050e-05
+    0 KSP Residual norm 9.010106766882e-02
+    1 KSP Residual norm 4.099738178102e-05
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 7.709450150831e-06
-  1 KSP Residual norm 6.522841871685e-07
-  2 KSP Residual norm 5.535365895769e-08
-  3 KSP Residual norm 1.424054222788e-08
-  4 KSP Residual norm 6.391619562525e-09
-  5 KSP Residual norm 1.603438065610e-09
-  6 KSP Residual norm 2.844008542366e-10
-  7 KSP Residual norm 1.164513247729e-10
-  8 KSP Residual norm 3.388522852154e-11
+  0 KSP Residual norm 7.717268426385e-06
+  1 KSP Residual norm 6.527790729293e-07
+  2 KSP Residual norm 5.573059318320e-08
+  3 KSP Residual norm 1.441354123161e-08
+  4 KSP Residual norm 6.449895402265e-09
+  5 KSP Residual norm 1.623249886728e-09
+  6 KSP Residual norm 2.863988163988e-10
+  7 KSP Residual norm 1.177843238377e-10
+  8 KSP Residual norm 3.413379377714e-11
   Linear ts_ solve converged due to CONVERGED_ATOL iterations 8
-*****************************************************************************
-Warning! Number of diverged points : 18034 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18064 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18064 
-Average iteration count            : 6 
-*****************************************************************************
-  2 SNES Function norm 1.513580190222e-02
-  2 PICARD ||F||/||F0||=4.412755e-02 
+  2 SNES Function norm 1.463273467193e-02
+  2 PICARD ||F||/||F0||=4.273347e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.513580190222e-02
-    1 KSP Residual norm 7.280723133882e-07
+    0 KSP Residual norm 1.463273467193e-02
+    1 KSP Residual norm 7.344330932357e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.227248846220e-05
-  1 KSP Residual norm 1.215379626518e-06
-  2 KSP Residual norm 1.013331810081e-07
-  3 KSP Residual norm 4.524988850970e-08
-  4 KSP Residual norm 1.494910966908e-08
-  5 KSP Residual norm 3.236527673020e-09
-  6 KSP Residual norm 7.330401963649e-10
-  7 KSP Residual norm 2.804302495287e-10
-  8 KSP Residual norm 5.677167350652e-11
+  0 KSP Residual norm 1.235566606987e-05
+  1 KSP Residual norm 1.223353547854e-06
+  2 KSP Residual norm 1.037712118057e-07
+  3 KSP Residual norm 4.627465167152e-08
+  4 KSP Residual norm 1.531241215876e-08
+  5 KSP Residual norm 3.279018476750e-09
+  6 KSP Residual norm 7.418895972961e-10
+  7 KSP Residual norm 2.838139100161e-10
+  8 KSP Residual norm 5.756262581762e-11
   Linear ts_ solve converged due to CONVERGED_ATOL iterations 8
-*****************************************************************************
-Warning! Number of diverged points : 18102 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18110 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18110 
-Average iteration count            : 6 
-*****************************************************************************
-  3 SNES Function norm 7.498180364079e-03
-  3 PICARD ||F||/||F0||=2.186051e-02 
+  3 SNES Function norm 7.492720073894e-03
+  3 PICARD ||F||/||F0||=2.188176e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 7.498180364079e-03
-    1 KSP Residual norm 4.188719060303e-07
+    0 KSP Residual norm 7.492720073894e-03
+    1 KSP Residual norm 4.158911373966e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 6.554594005918e-06
-  1 KSP Residual norm 6.559451420016e-07
-  2 KSP Residual norm 5.395131049437e-08
-  3 KSP Residual norm 2.430697346884e-08
-  4 KSP Residual norm 7.827113904987e-09
-  5 KSP Residual norm 1.669129788236e-09
-  6 KSP Residual norm 3.819985354117e-10
-  7 KSP Residual norm 1.501197908848e-10
-  8 KSP Residual norm 2.746272442962e-11
+  0 KSP Residual norm 6.502089085130e-06
+  1 KSP Residual norm 6.502943196651e-07
+  2 KSP Residual norm 5.411356050787e-08
+  3 KSP Residual norm 2.430820261118e-08
+  4 KSP Residual norm 7.849713576562e-09
+  5 KSP Residual norm 1.670742447801e-09
+  6 KSP Residual norm 3.961816336188e-10
+  7 KSP Residual norm 1.524226010980e-10
+  8 KSP Residual norm 2.882817303374e-11
   Linear ts_ solve converged due to CONVERGED_ATOL iterations 8
-*****************************************************************************
-Warning! Number of diverged points : 18116 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18126 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18126 
-Average iteration count            : 6 
-*****************************************************************************
-  4 SNES Function norm 4.352969139318e-03
-  4 PICARD ||F||/||F0||=1.269083e-02 
+  4 SNES Function norm 4.100187688625e-03
+  4 PICARD ||F||/||F0||=1.197420e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 4.352969139318e-03
-    1 KSP Residual norm 2.290100919359e-07
+    0 KSP Residual norm 4.100187688625e-03
+    1 KSP Residual norm 2.384911882003e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 3.502930995902e-06
-  1 KSP Residual norm 3.515513846239e-07
-  2 KSP Residual norm 2.759696859636e-08
-  3 KSP Residual norm 1.225963466405e-08
-  4 KSP Residual norm 4.039233238778e-09
-  5 KSP Residual norm 9.008924081549e-10
-  6 KSP Residual norm 2.268576175238e-10
-  7 KSP Residual norm 8.547510734293e-11
-  8 KSP Residual norm 1.620238592158e-11
+  0 KSP Residual norm 3.594390949425e-06
+  1 KSP Residual norm 3.595625442214e-07
+  2 KSP Residual norm 2.894127741792e-08
+  3 KSP Residual norm 1.288073192203e-08
+  4 KSP Residual norm 4.234973876883e-09
+  5 KSP Residual norm 9.150199481829e-10
+  6 KSP Residual norm 2.212996815616e-10
+  7 KSP Residual norm 8.593740394531e-11
+  8 KSP Residual norm 1.588245157880e-11
   Linear ts_ solve converged due to CONVERGED_ATOL iterations 8
-*****************************************************************************
-Warning! Number of diverged points : 18128 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18112 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18112 
-Average iteration count            : 6 
-*****************************************************************************
-  5 SNES Function norm 2.591148968582e-03
-  5 PICARD ||F||/||F0||=7.554344e-03 
+  5 SNES Function norm 2.298737627404e-03
+  5 PICARD ||F||/||F0||=6.713239e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.591148968582e-03
-    1 KSP Residual norm 1.335408075415e-07
+    0 KSP Residual norm 2.298737627404e-03
+    1 KSP Residual norm 1.379394343737e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.999856770926e-06
-  1 KSP Residual norm 1.992841225435e-07
-  2 KSP Residual norm 1.615719811753e-08
-  3 KSP Residual norm 7.144513271369e-09
-  4 KSP Residual norm 2.377376382811e-09
-  5 KSP Residual norm 5.207447207540e-10
-  6 KSP Residual norm 1.362055733869e-10
-  7 KSP Residual norm 5.108421250343e-11
+  0 KSP Residual norm 2.032600937277e-06
+  1 KSP Residual norm 2.032026794936e-07
+  2 KSP Residual norm 1.609988573017e-08
+  3 KSP Residual norm 7.152635607863e-09
+  4 KSP Residual norm 2.353924814626e-09
+  5 KSP Residual norm 5.130574152422e-10
+  6 KSP Residual norm 1.269067279807e-10
+  7 KSP Residual norm 4.927588834576e-11
   Linear ts_ solve converged due to CONVERGED_ATOL iterations 7
-*****************************************************************************
-Warning! Number of diverged points : 18102 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18118 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18118 
-Average iteration count            : 6 
-*****************************************************************************
-  6 SNES Function norm 1.695155818971e-03
-  6 PICARD ||F||/||F0||=4.942128e-03 
+  6 SNES Function norm 1.307563786607e-03
+  6 PICARD ||F||/||F0||=3.818612e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.695155818971e-03
-    1 KSP Residual norm 7.946134219069e-08
+    0 KSP Residual norm 1.307563786607e-03
+    1 KSP Residual norm 8.002864097322e-08
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.200777894535e-06
-  1 KSP Residual norm 1.193265983068e-07
-  2 KSP Residual norm 9.743595570395e-09
-  3 KSP Residual norm 4.289399727520e-09
-  4 KSP Residual norm 1.444067335270e-09
-  5 KSP Residual norm 3.123464649583e-10
-  6 KSP Residual norm 8.269491820378e-11
+  0 KSP Residual norm 1.164585720927e-06
+  1 KSP Residual norm 1.163558276388e-07
+  2 KSP Residual norm 9.106080405171e-09
+  3 KSP Residual norm 4.041667671736e-09
+  4 KSP Residual norm 1.331108579478e-09
+  5 KSP Residual norm 2.918093352157e-10
+  6 KSP Residual norm 7.303494277347e-11
   Linear ts_ solve converged due to CONVERGED_ATOL iterations 6
-*****************************************************************************
-Warning! Number of diverged points : 18120 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18128 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18128 
-Average iteration count            : 6 
-*****************************************************************************
-  7 SNES Function norm 1.142922892584e-03
-  7 PICARD ||F||/||F0||=3.332125e-03 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 1.142922892584e-03
-    1 KSP Residual norm 4.748481346901e-08
-    Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  Residual norms for ts_ solve.
-  0 KSP Residual norm 7.249299755112e-07
-  1 KSP Residual norm 7.185139136930e-08
-  2 KSP Residual norm 5.979985071804e-09
-  3 KSP Residual norm 2.623693945055e-09
-  4 KSP Residual norm 8.947593434960e-10
-  5 KSP Residual norm 1.900405242573e-10
-  6 KSP Residual norm 5.180712022326e-11
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 6
-*****************************************************************************
-Warning! Number of diverged points : 18128 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18134 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18134 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18134 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18134 
-Average iteration count            : 6 
-*****************************************************************************
-  8 SNES Function norm 6.575043909002e-04
+  7 SNES Function norm 7.511479570677e-04
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 8
-SNES solution time      : 1.05082 (sec)
+Number of iterations    : 7
+SNES solution time      : 1.13237 (sec)
 --------------------------------------------------------------------------
-*****************************************************************************
-Warning! Number of diverged points : 18134 
-Average iteration count            : 6 
-*****************************************************************************
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.347480089791e-09 
-      |Div|_2   = 4.782727131386e-08 
+      |Div|_inf = 3.965358706811e-09 
+      |Div|_2   = 8.002864089494e-08 
    Momentum: 
-      |mRes|_2  = 6.575043891607e-04 
+      |mRes|_2  = 7.511479528045e-04 
    Energy: 
-      |eRes|_2  = 4.527010729159e-07 
+      |eRes|_2  = 6.726685592579e-07 
 --------------------------------------------------------------------------
 Actual time step : 0.00100 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 47 markers in 4.4884e-03 s 
+Marker control: (Corners ) injected 47 markers in 4.8446e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0545601 sec)
+Saving output ... done (0.0544861 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
@@ -553,281 +402,161 @@ Current time        : 0.00100000 [Myr]
 Tentative time step : 0.00110000 [Myr] 
 --------------------------------------------------------------------------
 Phase_Transition ... 
-done (0.00603564 sec)
+done (0.00585992 sec)
 --------------------------------------------------------------------------
-*****************************************************************************
-Warning! Number of diverged points : 18397 
-Average iteration count            : 6 
-*****************************************************************************
-  0 SNES Function norm 6.177646486552e-02
+  0 SNES Function norm 6.148316456456e-02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 6.177646486552e-02
-    1 KSP Residual norm 2.888868235378e-06
+    0 KSP Residual norm 6.148316456456e-02
+    1 KSP Residual norm 2.888120556339e-06
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 3.374266903801e-01
-  1 KSP Residual norm 4.369601188690e-02
-  2 KSP Residual norm 1.572761847479e-02
-  3 KSP Residual norm 7.224714094379e-03
-  4 KSP Residual norm 1.829291097800e-03
-  5 KSP Residual norm 2.447719980655e-04
-  6 KSP Residual norm 9.921989065980e-05
-  7 KSP Residual norm 3.851949928541e-05
-  8 KSP Residual norm 9.412363151358e-06
-  9 KSP Residual norm 3.616331221261e-06
- 10 KSP Residual norm 1.173218545849e-06
- 11 KSP Residual norm 3.561556983472e-07
- 12 KSP Residual norm 1.216408369090e-07
- 13 KSP Residual norm 4.306570824374e-08
- 14 KSP Residual norm 1.546627050134e-08
- 15 KSP Residual norm 5.855179241347e-09
- 16 KSP Residual norm 2.003796424536e-09
+  0 KSP Residual norm 3.376628549754e-01
+  1 KSP Residual norm 4.372622210197e-02
+  2 KSP Residual norm 1.573230666345e-02
+  3 KSP Residual norm 7.226353708889e-03
+  4 KSP Residual norm 1.830059350607e-03
+  5 KSP Residual norm 2.449963398157e-04
+  6 KSP Residual norm 9.941786705041e-05
+  7 KSP Residual norm 3.856719721861e-05
+  8 KSP Residual norm 9.415738979086e-06
+  9 KSP Residual norm 3.614864878063e-06
+ 10 KSP Residual norm 1.173096757496e-06
+ 11 KSP Residual norm 3.562168401365e-07
+ 12 KSP Residual norm 1.218022336872e-07
+ 13 KSP Residual norm 4.314140350537e-08
+ 14 KSP Residual norm 1.548896030034e-08
+ 15 KSP Residual norm 5.860254440092e-09
+ 16 KSP Residual norm 2.003282619824e-09
   Linear ts_ solve converged due to CONVERGED_RTOL iterations 16
-*****************************************************************************
-Warning! Number of diverged points : 18442 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18445 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18445 
-Average iteration count            : 6 
-*****************************************************************************
-  1 SNES Function norm 6.056568981039e-02
-  1 PICARD ||F||/||F0||=9.804007e-01 
+  1 SNES Function norm 6.105514736424e-02
+  1 PICARD ||F||/||F0||=9.930385e-01 
     Residual norms for js_ solve.
-    0 KSP Residual norm 6.056568981039e-02
-    1 KSP Residual norm 2.221435964563e-06
+    0 KSP Residual norm 6.105514736424e-02
+    1 KSP Residual norm 2.226131756170e-06
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.415750699447e-05
-  1 KSP Residual norm 1.336655295143e-06
-  2 KSP Residual norm 1.013089233423e-07
-  3 KSP Residual norm 1.855991580762e-08
-  4 KSP Residual norm 9.219265026891e-09
-  5 KSP Residual norm 2.617867457271e-09
-  6 KSP Residual norm 8.473182777061e-10
-  7 KSP Residual norm 2.977031462864e-10
-  8 KSP Residual norm 8.695934809469e-11
-  9 KSP Residual norm 2.859329535192e-11
+  0 KSP Residual norm 1.416510254176e-05
+  1 KSP Residual norm 1.329094994426e-06
+  2 KSP Residual norm 1.006050031941e-07
+  3 KSP Residual norm 1.879911089189e-08
+  4 KSP Residual norm 9.329705578064e-09
+  5 KSP Residual norm 2.648423344456e-09
+  6 KSP Residual norm 8.533906056160e-10
+  7 KSP Residual norm 3.016945262740e-10
+  8 KSP Residual norm 8.745844575794e-11
+  9 KSP Residual norm 2.893800528546e-11
   Linear ts_ solve converged due to CONVERGED_ATOL iterations 9
-*****************************************************************************
-Warning! Number of diverged points : 18442 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18447 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18447 
-Average iteration count            : 6 
-*****************************************************************************
-  2 SNES Function norm 1.457953670684e-02
-  2 PICARD ||F||/||F0||=2.360047e-01 
+  2 SNES Function norm 1.429649619094e-02
+  2 PICARD ||F||/||F0||=2.325270e-01 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.457953670684e-02
-    1 KSP Residual norm 7.709980206417e-07
+    0 KSP Residual norm 1.429649619094e-02
+    1 KSP Residual norm 7.799128347455e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.721389074625e-05
-  1 KSP Residual norm 1.943723342922e-06
-  2 KSP Residual norm 1.829529731895e-07
-  3 KSP Residual norm 8.043503521334e-08
-  4 KSP Residual norm 2.967018294824e-08
-  5 KSP Residual norm 5.317660489167e-09
-  6 KSP Residual norm 1.346204596662e-09
-  7 KSP Residual norm 5.029843846983e-10
-  8 KSP Residual norm 1.135348373214e-10
-  9 KSP Residual norm 4.126000218836e-11
+  0 KSP Residual norm 1.743043573097e-05
+  1 KSP Residual norm 1.969010936963e-06
+  2 KSP Residual norm 1.863802829658e-07
+  3 KSP Residual norm 8.178966639034e-08
+  4 KSP Residual norm 3.023672018280e-08
+  5 KSP Residual norm 5.421692353842e-09
+  6 KSP Residual norm 1.376390273542e-09
+  7 KSP Residual norm 5.130853231319e-10
+  8 KSP Residual norm 1.163324318123e-10
+  9 KSP Residual norm 4.219099904064e-11
   Linear ts_ solve converged due to CONVERGED_ATOL iterations 9
-*****************************************************************************
-Warning! Number of diverged points : 18461 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18467 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18467 
-Average iteration count            : 6 
-*****************************************************************************
-  3 SNES Function norm 7.803161776061e-03
-  3 PICARD ||F||/||F0||=1.263129e-01 
+  3 SNES Function norm 7.751479141150e-03
+  3 PICARD ||F||/||F0||=1.260748e-01 
     Residual norms for js_ solve.
-    0 KSP Residual norm 7.803161776061e-03
-    1 KSP Residual norm 4.579464305833e-07
+    0 KSP Residual norm 7.751479141150e-03
+    1 KSP Residual norm 4.602351685890e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 9.490639895310e-06
-  1 KSP Residual norm 1.068070099012e-06
-  2 KSP Residual norm 9.898534750180e-08
-  3 KSP Residual norm 4.293003476849e-08
-  4 KSP Residual norm 1.602264134381e-08
-  5 KSP Residual norm 2.934526254253e-09
-  6 KSP Residual norm 7.870629221495e-10
-  7 KSP Residual norm 2.895024999774e-10
-  8 KSP Residual norm 6.333801270599e-11
+  0 KSP Residual norm 9.476109002721e-06
+  1 KSP Residual norm 1.065501197036e-06
+  2 KSP Residual norm 9.780070527305e-08
+  3 KSP Residual norm 4.235366356088e-08
+  4 KSP Residual norm 1.579649414973e-08
+  5 KSP Residual norm 2.917644202479e-09
+  6 KSP Residual norm 7.687270365155e-10
+  7 KSP Residual norm 2.847818258728e-10
+  8 KSP Residual norm 6.194200740858e-11
   Linear ts_ solve converged due to CONVERGED_ATOL iterations 8
-*****************************************************************************
-Warning! Number of diverged points : 18471 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18468 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18468 
-Average iteration count            : 6 
-*****************************************************************************
-  4 SNES Function norm 4.733209143589e-03
-  4 PICARD ||F||/||F0||=7.661832e-02 
+  4 SNES Function norm 4.407097873624e-03
+  4 PICARD ||F||/||F0||=7.167975e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 4.733209143589e-03
-    1 KSP Residual norm 2.688505311825e-07
+    0 KSP Residual norm 4.407097873624e-03
+    1 KSP Residual norm 2.668154307169e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 5.435254961768e-06
-  1 KSP Residual norm 6.119857671020e-07
-  2 KSP Residual norm 5.541641952049e-08
-  3 KSP Residual norm 2.382724316526e-08
-  4 KSP Residual norm 8.940043520815e-09
-  5 KSP Residual norm 1.648925509647e-09
-  6 KSP Residual norm 4.212857812357e-10
-  7 KSP Residual norm 1.622173189450e-10
-  8 KSP Residual norm 3.382597258964e-11
+  0 KSP Residual norm 5.429037162942e-06
+  1 KSP Residual norm 6.097674030520e-07
+  2 KSP Residual norm 5.482892251673e-08
+  3 KSP Residual norm 2.352482873647e-08
+  4 KSP Residual norm 8.821607598230e-09
+  5 KSP Residual norm 1.676223303549e-09
+  6 KSP Residual norm 4.493184638183e-10
+  7 KSP Residual norm 1.658030977589e-10
+  8 KSP Residual norm 3.510479888537e-11
   Linear ts_ solve converged due to CONVERGED_ATOL iterations 8
-*****************************************************************************
-Warning! Number of diverged points : 18465 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18464 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18464 
-Average iteration count            : 6 
-*****************************************************************************
-  5 SNES Function norm 3.019299043073e-03
-  5 PICARD ||F||/||F0||=4.887458e-02 
+  5 SNES Function norm 2.563186364445e-03
+  5 PICARD ||F||/||F0||=4.168924e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.019299043073e-03
-    1 KSP Residual norm 1.572668633998e-07
+    0 KSP Residual norm 2.563186364445e-03
+    1 KSP Residual norm 1.564314931854e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 3.191708884449e-06
-  1 KSP Residual norm 3.583499189502e-07
-  2 KSP Residual norm 3.167783604085e-08
-  3 KSP Residual norm 1.353640212584e-08
-  4 KSP Residual norm 5.096699560667e-09
-  5 KSP Residual norm 9.818222997450e-10
-  6 KSP Residual norm 2.467963047406e-10
-  7 KSP Residual norm 9.494505512614e-11
-  8 KSP Residual norm 2.029662878806e-11
+  0 KSP Residual norm 3.184542198037e-06
+  1 KSP Residual norm 3.572065897313e-07
+  2 KSP Residual norm 3.151816678204e-08
+  3 KSP Residual norm 1.343196125805e-08
+  4 KSP Residual norm 5.053350132172e-09
+  5 KSP Residual norm 9.832763394020e-10
+  6 KSP Residual norm 2.675140303638e-10
+  7 KSP Residual norm 9.816810644945e-11
+  8 KSP Residual norm 2.040093810683e-11
   Linear ts_ solve converged due to CONVERGED_ATOL iterations 8
-*****************************************************************************
-Warning! Number of diverged points : 18472 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18467 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18467 
-Average iteration count            : 6 
-*****************************************************************************
-  6 SNES Function norm 1.974443869193e-03
-  6 PICARD ||F||/||F0||=3.196110e-02 
+  6 SNES Function norm 1.512800195573e-03
+  6 PICARD ||F||/||F0||=2.460511e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.974443869193e-03
-    1 KSP Residual norm 9.455367973521e-08
+    0 KSP Residual norm 1.512800195573e-03
+    1 KSP Residual norm 9.249736642683e-08
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.909347603923e-06
-  1 KSP Residual norm 2.135292388199e-07
-  2 KSP Residual norm 1.846575911822e-08
-  3 KSP Residual norm 7.894243785541e-09
-  4 KSP Residual norm 2.973020775023e-09
-  5 KSP Residual norm 5.843215872599e-10
-  6 KSP Residual norm 1.450397436484e-10
-  7 KSP Residual norm 5.625069530173e-11
+  0 KSP Residual norm 1.895358885624e-06
+  1 KSP Residual norm 2.124368242185e-07
+  2 KSP Residual norm 1.842079651978e-08
+  3 KSP Residual norm 7.807683769234e-09
+  4 KSP Residual norm 2.944260471755e-09
+  5 KSP Residual norm 5.852950259928e-10
+  6 KSP Residual norm 1.611306660172e-10
+  7 KSP Residual norm 5.877395659241e-11
   Linear ts_ solve converged due to CONVERGED_ATOL iterations 7
-*****************************************************************************
-Warning! Number of diverged points : 18464 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18470 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18470 
-Average iteration count            : 6 
-*****************************************************************************
-  7 SNES Function norm 1.321504055424e-03
-  7 PICARD ||F||/||F0||=2.139171e-02 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 1.321504055424e-03
-    1 KSP Residual norm 5.645347373043e-08
-    Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  Residual norms for ts_ solve.
-  0 KSP Residual norm 1.167402896420e-06
-  1 KSP Residual norm 1.302160599096e-07
-  2 KSP Residual norm 1.101194744366e-08
-  3 KSP Residual norm 4.665873595188e-09
-  4 KSP Residual norm 1.765309331626e-09
-  5 KSP Residual norm 3.690287183999e-10
-  6 KSP Residual norm 9.179493755016e-11
-  7 KSP Residual norm 3.509450649289e-11
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 7
-*****************************************************************************
-Warning! Number of diverged points : 18473 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18474 
-Average iteration count            : 6 
-*****************************************************************************
-*****************************************************************************
-Warning! Number of diverged points : 18474 
-Average iteration count            : 6 
-*****************************************************************************
-  8 SNES Function norm 9.649363446606e-04
+  7 SNES Function norm 9.021441906866e-04
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 8
-SNES solution time      : 0.944705 (sec)
+Number of iterations    : 7
+SNES solution time      : 0.987336 (sec)
 --------------------------------------------------------------------------
-*****************************************************************************
-Warning! Number of diverged points : 18474 
-Average iteration count            : 6 
-*****************************************************************************
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.917477519612e-09 
-      |Div|_2   = 5.645347371067e-08 
+      |Div|_inf = 4.780014856831e-09 
+      |Div|_2   = 9.249736634465e-08 
    Momentum: 
-      |mRes|_2  = 9.649363430092e-04 
+      |mRes|_2  = 9.021441859447e-04 
    Energy: 
-      |eRes|_2  = 7.442056021642e-07 
+      |eRes|_2  = 1.139083479556e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.00110 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 53 markers in 4.7832e-03 s 
+Marker control: (Corners ) injected 53 markers in 4.6626e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0509682 sec)
+Saving output ... done (0.0510818 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 2.62037 (sec) 
+Total solution time : 2.75582 (sec) 
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
 -jp_pc_factor_mat_solver_type mumps # (source: code)
@@ -855,9 +584,9 @@ Total solution time : 2.62037 (sec)
 -snes_newton_maxit 20 # (source: code)
 -snes_newton_rtol 1.2 # (source: code)
 -snes_picard_minit 5 # (source: code)
--snes_picard_rtol 1e-05 # (source: code)
+-snes_picard_rtol 1.0000000000000001e-05 # (source: code)
 -snes_rtol 0.001 # (source: code)
--snes_stol 1e-32 # (source: code)
+-snes_stol 1.0000000000000001e-32 # (source: code)
 -ts_ksp_atol_auto # (source: code)
 -ts_ksp_converged_reason # (source: code)
 -ts_ksp_max_it 500 # (source: code)

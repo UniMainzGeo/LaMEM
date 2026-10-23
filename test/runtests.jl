@@ -1003,7 +1003,6 @@ if should_run_test("t16_PhaseTransitions")
                             create_expected_file=update_expected, clean_dir=clean_files)
 
     # Test dike feature using optimized LaMEM
-	# *** WARNING! This test fails to converge to a reasonable tolerance ***
     keywords = ("|mRes|_2",)
     acc      = ((rtol=1, atol=5e-2),)
     @test perform_lamem_test(dir,"PhaseTransNotInAirBox_move.dat","PhaseTransNotInAirBox_move",

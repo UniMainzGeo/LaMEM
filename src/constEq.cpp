@@ -935,10 +935,7 @@ PetscErrorCode checkConvConstEq(ConstEqCtx *ctx)
 
 	if(ndiv)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"*****************************************************************************\n");
-		PetscPrintf(PETSC_COMM_WORLD,"Warning! Number of diverged points : %" PetscInt_FMT " \n", ndiv);
-		PetscPrintf(PETSC_COMM_WORLD,"Average iteration count            : %" PetscInt_FMT " \n", nit);
-		PetscPrintf(PETSC_COMM_WORLD,"*****************************************************************************\n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_CONV_FAILED, "Local rheology iterations diverged in %" PetscInt_FMT " points (average iteration count: %" PetscInt_FMT ")\n", ndiv, nit);
 	}
 
 	PetscFunctionReturn(0);

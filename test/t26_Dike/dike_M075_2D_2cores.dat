@@ -97,7 +97,6 @@
 	act_dike       = 1 		# activate dike flag
 	act_therm_exp  = 1              # thermal expansion activation flag
 	act_temp_diff   = 1              # temperature diffusion activation flag
-	lmaxit          = 8             # maximum number of local rheology iterations
 #       lrtol           = 1e-6           # local rheology iterations relative tolerance
 	
 #===============================================================================

@@ -375,7 +375,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 	Ph_trans_t  *CurrPhTr;
 	Material_t  *mat;
 	PetscInt     i, numDike, nD, nPtr, numPhtr, nsegs;
-	PetscScalar  v_spread, left, right, front, back, M, kfac, tempdikeRHS;
+	PetscScalar  v_spread, left, right, front, back, M, kfac, tempdikeRHS, dT, melt;
 	PetscScalar  y_distance;
 
 	PetscFunctionBeginUser;
@@ -386,7 +386,8 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 
 	nPtr = 0;
 	nD   = 0;
-	kfac = 0;
+	kfac = 1.0;
+	dT   = 10.0/jr->scal->temperature; // half-width of solidus and liquidus ramps
 
 	for(nPtr=0; nPtr<numPhtr; nPtr++)   // loop over all phase transitions blocks
 	{
@@ -460,28 +461,18 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 					mat = &phases[i];
 
 					//adjust k and heat source according to Behn & Ito [2008]
-					if (Tc < mat->T_liq && Tc > mat->T_sol)
-					{
-						kfac  += phRat[i] / ( 1 + ( mat->Latent_hx/ (mat->Cp*(mat->T_liq-mat->T_sol))) );
-						rho_A += phRat[i]*(mat->rho*mat->Cp)*(mat->T_liq-Tc)*tempdikeRHS;  // Cp*rho not used in the paper, added to conserve units of rho_A
-					}
-					else if (Tc <= mat->T_sol)
-					{
-						kfac  += phRat[i];
-						rho_A += phRat[i]*( mat->rho*mat->Cp)*( (mat->T_liq-Tc) + mat->Latent_hx/mat->Cp )*tempdikeRHS;
-					}
-					else if (Tc >= mat->T_liq)
-					{
-						kfac += phRat[i];
-					}
+					// jumps at T_sol and T_liq are smoothed over 2*dT, only the dike fraction of the cell conductivity is scaled
+					melt   = RAMP(Tc, mat->T_sol, dT) - RAMP(Tc, mat->T_liq, dT);
+					kfac  -= phRat[i]*melt*(1.0 - 1.0 / ( 1 + ( mat->Latent_hx/ (mat->Cp*(mat->T_liq-mat->T_sol))) ));
+					rho_A += phRat[i]*(mat->rho*mat->Cp)*( PetscMax(mat->T_liq-Tc, 0.0) + (1.0 - RAMP(Tc, mat->T_sol, dT))*mat->Latent_hx/mat->Cp )*tempdikeRHS;  // Cp*rho not used in the paper, added to conserve units of rho_A
 					// end adjust k and heat source according to Behn & Ito [2008]
-
-					k=kfac*k;
 
 				}   // end if phRat and xboundR>xboundL
 			} // close phase transition and phase ID comparison
 		}   // end dike block loop
 	}  // close phase transition block loop
+
+	k = kfac*k;
 
 	PetscFunctionReturn(0);
 }
