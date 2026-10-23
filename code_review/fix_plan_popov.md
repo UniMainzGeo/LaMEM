@@ -106,6 +106,8 @@ Testing:
     more than one cell per step or has overhangs. Relax, or keep the stop?
 12. Nothing to do: M-019 (mitigated by `-snes_max_funcs unlimited`); N-028, N-029 (Boris: leave).
     Small clean-ups: N-002, N-007 (mostly Wenrong/Yun), N-011, N-018.
+    Done 2026-10-23: M-019, N-028, N-029 marked won't fix. N-002, N-007, N-011 (input checks
+    only; initial-guess skip of boxes/cylinders kept), N-018 fixed.
 
 ## Moved from A to C while fixing
 

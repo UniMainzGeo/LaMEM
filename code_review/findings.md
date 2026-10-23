@@ -83,7 +83,7 @@ Next free IDs: S-049, M-074, N-030
 | M-016 | minor | confirmed | input | quick | bc.cpp:675-679, 712-713, 1784-1802 | Typos in BC options are silently ignored; `exy` silently drops no-slip on vx | open |
 | M-017 | minor | confirmed | logic | quick | matData.cpp:497-498, 529-530, 561-562 | Coarse edge viscosity at upper boundaries averages in zero ghost cells | open |
 | M-018 | minor | confirmed | logic | quick | nlsolve.cpp:430-515 | Some SNES/KSP failure reasons are not printed or not treated as severe | open |
-| M-019 | minor | possible | logic | quick | nlsolve.cpp:284 | MFFD mat-vecs count as SNES function calls; long Newton runs may hit max_funcs | open |
+| M-019 | minor | possible | logic | quick | nlsolve.cpp:284 | MFFD mat-vecs count as SNES function calls; long Newton runs may hit max_funcs | wontfix |
 | M-020 | minor | confirmed | memory | quick | advect.cpp:1485-1539 | ADVCheckCorners reads an empty buffer when the cell and its local neighbours are empty | open |
 | M-021 | minor | confirmed | logic | quick | AVD.cpp:753-754,1136-1137 | AVD never refills empty volumes and at most doubles sparse ones | open |
 | M-022 | minor | confirmed | logic | quick | AVD.cpp:830-833 | `FindPointInCell` returns an error code as a cell index | open |
@@ -144,23 +144,23 @@ Next free IDs: S-049, M-074, N-030
 | ID | Severity | Confidence | Kind | Effort | Where | Title | Status |
 |----|----------|------------|------|--------|-------|-------|--------|
 | N-001 | note | confirmed | logic | quick | JacRes.cpp:917 | `dikeRHS` is not set when dikes are off | open |
-| N-002 | note | confirmed | cleanup | quick | JacResAux.cpp:389; JacResTemp.cpp:85,107 | Material data changed inside compute loops; Controls copied for every cell | open |
+| N-002 | note | confirmed | cleanup | quick | JacResAux.cpp:389; JacResTemp.cpp:85,107 | Material data changed inside compute loops; Controls copied for every cell | fixed |
 | N-003 | note | confirmed | physics | quick | phase.cpp:1511; constEq.cpp:375,798 | `eta_min` is not a cutoff; it's added to every phase's viscosity | open |
 | N-004 | note | confirmed | input | quick | phase.cpp:526-548 | Creep input checks never fire; `Bd`/`Bn` are silently overwritten by `eta`/`eta0` | open |
 | N-005 | note | confirmed | cleanup | quick | meltParam.cpp | Whole file is dead code (no callers) | open |
 | N-006 | note | confirmed | logic | quick | phase.cpp:1471,1479 | PrintMatProp prints wrong values under some labels | open |
-| N-007 | note | confirmed | cleanup | quick | surf.cpp, fastscape.cpp | Small clean-ups (duplicate reads, wrong comments/units, folder name rounding) | open |
+| N-007 | note | confirmed | cleanup | quick | surf.cpp, fastscape.cpp | Small clean-ups (duplicate reads, wrong comments/units, folder name rounding) | fixed |
 | N-008 | note | confirmed | physics | quick | surf.cpp:288-292 | Average topography is a plain node average | fixed |
 | N-009 | note | confirmed | cleanup | quick | Tensor.cpp:112-318, 493-603 | ISA / eigenvalue code is unused and has latent bugs | open |
 | N-010 | note | confirmed | cleanup | quick | fdstag.cpp:80-83 | Non-unit bias is rejected, so all bias code is dead | open |
-| N-011 | note | confirmed | input | quick | bc.cpp:2405-2411, 2234, 2369 | Velocity cylinder/box edge cases: NaN axis, skipped at initial guess unlike other BCs | open |
+| N-011 | note | confirmed | input | quick | bc.cpp:2405-2411, 2234, 2369 | Velocity cylinder/box edge cases: NaN axis, skipped at initial guess unlike other BCs | fixed |
 | N-012 | note | confirmed | cleanup | quick | bc.h, bc.cpp (various) | Wrong comments and messages, debug print every step, small clean-ups | open |
 | N-013 | note | possible | logic | quick | AVD.cpp:1123-1125 | AVD point with no cells gives NaN coordinates | open |
 | N-014 | note | confirmed | input | quick | input_file.dat:747-749; phase_transition.cpp:562-580 | Docs say Clapeyron parameters overwrite a predefined law; they are ignored | fixed |
 | N-015 | note | confirmed | cleanup | quick | objFunct.cpp; adjoint.cpp:3684-4150 | Dead code: whole ObjFunct module and the pointwise FD kernels | open |
 | N-016 | note | confirmed | physics | medium | JacResAux.cpp:357 | `gw_level_type = surf` gives a flat water table at the mean topography | open |
 | N-017 | note | possible | physics | medium | phase.cpp:888-1352 | Experiment type of the creep profiles not checked against the sources | non-issue |
-| N-018 | note | confirmed | memory | medium | tools.cpp:608-609, 658-662 | Polygon helpers use stack arrays and can divide by zero | open |
+| N-018 | note | confirmed | memory | medium | tools.cpp:608-609, 658-662 | Polygon helpers use stack arrays and can divide by zero | fixed |
 | N-019 | note | confirmed | logic | medium | nlsolve.cpp:216-238 | Newton/Picard switch: divergence test uses initial residual; max-Newton gives one Picard step | open |
 | N-020 | note | confirmed | physics | medium | lsolve.cpp, matrix.cpp, matAux.cpp | `jp_pgamma` means different things per solver; inv_eta Schur with penalty drops the eta term | non-issue |
 | N-021 | note | confirmed | cleanup | medium | nlsolve, lsolve, multigrid, matData, matFree (various) | Option overrides, stale comments, dead test code, small clean-ups | open |
@@ -170,8 +170,8 @@ Next free IDs: S-049, M-074, N-030
 | N-025 | note | confirmed | cleanup | medium | options.cpp, tssolve.cpp, scaling.cpp, LaMEMLib.cpp, docs | Output and time-step quirks, labels, docs | open |
 | N-026 | note | confirmed | cleanup | medium | outFunct.cpp, paraViewOutBin.cpp, paraViewOutAVD.cpp, paraViewOutPassiveTracers.cpp | Output quirks: names, stale residual, dead vectors, unchecked inputs | open |
 | N-027 | note | confirmed | input | medium | adjoint.cpp (several) | Adjoint input and small quirks | open |
-| N-028 | note | confirmed | physics | design | JacRes.cpp:1086-1103 | FSSA only stabilizes the diagonal terms | open |
-| N-029 | note | confirmed | physics | design | subgrid.cpp:528-606 | Rock/air phase change keeps old stress, APS and T | open |
+| N-028 | note | confirmed | physics | design | JacRes.cpp:1086-1103 | FSSA only stabilizes the diagonal terms | wontfix |
+| N-029 | note | confirmed | physics | design | subgrid.cpp:528-606 | Rock/air phase change keeps old stress, APS and T | wontfix |
 
 ## Details
 
@@ -976,7 +976,7 @@ Next free IDs: S-049, M-074, N-030
 - Why it matters: long Newton phases with many linear iterations could stop for this reason.
 - Fix idea: call `JacResFormResidual` directly in the MFFD function, or raise
   `snes_max_funcs` at setup. Check the PETSc default first.
-- Status: open
+- Status: won't fix (group C): mitigated by `-snes_max_funcs unlimited`
 
 ### M-020 [minor, confirmed] ADVCheckCorners reads an empty buffer
 - Tags: minor, confirmed, memory, quick
@@ -1553,7 +1553,7 @@ Next free IDs: S-049, M-074, N-030
   (`M->nu_k = 1`), src/JacResTemp.cpp:85 (`Controls ctrl = jr->ctrl` copied on every call)
 - Why it matters: input checks belong in setup. The struct copy runs for every cell on every
   residual evaluation, which costs time for no reason.
-- Status: open
+- Status: fixed (group C): rp clamp removed (already checked in phase.cpp); nu_k default no longer written to the material; Controls by pointer
 
 ### N-003 [note, confirmed] `eta_min` is not a cutoff
 - Tags: note, confirmed, physics, quick
@@ -1602,7 +1602,7 @@ Next free IDs: S-049, M-074, N-030
   - fastscape.cpp:124 says kf, kd "can be set as an array", but only one value is read.
   - fastscape.cpp:1528 builds the output folder time as t*s + dt*s, while LaMEM uses (t+dt)*s
     (LaMEMLib.cpp:542). A rounding difference can give two folders for one step.
-- Status: open
+- Status: fixed (group C): all items; FastScape folder time now (t+dt)*s
 
 ### N-008 [note, confirmed] Average topography is a plain node average
 - Tags: note, confirmed, physics, quick
@@ -1638,7 +1638,7 @@ Next free IDs: S-049, M-074, N-030
 - What: with `vmag` and base == cap the axis length is 0, giving NaN velocities; radius 0
   divides by zero. No checks. Velocity boxes and cylinders are skipped during the initial
   guess solve, but Bezier blocks and boundary inflow are not.
-- Status: open
+- Status: fixed (group C): radius > 0 and base != cap checked; initial-guess skip of boxes/cylinders left as is
 
 ### N-012 [note, confirmed] Wrong comments and messages, debug print, small clean-ups
 - Tags: note, confirmed, cleanup, quick
@@ -1717,7 +1717,7 @@ Next free IDs: S-049, M-074, N-030
 - What: arrays sized by the number of polygon nodes/slices live on the stack (variable-length
   arrays, not standard C++). Large polygons can overflow the stack. findCenterMass divides by
   the area with no check, so a degenerate polygon gives inf/NaN.
-- Status: open
+- Status: fixed (group C): stack arrays removed; zero-area polygon uses node mean (marker.cpp arrays were already heap)
 
 ### N-019 [note, confirmed] Newton/Picard switch logic
 - Tags: note, confirmed, logic, medium
@@ -1891,11 +1891,11 @@ Next free IDs: S-049, M-074, N-030
   vx*drho/dx*gz.
 - Why it matters: lateral density gradients (sloped surfaces, tilted interfaces) are not
   stabilized. The code comment says "lumped", but the user docs don't mention the limit.
-- Status: open
+- Status: won't fix (group C): Boris: leave
 
 ### N-029 [note, confirmed] Rock/air phase change keeps old stress, APS and T
 - Tags: note, confirmed, physics, design
 - Where: subgrid.cpp:528-606 (commit 6124aa7d)
 - What: `ADVMarkCrossFreeSurf` changes only the phase; history is mixed into cut cells for one
   step. There is already a WARNING comment.
-- Status: open
+- Status: won't fix (group C): Boris: leave
