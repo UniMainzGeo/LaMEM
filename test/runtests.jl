@@ -1003,6 +1003,7 @@ if should_run_test("t16_PhaseTransitions")
                             create_expected_file=update_expected, clean_dir=clean_files)
 
     # Test dike feature using optimized LaMEM
+    # Newton stalls near |F| ~ 1e-2 from step 13 on (thermo-mechanical coupling), hence loose tolerances
     keywords = ("|mRes|_2",)
     acc      = ((rtol=1, atol=5e-2),)
     @test perform_lamem_test(dir,"PhaseTransNotInAirBox_move.dat","PhaseTransNotInAirBox_move",
@@ -1242,7 +1243,6 @@ if should_run_test("t26_Dike")
                             create_expected_file=update_expected, clean_dir=clean_files)
 
     # heat_rhoA
-	# *** WARNING! This test fails to converge to a reasonable tolerance ***
     keywords = ("|eRes|_2",)
     acc      = ((rtol=1e-4,atol=1e-5),);       
     @test perform_lamem_test(dir,"dike_heating_rhoA.dat","dike_heating_rhoA",
@@ -1251,9 +1251,8 @@ if should_run_test("t26_Dike")
                            create_expected_file=update_expected, clean_dir=clean_files)
 
     # test_variableM
-	# *** WARNING! This test fails to converge to a reasonable tolerance ***
-    keywords = ("|mRes|_2",)
-    acc      = ((rtol=1, atol=5e-2),)
+    keywords = ("|Div|_inf", "|mRes|_2")
+    acc      = ((rtol=1e-5, atol=1e-7), (rtol=1e-2, atol=1e-3))
     @test perform_lamem_test(dir,"dike_variableM.dat","dike_variableM",
                             args="-nstep_max 2 -nel_y 2",
                             keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
