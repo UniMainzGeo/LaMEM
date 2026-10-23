@@ -260,6 +260,18 @@ One commit per group of A, then B, then C after discussion.
   Ito, taken over). With rtol 1e-4 steps 1-8 now converge in 8-13 iterations, but from step 13
   Newton still stalls near |F| ~ 1e-2, so this test keeps rtol 2.5e-2 and its loose check
   (comment in runtests.jl says why). Open: find the remaining floor.
+- Remaining floor found (2026-10-23): the temperature matrix (`JacResGetTempMat`) had no
+  derivatives of k(T) and of the dike heat source. With the steep ramps (nu_k = 5 and kfac over
+  20 C) the T update alone fell into a 2-cycle (|ge| 0.0129 / 0.0142), which kept Newton at
+  ~9e-3. The matrix now has the dk/dT terms (face k is a two-cell average) and d(rho_A)/dT on the
+  diagonal (both by central differences, dT = 1e-3 C); it is no longer symmetric (fgmres).
+  t16 PhaseTransNotInAirBox_move back to its original settings (rtol 1e-3, maxit 20) and the
+  usual t16 checks; linear maxit 20 -> 50 (needed ~23). All 20 steps converge in 6-14
+  iterations, final |eRes| ~1e-7 (was ~2e-3). Results change: references of t16, t26, t27
+  updated. Tests: t12, t16, t26, t27, t28 pass.
+- Ramp half-width (10 C) and derivative perturbation (1e-3 C) are now inputs `T_ramp` and
+  `T_pert` (Controls, JacRes.cpp; listed in info/options/input_file.dat). Defaults unchanged,
+  no results change.
 - Workarounds from f37db09c / N-024 / S-029 removed: t26 heat_rhoA and variableM back to
   nonlinear rtol 1e-3 (were 5e-2, 1e-2) and the usual checks; kfac atol back to 1e-4;
   dyndike maxit back to 50. t26 references updated; t16, t26 pass.
