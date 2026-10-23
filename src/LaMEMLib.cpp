@@ -832,6 +832,9 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 	// evaluate initial residual
 	PetscCall(JacResFormResidual(&lm->jr, lm->jr.gsol, lm->jr.gres));
 
+	// evaluate initial energy residual (for output)
+	if(lm->jr.ctrl.actTemp) { PetscCall(JacResGetTempRes(&lm->jr, lm->jr.ts->dt)); }
+
 	// save output for inspection
 	PetscCall(LaMEMLibSaveOutput(lm));
 
@@ -889,6 +892,9 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 	{
 		// evaluate initial residual
 		PetscCall(JacResFormResidual(&lm->jr, lm->jr.gsol, lm->jr.gres));
+
+		// evaluate initial energy residual (for output)
+		if(lm->jr.ctrl.actTemp) { PetscCall(JacResGetTempRes(&lm->jr, lm->jr.ts->dt)); }
 	}
 
 	// save output for inspection
@@ -1034,6 +1040,7 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 	PetscCall(JacResGetTempMat(jr, dt));
 
 	// update reference norm for automatic tolerance selection
+	// (seeds the transient solver tolerance, see NLSolvePushNorm; its_ solver uses its own settings)
 	if(ts_ksp_atol_auto)
 	{
 		PetscCall(VecNorm(jr->ge, NORM_2, &norm));

@@ -117,7 +117,7 @@ void OutVecCreate(
 	outvec->outbuf = outbuf;
 
 	// store name
-	sprintf(outvec->name, "%s %s", name, label);
+	snprintf(outvec->name, _str_len_, "%s %s", name, label);
 
 	// phase mask for phase aggregate
 	if(phase_ID)
@@ -616,29 +616,152 @@ PetscErrorCode PVOutWriteMeltFraction(OutVec* outvec)
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteVolRate(OutVec* outvec)
 {
-	PetscFunctionBeginUser;
+	ACCESS_FUNCTION_HEADER
 
-	UNUSED(outvec);
+	Vec    lvx, lvy, lvz;
+	Vec    dvxdx, dvxdy, dvxdz;
+	Vec    dvydx, dvydy, dvydz;
+	Vec    dvzdx, dvzdy, dvzdz;
 
-	PetscFunctionReturn(0);
+	cf = scal->strain_rate;
+
+	// get work vectors
+	PetscCall(FDSTAGGetLocalVectorCenter(fs, &dvxdx, &dvydy, &dvzdz));
+	PetscCall(FDSTAGGetLocalVectorEdge  (fs, &dvxdy, &dvxdz, &dvydz));
+	PetscCall(FDSTAGGetLocalVectorEdge  (fs, &dvydx, &dvzdx, &dvzdy));
+
+	// get velocity vectors
+	PetscCall(JacResGetSolution(jr, jr->gsol, &lvx, &lvy, &lvz, NULL, NULL, _no_interp_));
+
+	// compute velocity gradients
+	PetscCall(JacResGetVelGrad(jr,
+	                           lvx,   lvy,   lvz,
+	                           dvxdx, dvxdy, dvxdz,
+	                           dvydx, dvydy, dvydz,
+	                           dvzdx, dvzdy, dvzdz));
+
+	// volumetric strain rate (velocity divergence)
+	PetscCall(VecAXPY(dvxdx, 1.0, dvydy));
+	PetscCall(VecAXPY(dvxdx, 1.0, dvzdz));
+
+	INTERPOLATE_ACCESS(dvxdx, InterpCenterCorner, 1, 0, 0.0)
+
+	// restore work vectors
+	PetscCall(FDSTAGRestoreLocalVectorCenter(fs, &dvxdx, &dvydy, &dvzdz));
+	PetscCall(FDSTAGRestoreLocalVectorEdge  (fs, &dvxdy, &dvxdz, &dvydz));
+	PetscCall(FDSTAGRestoreLocalVectorEdge  (fs, &dvydx, &dvzdx, &dvzdy));
+
+	// restore velocity vectors
+	PetscCall(JacResRestoreSolution(jr, &lvx, &lvy, &lvz, NULL, NULL));
+
+	ACCESS_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteVorticity(OutVec* outvec)
 {
-	PetscFunctionBeginUser;
+	ACCESS_FUNCTION_HEADER
 
-	UNUSED(outvec);
+	Vec    lvx, lvy, lvz;
+	Vec    dvxdx, dvxdy, dvxdz;
+	Vec    dvydx, dvydy, dvydz;
+	Vec    dvzdx, dvzdy, dvzdz;
 
-	PetscFunctionReturn(0);
+	cf = scal->strain_rate;
+
+	// get work vectors
+	PetscCall(FDSTAGGetLocalVectorCenter(fs, &dvxdx, &dvydy, &dvzdz));
+	PetscCall(FDSTAGGetLocalVectorEdge  (fs, &dvxdy, &dvxdz, &dvydz));
+	PetscCall(FDSTAGGetLocalVectorEdge  (fs, &dvydx, &dvzdx, &dvzdy));
+
+	// get velocity vectors
+	PetscCall(JacResGetSolution(jr, jr->gsol, &lvx, &lvy, &lvz, NULL, NULL, _no_interp_));
+
+	// compute velocity gradients
+	PetscCall(JacResGetVelGrad(jr,
+	                           lvx,   lvy,   lvz,
+	                           dvxdx, dvxdy, dvxdz,
+	                           dvydx, dvydy, dvydz,
+	                           dvzdx, dvzdy, dvzdz));
+
+	// vorticity components (curl of velocity), stored in-place on edges
+	PetscCall(VecAXPY(dvzdy, -1.0, dvydz)); // wx = dvz/dy - dvy/dz (yz-edge)
+	PetscCall(VecAXPY(dvxdz, -1.0, dvzdx)); // wy = dvx/dz - dvz/dx (xz-edge)
+	PetscCall(VecAXPY(dvydx, -1.0, dvxdy)); // wz = dvy/dx - dvx/dy (xy-edge)
+
+	INTERPOLATE_ACCESS(dvzdy, InterpYZEdgeCorner, 3, 0, 0.0)
+	INTERPOLATE_ACCESS(dvxdz, InterpXZEdgeCorner, 3, 1, 0.0)
+	INTERPOLATE_ACCESS(dvydx, InterpXYEdgeCorner, 3, 2, 0.0)
+
+	// restore work vectors
+	PetscCall(FDSTAGRestoreLocalVectorCenter(fs, &dvxdx, &dvydy, &dvzdz));
+	PetscCall(FDSTAGRestoreLocalVectorEdge  (fs, &dvxdy, &dvxdz, &dvydz));
+	PetscCall(FDSTAGRestoreLocalVectorEdge  (fs, &dvydx, &dvzdx, &dvzdy));
+
+	// restore velocity vectors
+	PetscCall(JacResRestoreSolution(jr, &lvx, &lvy, &lvz, NULL, NULL));
+
+	ACCESS_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteAngVelMag(OutVec* outvec)
 {
-	PetscFunctionBeginUser;
+	ACCESS_FUNCTION_HEADER
 
-	UNUSED(outvec);
+	Vec    lvx, lvy, lvz;
+	Vec    dvxdx, dvxdy, dvxdz;
+	Vec    dvydx, dvydy, dvydz;
+	Vec    dvzdx, dvzdy, dvzdz;
 
-	PetscFunctionReturn(0);
+	cf           = scal->angular_velocity;
+	iflag.update = 1;
+
+	// get work vectors
+	PetscCall(FDSTAGGetLocalVectorCenter(fs, &dvxdx, &dvydy, &dvzdz));
+	PetscCall(FDSTAGGetLocalVectorEdge  (fs, &dvxdy, &dvxdz, &dvydz));
+	PetscCall(FDSTAGGetLocalVectorEdge  (fs, &dvydx, &dvzdx, &dvzdy));
+
+	// get velocity vectors
+	PetscCall(JacResGetSolution(jr, jr->gsol, &lvx, &lvy, &lvz, NULL, NULL, _no_interp_));
+
+	// compute velocity gradients
+	PetscCall(JacResGetVelGrad(jr,
+	                           lvx,   lvy,   lvz,
+	                           dvxdx, dvxdy, dvxdz,
+	                           dvydx, dvydy, dvydz,
+	                           dvzdx, dvzdy, dvzdz));
+
+	// vorticity components (curl of velocity), stored in-place on edges
+	PetscCall(VecAXPY(dvzdy, -1.0, dvydz)); // wx = dvz/dy - dvy/dz (yz-edge)
+	PetscCall(VecAXPY(dvxdz, -1.0, dvzdx)); // wy = dvx/dz - dvz/dx (xz-edge)
+	PetscCall(VecAXPY(dvydx, -1.0, dvxdy)); // wz = dvy/dx - dvx/dy (xy-edge)
+
+	// squares of vorticity components
+	PetscCall(VecPointwiseMult(dvzdy, dvzdy, dvzdy));
+	PetscCall(VecPointwiseMult(dvxdz, dvxdz, dvxdz));
+	PetscCall(VecPointwiseMult(dvydx, dvydx, dvydx));
+
+	// average squares in corners
+	PetscCall(VecSet(lbcor, 0.0));
+
+	PetscCall(InterpYZEdgeCorner(fs, dvzdy, lbcor, iflag));
+	PetscCall(InterpXZEdgeCorner(fs, dvxdz, lbcor, iflag));
+	PetscCall(InterpXYEdgeCorner(fs, dvydx, lbcor, iflag));
+
+	// angular velocity magnitude is half of vorticity magnitude
+	PetscCall(VecSqrtAbs(lbcor));
+	PetscCall(VecScale(lbcor, 0.5));
+
+	PetscCall(OutBufPut3DVecComp(outbuf, lbcor, 1, 0, cf, 0.0));
+
+	// restore work vectors
+	PetscCall(FDSTAGRestoreLocalVectorCenter(fs, &dvxdx, &dvydy, &dvzdz));
+	PetscCall(FDSTAGRestoreLocalVectorEdge  (fs, &dvxdy, &dvxdz, &dvydz));
+	PetscCall(FDSTAGRestoreLocalVectorEdge  (fs, &dvydx, &dvzdx, &dvzdy));
+
+	// restore velocity vectors
+	PetscCall(JacResRestoreSolution(jr, &lvx, &lvy, &lvz, NULL, NULL));
+
+	ACCESS_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteTotStrain(OutVec* outvec)

@@ -89,7 +89,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	char       *fname;
 	FILE       *fp;
 	PetscInt    i, nummark;
-	PetscScalar scal_leng, scal_temp, Tshift, stress;
+	PetscScalar scal_leng, scal_temp, Tshift, stress, pShift;
 	PetscScalar *xp, *yp, *zp, *buf;
 	float       var_float, Xp[3];
 	int         var_int;
@@ -109,6 +109,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	scal_temp = pvptr->actx->jr->scal->temperature;
 	Tshift    = pvptr->actx->jr->scal->Tshift;
 	stress    = pvptr->actx->jr->scal->stress;
+	pShift    = pvptr->actx->jr->ctrl.pShift;
 
 	// create file name
 	asprintf(&fname, "%s/%s.vtu", dirName, pvptr->outfile);
@@ -316,7 +317,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 
 		for(i = 0; i < nummark; i++)
 		{
-			var_float = float(buf[i]*stress);
+			var_float = float((buf[i] + pShift)*stress);
 			fwrite(&var_float, sizeof(float), 1, fp);
 		}
 

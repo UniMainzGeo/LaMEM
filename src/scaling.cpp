@@ -120,7 +120,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 		if(density)
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"   Density     : %g [kg/m^3] \n", density);
-			PetscPrintf(PETSC_COMM_WORLD,"   WRNING! Unconventional scaling is employed");
+			PetscPrintf(PETSC_COMM_WORLD,"   WARNING! Unconventional scaling is employed\n");
 		}
 
 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
@@ -185,7 +185,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 		scal->viscosity           = viscosity;                sprintf(scal->lbl_viscosity,        "[Pa*s]");
 		scal->cpecific_heat       = energy/mass/temperature;  sprintf(scal->lbl_cpecific_heat,    "[J/kg/K]");
 		scal->conductivity        = power/length/temperature; sprintf(scal->lbl_conductivity,     "[W/m/K]");
-		scal->heat_production     = power/mass;               sprintf(scal->lbl_heat_production,  "[W/m3]");
+		scal->heat_production     = power/mass;               sprintf(scal->lbl_heat_production,  "[W/kg]");
 		scal->expansivity         = 1.0/temperature;          sprintf(scal->lbl_expansivity,      "[1/K]");
 
 		sprintf(scal->lbl_diffusion_creep,   "[1/Pa/s]");
@@ -243,7 +243,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 		scal->viscosity           = viscosity;                sprintf(scal->lbl_viscosity,        "[Pa*s]");
 		scal->cpecific_heat       = energy/mass/temperature;  sprintf(scal->lbl_cpecific_heat,    "[J/kg/K]");
 		scal->conductivity        = power/length/temperature; sprintf(scal->lbl_conductivity,     "[W/m/K]");
-		scal->heat_production     = power/mass;               sprintf(scal->lbl_heat_production,  "[W/m3]");
+		scal->heat_production     = power/mass;               sprintf(scal->lbl_heat_production,  "[W/kg]");
 		scal->expansivity         = 1.0/temperature;          sprintf(scal->lbl_expansivity,      "[1/K]");
 
 		sprintf(scal->lbl_diffusion_creep,   "[1/Pa/s]");

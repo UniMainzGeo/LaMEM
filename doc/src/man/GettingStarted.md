@@ -48,16 +48,16 @@ In order to produce this picture, we used the "Slice", "Glyph" and "Contour" too
 Let's change a few input parameters and have a look at the LaMEM input file. Open it ```FallingSpheres_Multigrid.dat``` with a text editor and have a look at it. 
 
 ### 2.3.1 Running the simulation for longer
-Changing the number of timesteps is done with the parameter ```nstep_out```. There are two ways to run the simulation for longer
+Changing the number of timesteps is done with the parameter ```nstep_max``` (```nstep_out``` sets how often output is saved). There are two ways to run the simulation for longer
 
 1) Change the parameter in the input file, save it and rerun the simulation
 ```
-nstep_out = 19     # save output every n steps
+nstep_max = 19     # maximum allowed number of steps
 ```
 
-2) Add the parameter ```-nstep_out 19``` to the command-line and run the simulation with:
+2) Add the parameter ```-nstep_max 19``` to the command-line and run the simulation with:
 ```
-$ mpiexec -n 4 ../../bin/opt/LaMEM -ParamFile FallingSpheres_Multigrid.dat -nstep_out 19
+$ mpiexec -n 4 ../../bin/opt/LaMEM -ParamFile FallingSpheres_Multigrid.dat -nstep_max 19
 ```
 In fact, most input parameters in the LaMEM input file can be set from the command-line as well.
 

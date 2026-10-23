@@ -333,6 +333,9 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_j2_dev_stress",  &omask->j2_dev_stress,     1, 1));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_strain_rate",    &omask->strain_rate,       1, 1));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_j2_strain_rate", &omask->j2_strain_rate,    1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_vol_rate",       &omask->vol_rate,          1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_vorticity",      &omask->vorticity,         1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ang_vel_mag",    &omask->ang_vel_mag,       1, 1));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_shmax",          &omask->SHmax,             1, 1));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_stangle",        &omask->StAngle,           1, 1));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ehmax",          &omask->EHmax,             1, 1));
@@ -368,6 +371,14 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 		PetscCall(getIntParam   (fb, _REQUIRED_, "numPhase", &np,                      1,  numPhases));
 		PetscCall(getIntParam   (fb, _REQUIRED_, "phaseID",   omask->agg_phase_ID[i],  np, maxPhaseID));
 
+		for(j = 0; j < np; j++)
+		{
+			if(omask->agg_phase_ID[i][j] < 0)
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Negative phaseID in phase aggregate %s\n", omask->agg_name[i]);
+			}
+		}
+
 		// store number of phases
 		omask->agg_num_phase[i] = np;
 
@@ -402,6 +413,9 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->j2_dev_stress)  PetscPrintf(PETSC_COMM_WORLD, "   Deviatoric stress second invariant      @ \n");
 	if(omask->strain_rate)    PetscPrintf(PETSC_COMM_WORLD, "   Deviatoric strain rate tensor           @ \n");
 	if(omask->j2_strain_rate) PetscPrintf(PETSC_COMM_WORLD, "   Deviatoric strain rate second invariant @ \n");
+	if(omask->vol_rate)       PetscPrintf(PETSC_COMM_WORLD, "   Volumetric strain rate                  @ \n");
+	if(omask->vorticity)      PetscPrintf(PETSC_COMM_WORLD, "   Vorticity vector                        @ \n");
+	if(omask->ang_vel_mag)    PetscPrintf(PETSC_COMM_WORLD, "   Angular velocity magnitude              @ \n");
 	if(omask->SHmax)          PetscPrintf(PETSC_COMM_WORLD, "   Maximum horizontal stress               @ \n");
 	if(omask->StAngle)        PetscPrintf(PETSC_COMM_WORLD, "   Principal stress angle                  @ \n");
 	if(omask->EHmax)          PetscPrintf(PETSC_COMM_WORLD, "   Maximum horizontal extension            @ \n");

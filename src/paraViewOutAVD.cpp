@@ -681,6 +681,11 @@ PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb)
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_avd_pvd",   &pvavd->outpvd,                1, 1));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_avd_ref",   &pvavd->refine, 1, _max_avd_refine_));
 
+	if(pvavd->refine < 1)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "AVD refinement factor must be positive (out_avd_ref = %" PetscInt_FMT ")\n", pvavd->refine);
+	}
+
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "AVD output parameters:\n");
 	PetscPrintf(PETSC_COMM_WORLD, "   Write .pvd file       : %s \n", pvavd->outpvd ? "yes" : "no");
@@ -906,7 +911,9 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 			for(i=1; i < A->mx+1; i++)
 			{
 				ii    = i + j*A->mx_mesh + k*A->mx_mesh*A->my_mesh;
-				phase = (unsigned char)A->points[A->cells[ii].p].phase;
+				// cells not claimed by any marker (e.g. no markers on this rank) get phase 255
+				if(A->cells[ii].p < 0) phase = 255;
+				else                   phase = (unsigned char)A->points[A->cells[ii].p].phase;
 				fwrite(&phase,sizeof(unsigned char),1,fp);
 			}
 		}

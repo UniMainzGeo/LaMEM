@@ -906,8 +906,8 @@ PetscErrorCode set_scalar_option(const char *key, const PetscScalar val, const c
 {
 	PetscFunctionBeginUser;
 	char *opt;
-	if(prefix) asprintf(&opt,"-%s_%s %g", prefix, key, val);
-	else       asprintf(&opt,"-%s %g",            key, val);
+	if(prefix) asprintf(&opt,"-%s_%s %.17g", prefix, key, val);
+	else       asprintf(&opt,"-%s %.17g",            key, val);
 	PetscCall(PetscOptionsInsertString(NULL, opt));
 	free(opt);
 	PetscFunctionReturn(0);
