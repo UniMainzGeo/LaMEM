@@ -13,12 +13,14 @@
 #include "LaMEM.h"
 #include "parsing.h"
 #include "tools.h"
+#include <errno.h>
 //---------------------------------------------------------------------------
 PetscErrorCode FBLoad(FB **pfb)
 {
 	FB        *fb;
 	FILE      *fp;
 	size_t    sz;
+	long      pos;
 	PetscBool found;
 	char      filename[_str_len_];
 
@@ -53,7 +55,14 @@ PetscErrorCode FBLoad(FB **pfb)
 		// get file size
 		fseek(fp, 0L, SEEK_END);
 
-		sz = (size_t)ftell(fp);
+		pos = ftell(fp);
+
+		if(pos < 0)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot get size of input file %s\n", filename);
+		}
+
+		sz = (size_t)pos;
 
 		rewind(fp);
 
@@ -278,7 +287,7 @@ PetscErrorCode FBFindBlocks(FB *fb, ParamType ptype, const char *keybeg, const c
 	// check block line ranges
 	for(i = 0; i < fb->nblocks; i++)
 	{
-		if(fb->blBeg[i] >= fb->blEnd[i])
+		if(fb->blBeg[i] >= fb->blEnd[i] || (i && fb->blBeg[i] <= fb->blEnd[i-1]))
 		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect order of %s - %s identifiers\n", keybeg, keyend);
 		}
@@ -334,6 +343,8 @@ PetscErrorCode FBGetIntArray(
 
 	char     *ptr, *line, **lines;
 	PetscInt  i, lnbeg, lnend, count;
+	char     *end;
+	long      lval;
 
 	// initialize
 	(*nvalues) = 0;
@@ -367,7 +378,17 @@ PetscErrorCode FBGetIntArray(
 
 		while(ptr != NULL && count < num)
 		{
-			values[count++] = (PetscInt)strtol(ptr, NULL, 0);
+			errno = 0;
+			lval  = strtol(ptr, &end, 10);
+
+			// trailing characters are allowed (e.g. ';'), but not a real number
+			if(end == ptr || *end == '.' || *end == 'e' || *end == 'E'
+			|| errno == ERANGE || lval < PETSC_MIN_INT || lval > PETSC_MAX_INT)
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect integer value \"%s\" in parameter \"%s\"\n", ptr, key);
+			}
+
+			values[count++] = (PetscInt)lval;
 
 			ptr = strtok(NULL, " ");
 		}
@@ -395,6 +416,8 @@ PetscErrorCode FBGetScalarArray(
 
 	char     *ptr, *line, **lines;
 	PetscInt  i, lnbeg, lnend, count;
+	char     *end;
+	double    dval;
 
 	// initialize
 	(*nvalues) = 0;
@@ -428,7 +451,15 @@ PetscErrorCode FBGetScalarArray(
 
 		while(ptr != NULL && count < num)
 		{
-			values[count++] = (PetscScalar)strtod(ptr, NULL);
+			dval = strtod(ptr, &end);
+
+			// trailing characters are allowed (e.g. ';')
+			if(end == ptr)
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect real value \"%s\" in parameter \"%s\"\n", ptr, key);
+			}
+
+			values[count++] = (PetscScalar)dval;
 
 			ptr = strtok(NULL, " ");
 		}
@@ -537,7 +568,7 @@ PetscErrorCode getIntParam(
 
 	free(dbkey);
 
-	if(found != PETSC_TRUE && fb)
+	if(found != PETSC_TRUE)
 	{
 		PetscCall(FBGetIntArray(fb, key, &nval, val, num, &found));
 	}
@@ -603,7 +634,7 @@ PetscErrorCode getScalarParam(
 	free(dbkey);
 
 
-	if(found != PETSC_TRUE && fb)
+	if(found != PETSC_TRUE)
 	{
 		PetscCall(FBGetScalarArray(fb, key, &nval, val, num, &found));
 	}
@@ -659,7 +690,7 @@ PetscErrorCode getStringParam(
 
 	free(dbkey);
 
-	if(found != PETSC_TRUE && fb)
+	if(found != PETSC_TRUE)
 	{
 		PetscCall(FBGetString(fb, key, str, &found));
 	}

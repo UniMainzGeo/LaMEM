@@ -206,9 +206,9 @@
         Type                    =   NotInAirBox                       # A box-like region
  #       PTBox_Bounds            =   -15.0 15.0  -1.0 1.0 -30.0 5.0      # box bound coordinates: [left, right, front, back, bottom, top]
  	nsegs			=   1
- 	xbounds                 =   [-15.0 15.0]
- 	ybounds                 =   [-1.0 1.0]
- 	zbounds                 =   [-30.0 5.0]
+ 	xbounds                 =   -15.0 15.0
+ 	ybounds                 =   -1.0 1.0
+ 	zbounds                 =   -30.0 5.0
         number_phases           =   2
         PhaseInside             =   2 2                               # Phase within the box [use -1 if you don't want to change the phase inside the box]
         PhaseOutside            =   1 0                               # Phase outside the box
@@ -340,7 +340,7 @@
 
 <SolverOptionsStart>
 
-	nonlinear_tolerances = 1e-3 1e-4  50   # rtol, atol, maxit
+	nonlinear_tolerances = 1e-3 1e-3  50   # rtol, atol, maxit
 	linear_tolerances    = 1e-3 1e-8  20   # rtol, atol, maxit
 	picard_to_newton     = 1e-5 5 1.2 20   # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1

@@ -971,7 +971,7 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb)
 	// (PETSc prioritizes options appearing LAST)
 
 	PetscInt  jj, i, lnbeg, lnend, cnt;
-	char     *line, **lines, *key, *val, *option;
+	char     *line, **lines;
 
 	PetscFunctionBeginUser;
 
@@ -997,26 +997,16 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb)
 			// copy line for parsing
 			strcpy(line, lines[i]);
 
-			// get key
-			key = strtok(line, " ");
+			// skip blank lines
+			if(!strtok(line, " ")) continue;
 
-			if(!key) continue;
+			// add entire line to PETSc options (keeps all values)
+			PetscPrintf(PETSC_COMM_WORLD, "   Adding PETSc option: %s\n", lines[i]);
 
-			// get value
-			val = strtok(NULL, " ");
-
-			if(!val) option = key;
-			else     asprintf(&option, "%s %s", key, val);
-
-			// add to PETSc options
-			PetscPrintf(PETSC_COMM_WORLD, "   Adding PETSc option: %s\n", option);
-
-			PetscCall(PetscOptionsInsertString(NULL, option));
+			PetscCall(PetscOptionsInsertString(NULL, lines[i]));
 
 			// count number of options set
 			cnt++;
-
-			if(val) free(option);
 		}
 
 		fb->blockID++;
