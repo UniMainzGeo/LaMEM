@@ -69,6 +69,19 @@ Testing:
   stalled (|F| ~6e-4 after 50 its), so its nonlinear atol was raised 1e-4 -> 1e-3. t26
   references updated (dyndike_4core.expected kept). Scan of all 119 test/example inputs: no
   parser errors. Full suite: only t26 dyndike (known) and t37 (binary without FastScape) fail.
+  N-025 (2026-10-23): its_ steady-state norm seeding jr->ts_ksp_ref_norm is intended (Anton):
+  comment added in LaMEMLib.cpp only. Fixed: heat production label W/kg, "WARNING" typo and
+  newline (scaling.cpp), GettingStarted.md uses nstep_max, set_scalar_option uses %.17g.
+  Left for C: fix_dt schedule one step late, dt_out without effect when nstep_out = 1, no dt
+  trimming at time_end / output times. nstep_out <= 0 switching off output is intended (Boris).
+  N-026 (2026-10-23): energ_res was stale only in dry-run and first output without initial
+  guess (in the time loop JacResViewRes recomputes it): now recomputed there. Passive tracer
+  pressure gets pShift. out_avd_ref < 1 rejected; unclaimed AVD cells written as phase 255
+  (was points[-1]). Negative aggregate phaseID rejected; output name uses snprintf.
+  vol_rate, vorticity, ang_vel_mag implemented (from JacResGetVelGrad) with options
+  out_vol_rate, out_vorticity, out_ang_vel_mag; checked on t18 simple shear (wz = 2e-15,
+  angular velocity 1.82 deg/Myr, expected 1.81; vol_rate ~1e-22). plast_dissip kept (Boris).
+  Not done: one value per fwrite in marker/tracer/AVD files, total_pressure edge values.
 
 ## C. Discuss first
 
