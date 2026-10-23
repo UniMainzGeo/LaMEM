@@ -410,7 +410,6 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	IOparam->ScalLaws           = 0;
 	IOparam->ReferenceDensity   = 0;
 	IOparam->SCF                = 0;
-	IOparam->DII_ref            = 0.0;
 
 	// Create scaling object
 	PetscCall(PetscMemzero (&scal, sizeof(Scaling)));
@@ -434,7 +433,6 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "Adjoint_PrintScalingLaws", &IOparam->ScalLaws,          1, 1 ));            // Print scaling laws (combined with AdjointGradients)
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "Adjoint_UseInitialAdjointParams", &IOparam->SetInitAdjParam,    1, 1 ));    // Use InitialGuess specified in AdjointParamsStart/End as initial value?
 	PetscCall(getStringParam(fb, _OPTIONAL_, "Adjoint_ScalingLawFilename", str,  "ScalingLaw.out"  ));          // Scaling law filename
-	PetscCall(getScalarParam(fb, _OPTIONAL_, "Adjoint_DII_ref", &IOparam->DII_ref,   1, 1        ));                     // Reference strainrate needed for direct FD for pointwise kernels for powerlaw viscosity (very unflexible so far)
 
 	PetscCall(PetscMemcpy(IOparam->ScalLawFilename,     str,   (size_t)_str_len_*sizeof(char) ));
 
@@ -1122,7 +1120,6 @@ PetscErrorCode AdjointVectorsCreate(Adjoint_Vecs *Adjoint_Vectors, ModParam *IOp
 	// VECTORS
 	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_, PETSC_DETERMINE, &Adjoint_Vectors->Lb));
 	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_, PETSC_DETERMINE, &Adjoint_Vectors->Ub));
-	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_, PETSC_DETERMINE, &Adjoint_Vectors->val));
 	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_, PETSC_DETERMINE, &Adjoint_Vectors->P));
 	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_, PETSC_DETERMINE, &Adjoint_Vectors->grad));
 
@@ -1139,7 +1136,6 @@ PetscErrorCode AdjointVectorsDestroy(Adjoint_Vecs *Adjoint_Vectors, ModParam *IO
 
 	PetscCall(VecDestroy(&Adjoint_Vectors->Lb));
 	PetscCall(VecDestroy(&Adjoint_Vectors->Ub));
-	PetscCall(VecDestroy(&Adjoint_Vectors->val));
 	PetscCall(VecDestroy(&Adjoint_Vectors->P));
 	PetscCall(VecDestroy(&Adjoint_Vectors->grad));
 
@@ -1158,7 +1154,6 @@ PetscErrorCode AdjointCreate(AdjGrad *aop, JacRes *jr, ModParam *IOparam)
 	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->vy));
 	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->vz));
 	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->sty));
-	PetscCall(DMCreateLocalVector (jr->fs->DA_CEN, &aop->gradfield));
 
 	PetscCall(VecDuplicate(jr->gsol, &aop->dPardu));
 	PetscCall(VecDuplicate(jr->gsol, &aop->dF));
@@ -1176,7 +1171,6 @@ PetscErrorCode AdjointDestroy(AdjGrad *aop, ModParam *IOparam)
 	PetscCall(VecDestroy(&aop->vy));
 	PetscCall(VecDestroy(&aop->vz));
 	PetscCall(VecDestroy(&aop->sty));
-	PetscCall(VecDestroy(&aop->gradfield));
 
 	PetscCall(VecDestroy(&aop->dPardu));
 	PetscCall(VecDestroy(&aop->dF));
@@ -1665,7 +1659,7 @@ PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOpa
 	}
 
 	// Compute the value of velocities @ the observation points
-	if(IOparam->mdI<_MAX_OBS_ && IOparam->Ap == 1)
+	if(IOparam->Ap == 1)
 	{
 
 		// get the current velocities at the observation point
@@ -2123,7 +2117,7 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 	PetscPrintf(PETSC_COMM_WORLD,"| \n| ");
 
 
-	if(IOparam->mdI<_MAX_OBS_ && IOparam->Ap == 1)
+	if(IOparam->Ap == 1)
 	{
 
 		PetscPrintf(PETSC_COMM_WORLD,"\n| Observation points: \n");
@@ -3655,477 +3649,6 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-PetscErrorCode cellConstEqFD(
-    ConstEqCtx  *ctx,    // evaluation context
-    SolVarCell  *svCell, // solution variables
-    PetscScalar  dxx,    // effective normal strain rate components
-    PetscScalar  dyy,    // ...
-    PetscScalar  dzz,    // ...
-    PetscScalar &sxx,    // Cauchy stress components
-    PetscScalar &syy,    // ...
-    PetscScalar &szz,    // ...
-    PetscScalar &gres,   // volumetric residual
-    PetscScalar &rho,    // effective density
-    AdjGrad *aop,
-    ModParam *IOparam,
-    PetscInt ii,
-    PetscInt jj,
-    PetscInt k,
-    PetscInt ik,
-    PetscInt jk,
-    PetscInt kk)
-{
-	// evaluate constitutive equations on the cell
-
-	SolVarDev   *svDev;
-	SolVarBulk  *svBulk;
-	Controls    *ctrl;
-	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
-
-	PetscFunctionBeginUser;
-
-	// access context
-	svDev  = ctx->svDev;
-	svBulk = ctx->svBulk;
-	ctrl   = ctx->ctrl;
-
-	// evaluate deviatoric constitutive equation
-	PetscCall(devConstEqFD(ctx, aop, IOparam,  ii,  jj,  k,  ik,  jk,  kk));
-
-	// evaluate volumetric constitutive equation
-	PetscCall(volConstEq(ctx));
-
-	// get stabilization viscosity
-	if(ctrl->initGuess) eta_st = 0.0;
-	else                eta_st = svDev->eta_st;
-
-	// compute stabilization stresses
-	sxx = 2.0*eta_st*svCell->dxx;
-	syy = 2.0*eta_st*svCell->dyy;
-	szz = 2.0*eta_st*svCell->dzz;
-
-	// compute history shear stress
-	svCell->sxx = 2.0*ctx->eta*dxx;
-	svCell->syy = 2.0*ctx->eta*dyy;
-	svCell->szz = 2.0*ctx->eta*dzz;
-
-	// compute plastic strain-rate components
-	txx = ctx->DIIpl*dxx;
-	tyy = ctx->DIIpl*dyy;
-	tzz = ctx->DIIpl*dzz;
-
-	// store contribution to the second invariant of plastic strain-rate
-	svDev->PSR = 0.5*(txx*txx + tyy*tyy + tzz*tzz);
-
-	// compute dissipative part of total strain rate (viscous + plastic = total - elastic)
-	txx = svCell->dxx - svDev->I2Gdt*(svCell->sxx - svCell->hxx);
-	tyy = svCell->dyy - svDev->I2Gdt*(svCell->syy - svCell->hyy);
-	tzz = svCell->dzz - svDev->I2Gdt*(svCell->szz - svCell->hzz);
-
-	// compute shear heating term contribution
-	svDev->Hr =
-	    txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz +
-	    sxx*svCell->dxx + syy*svCell->dyy + szz*svCell->dzz;
-
-	// compute total viscosity
-	svDev->eta = ctx->eta + eta_st;
-
-	// get total pressure (effective pressure + pore pressure)
-	ptotal = ctx->p + ctrl->biot*ctx->p_pore;
-
-	// compute total Cauchy stresses
-	sxx += svCell->sxx - ptotal;
-	syy += svCell->syy - ptotal;
-	szz += svCell->szz - ptotal;
-
-	// save output variables
-	svCell->eta_cr = ctx->eta_cr; // creep viscosity
-	svCell->DIIdif = ctx->DIIdif; // relative diffusion creep strain rate
-	svCell->DIIdis = ctx->DIIdis; // relative dislocation creep strain rate
-	svCell->DIIprl = ctx->DIIprl; // relative Peierls creep strain rate
-	svCell->yield  = ctx->yield;  // average yield stress in control volume
-
-	// compute volumetric residual
-	if(ctrl->actExp)
-	{
-		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
-	}
-	else
-	{
-		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
-	}
-
-	// store effective density
-	rho = svBulk->rho;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam *IOparam, PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk)
-{
-	// setup phase parameters for deviatoric constitutive equation
-	// evaluate dependence on constant parameters (pressure, temperature)
-
-	Material_t  *mat;
-	Soft_t      *soft;
-	Controls    *ctrl;
-	PData       *Pd;
-	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
-	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
-	PetscScalar  Inin=1.0,Inieta=1.0,ViscTemp=1.0;
-	PetscFunctionBeginUser;
-
-	// access context
-	mat    = ctx->phases + ID;
-	soft   = ctx->soft;
-	ctrl   = ctx->ctrl;
-	Pd     = ctx->Pd;
-	APS    = ctx->svDev->APS;
-	Le     = ctx->Le;
-	dt     = ctx->dt;
-	p      = ctx->p;
-	p_lith = ctx->p_lith;
-	p_pore = ctx->p_pore;
-	T      = ctx->T;
-	mf     = 0.0;
-
-	if(mat->pdAct == 1)
-	{
-		// compute melt fraction from phase diagram
-		PetscCall(setDataPhaseDiagram(Pd, p, T, mat->pdn));
-
-		// store melt fraction
-		mf = Pd->mf;
-	}
-
-	// set RT
-	RT         =  ctrl->Rugc*T;
-	if(!RT) RT = -1.0;
-
-	// initialize phase parameters
-	ctx->A_els = 0.0; // elasticity constant
-	ctx->A_dif = 0.0; // diffusion constant
-	ctx->A_max = 0.0; // upper bound constant
-	ctx->A_dis = 0.0; // dislocation constant
-	ctx->N_dis = 1.0; // dislocation exponent
-	ctx->A_prl = 0.0; // Peierls constant
-	ctx->N_prl = 1.0; // Peierls exponent
-	ctx->taupl = 0.0; // plastic yield stress
-
-	// MELT FRACTION
-	mfd = 1.0;
-	mfn = 1.0;
-
-	if(!strcmp(IOparam->type_name[0],"eta0"))
-	{
-		if ((ii)==ik && (jj)==jk && (k)==kk)
-		{
-			ViscTemp = (pow((mat->Bn * pow(2,mat->n) * pow(IOparam->DII_ref, mat->n-1)), -1/mat->n));
-			Inieta = ViscTemp;
-			aop->Perturb = ViscTemp*aop->FD_epsilon;
-			ViscTemp += aop->Perturb;
-			mat->Bn = pow (2.0*ViscTemp, -mat->n) * pow(IOparam->DII_ref, 1.0 - mat->n);
-		}
-	}
-
-	if(mf)
-	{
-		// limit melt fraction
-		if(mf > ctrl->mfmax) mf = ctrl->mfmax;
-
-		// compute corrections factors for diffusion & dislocation creep
-		mfd = exp(mat->mfc*mf);
-		mfn = exp(mat->mfc*mf*mat->n);
-	}
-
-	// PRESSURE
-
-	// pore pressure
-	if(ctrl->gwType == _GW_NONE_) p_pore = 0.0;
-
-	// total pressure
-	p_total = p + ctrl->biot*p_pore;
-
-	// assign pressure for viscous laws
-	if(ctrl->pLithoVisc)  p_visc = p_lith;
-	else                  p_visc = p_total;
-
-	// ELASTICITY
-	if(mat->G)
-	{
-		// Elasticity correction can only DECREASE the viscosity.
-		// eta/G << dt (viscous regime)  eta*(dt/(dt + eta/G)) -> eta
-		// eta/G >> dt (elastic regime)  eta*(dt/(dt + eta/G)) -> G*dt < eta
-		// Elasticity doesn't normally interact with the bottom viscosity limit,
-		// instead it rather acts as a smooth limiter for maximum viscosity.
-
-		ctx->A_els = 1.0/(mat->G*dt)/2.0;
-	}
-
-	// LINEAR DIFFUSION CREEP (NEWTONIAN)
-	if(mat->Bd)
-	{
-		Q          = (mat->Ed + p_visc*mat->Vd)/RT;
-		ctx->A_dif =  mat->Bd*exp(-Q)*mfd;
-	}
-
-	// PS-CREEP
-	else if(mat->Bps && T)
-	{
-		Q          = mat->Eps/RT;
-		ctx->A_dif = mat->Bps*exp(-Q)/T/pow(mat->d, 3.0);
-	}
-
-	// UPPER BOUND CREEP
-	if(ctrl->eta_max)
-	{
-		ctx->A_max = 1.0/(ctrl->eta_max)/2.0;
-	}
-
-	// DISLOCATION CREEP (POWER LAW)
-	if(mat->Bn)
-	{
-		Q          = (mat->En + p_visc*mat->Vn)/RT;
-		if(!strcmp(IOparam->type_name[0],"n"))
-		{
-			if ((ii)==ik && (jj)==jk && (k)==kk)
-			{
-				ViscTemp = (pow((mat->Bn * pow(2,mat->n) * pow(IOparam->DII_ref, mat->n-1)), -1/mat->n));
-				Inin = mat->n;
-				aop->Perturb = mat->n*aop->FD_epsilon;
-				mat->n += aop->Perturb;
-				mat->Bn = pow (2.0*ViscTemp, -mat->n) * pow(IOparam->DII_ref, 1.0 - mat->n);
-			}
-		}
-		ctx->N_dis =  mat->n;
-		ctx->A_dis =  mat->Bn*exp(-Q)*mfn;
-	}
-
-	// DC-CREEP
-	else if(mat->Bdc && T)
-	{
-		Q          = mat->Edc/RT;
-		ctx->N_dis = Q;
-		ctx->A_dis = mat->Bdc*exp(-Q*log(mat->Rdc))*pow(mat->mu, -Q);
-	}
-
-	// PEIERLS CREEP (LOW TEMPERATURE RATE-DEPENDENT PLASTICITY, POWER-LAW APPROXIMATION)
-	if(mat->Bp && T)
-	{
-		Q           = (mat->Ep + p_visc*mat->Vp)/RT;
-		ctx->N_prl =  Q*pow(1.0-mat->gamma, mat->q-1.0)*mat->q*mat->gamma;
-		ctx->A_prl =  mat->Bp/pow(mat->gamma*mat->taup, ctx->N_prl)*exp(-Q*pow(1.0-mat->gamma, mat->q));
-	}
-
-	if(!strcmp(IOparam->type_name[0],"n"))
-	{
-		if ((ii)==ik && (jj)==jk && (k)==kk)
-		{
-			mat->n = Inin;
-			mat->Bn = pow (2.0*ViscTemp, -mat->n) * pow(IOparam->DII_ref, 1.0 - mat->n);
-		}
-	}
-	if(!strcmp(IOparam->type_name[0],"eta0"))
-	{
-		if ((ii)==ik && (jj)==jk && (k)==kk)
-		{
-			mat->Bn = pow (2.0*Inieta, -mat->n) * pow(IOparam->DII_ref, 1.0 - mat->n);
-		}
-	}
-
-	if(PetscIsInfOrNanScalar(ctx->A_dif)) ctx->A_dif = 0.0;
-	if(PetscIsInfOrNanScalar(ctx->A_dis)) ctx->A_dis = 0.0;
-	if(PetscIsInfOrNanScalar(ctx->A_prl)) ctx->A_prl = 0.0;
-
-	// PLASTICITY
-	if(!mat->ch && !mat->fr)
-	{
-		PetscFunctionReturn(0); // return if no plasticity is set
-	}
-
-	// apply strain softening to friction and cohesion
-	ch = applyStrainSoft(soft, mat->chSoftID, APS, Le, mat->ch);
-	fr = applyStrainSoft(soft, mat->frSoftID, APS, Le, mat->fr);
-
-	// fit to limits
-	if(ch < ctrl->minCh) ch = ctrl->minCh;
-	if(fr < ctrl->minFr) fr = ctrl->minFr;
-
-	// override total pressure with lithostatic if requested
-	if(ctrl->pLithoPlast)
-	{
-		// Use lithostatic, rather than dynamic pressure to evaluate yield stress
-		// This converges better, but does not result in localization of deformation & shear banding,
-		// so only apply it for large-scale simulations where plasticity does not matter much
-
-		p_total = p_lith;
-	}
-	else if(ctrl->pLimPlast)
-	{
-		// apply pressure limits
-
-		// yielding surface: (S1-S3)/2 = (S1+S3)/2*sin(phi) + C*cos(phi)
-		// pressure can be written as: P = (S1+S2+S3)/3 and P~=S2,then P=(S1+S3)/2
-		// so the yield surface can be rewritten as:
-		// P-S3=P*sin(phi) + C*cos(phi)   --> compression
-		// S1-P=P*sin(phi) + C*cos(phi)   --> extension
-		// under pure shear compression, S3=P_Lithos and S1=P_Lithos when extension
-		// P = -( S3+C*cos(phi))/(sin(phi)-1)  --> compression
-		// P = -(-S1+C*cos(phi))/(sin(phi)+1)  --> extension
-
-		p_upper = -( p_lith + ch * cos(fr))/(sin(fr) - 1.0); // compression
-		p_lower = -(-p_lith + ch * cos(fr))/(sin(fr) + 1.0); // extension
-
-		if(p_total > p_upper) p_total = p_upper;
-		if(p_total < p_lower) p_total = p_lower;
-	}
-
-	// compute cohesion and friction coefficient
-	ch = cos(fr)*ch;
-	fr = sin(fr);
-
-	// compute effective mean stress
-	dP = (p_total - p_pore);
-
-	// compute yield stress
-	if(dP < 0.0) ctx->taupl =         ch; // Von-Mises model for extension
-	else         ctx->taupl = dP*fr + ch; // Drucker-Prager model for compression
-
-	// correct for ultimate yield stress (if defined)
-	if(ctrl->tauUlt) { if(ctx->taupl > ctrl->tauUlt) ctx->taupl = ctrl->tauUlt; }
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode devConstEqFD(ConstEqCtx *ctx, AdjGrad *aop, ModParam *IOparam, PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk)
-{
-	// evaluate deviatoric constitutive equations in control volume
-
-	Controls    *ctrl;
-	PetscScalar *phRat;
-	SolVarDev   *svDev;
-	Material_t  *phases;
-	PetscInt     i, numPhases;
-
-	PetscFunctionBeginUser;
-
-	// access context
-	ctrl      = ctx->ctrl;
-	numPhases = ctx->numPhases;
-	phRat     = ctx->phRat;
-	svDev     = ctx->svDev;
-	phases    = ctx->phases;
-
-	// zero out results
-	ctx->eta    = 0.0; // effective viscosity
-	ctx->eta_cr = 0.0; // creep viscosity
-	ctx->DIIdif = 0.0; // diffusion creep strain rate
-	ctx->DIIdis = 0.0; // dislocation creep strain rate
-	ctx->DIIprl = 0.0; // Peierls creep strain rate
-	ctx->DIIpl  = 0.0; // plastic strain rate
-	ctx->yield  = 0.0; // yield stress
-
-	// zero out stabilization viscosity
-	svDev->eta_st = 0.0;
-
-	// viscous initial guess
-	if(ctrl->initGuess)
-	{
-		ctx->eta    = ctrl->eta_ref;
-		ctx->eta_cr = ctrl->eta_ref;
-		ctx->DIIdif = 1.0;
-
-		PetscFunctionReturn(0);
-	}
-
-	// scan all phases
-	for(i = 0; i < numPhases; i++)
-	{
-		// update present phases only
-		if(phRat[i])
-		{
-			// setup phase parameters
-			PetscCall(setUpPhaseFD(ctx, i, aop, IOparam,  ii,  jj,  k,  ik,  jk,  kk));
-
-			// compute phase viscosities and strain rate partitioning
-			PetscCall(getPhaseVisc(ctx, i));
-
-			// update stabilization viscosity
-			svDev->eta_st += phRat[i]*phases->eta_st;
-		}
-	}
-
-	// normalize strain rates
-	if(ctx->DII)
-	{
-		ctx->DIIdif /= ctx->DII;
-		ctx->DIIdis /= ctx->DII;
-		ctx->DIIprl /= ctx->DII;
-		ctx->DIIpl  /= ctx->DII;
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode edgeConstEqFD(
-    ConstEqCtx  *ctx,    // evaluation context
-    SolVarEdge  *svEdge, // solution variables
-    PetscScalar  d,      // effective shear strain rate component
-    PetscScalar &s,
-    AdjGrad *aop,
-    ModParam *IOparam,
-    PetscInt ii,
-    PetscInt jj,
-    PetscInt k,
-    PetscInt ik,
-    PetscInt jk,
-    PetscInt kk)      // Cauchy stress component
-{
-	// evaluate constitutive equations on the edge
-
-	SolVarDev   *svDev;
-	PetscScalar  t, eta_st;
-
-	PetscFunctionBeginUser;
-
-	// access context
-	svDev = &svEdge->svDev;
-
-	// evaluate deviatoric constitutive equation
-	PetscCall(devConstEqFD(ctx, aop, IOparam,  ii,  jj,  k,  ik,  jk,  kk));
-
-	// get stabilization viscosity
-	if(ctx->ctrl->initGuess) eta_st = 0.0;
-	else                     eta_st = svDev->eta_st;
-
-	// compute stabilization stress
-	s = 2.0*eta_st*svEdge->d;
-
-	// compute history shear stress
-	svEdge->s = 2.0*ctx->eta*d;
-
-	// compute plastic strain-rate component
-	t = ctx->DIIpl*d;
-
-	// store contribution to the second invariant of plastic strain-rate
-	svDev->PSR = t*t;
-
-	// compute dissipative part of total strain rate (viscous + plastic = total - elastic)
-	t = svEdge->d - svDev->I2Gdt*(svEdge->s - svEdge->h);
-
-	// compute shear heating term contribution
-	svDev->Hr = 2.0*t*svEdge->s + 2.0*svEdge->d*s;
-
-	// compute total viscosity
-	svDev->eta = ctx->eta + eta_st;
-
-	// compute total stress
-	s += svEdge->s;
-
-	PetscFunctionReturn(0);
-}
-
 //---------------------------------------------------------------------------
 PetscErrorCode Adjoint_ApplyBCs(Vec dF, BCCtx* bc)
 {

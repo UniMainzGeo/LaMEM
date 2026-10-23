@@ -26,7 +26,6 @@ struct MeshSeg1D
 	PetscInt    nsegs;                    // number of segments
 	PetscInt    istart[_max_num_segs_+1]; // indices of the first nodes plus last index
 	PetscScalar xstart[_max_num_segs_+1]; // coordinates of the first nodes plus total size
-	PetscScalar biases[_max_num_segs_  ]; // biases for each segment
 	PetscInt    tcels;                    // total number of cells
 	PetscInt    uniform;                  // uniform grid flag
 
@@ -41,7 +40,7 @@ PetscErrorCode MeshSeg1DReadParam(
     const char *dir,
     FB         *fb);
 
-// (partially) mesh a segment with (optionally) biased element size
+// (partially) mesh a segment with uniform element size
 PetscErrorCode MeshSeg1DGenCoord(
     MeshSeg1D   *ms,     // segments description
     PetscInt     iseg,   // segment index

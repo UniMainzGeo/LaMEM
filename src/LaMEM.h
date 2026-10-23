@@ -117,9 +117,6 @@ const PetscInt _max_inj_times_ = 10;
 // maximum number of polygons on the same level
 const PetscInt _max_polygons_ = 10;
 
-// maximum number of observation types
-const PetscInt _max_num_obs_ = 7;
-
 // maximum number of components in the output vector (3D)
 const PetscInt _max_num_comp_ = 9;
 

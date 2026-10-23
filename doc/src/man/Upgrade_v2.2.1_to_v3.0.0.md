@@ -29,7 +29,7 @@ If you only read one section, read this.
    but with v3.0.0 *default* solver settings, not yours. See the pitfall in [§8](@ref "8. Pitfalls & troubleshooting").
 2. **2D setups: change `nel_y = 1` → `nel_y = 2`.** Fewer than 2 cells in any
    direction is now a hard error. **→ [§5.1](@ref "5.1 Minimum 2 cells per direction (breaking)")**
-3. **Graded meshes: drop non-unit `bias_*`.** Bias ratios ≠ 1.0 are now rejected. **→ [§5.2](@ref "5.2 Mesh bias ratios deprecated")**
+3. **Graded meshes: `bias_*` removed.** The keys are no longer read, so a graded mesh silently becomes uniform. **→ [§5.2](@ref "5.2 Mesh bias ratios removed")**
 4. **Out-of-plane background shear removed.** `exz_strain_rates` / `eyz_strain_rates`
    (and their `*_time_delims`) no longer exist. **→ [§5.3](@ref "5.3 Background strain rates reduced")**
 5. **Gravity-survey feature removed** entirely (`gravity.cpp/h` deleted). **→ [§5.4](@ref "5.4 Gravity-survey feature removed")**
@@ -51,8 +51,8 @@ breaking change and both pitfalls; item 8 is the runtime confirmation.
    this is the dangerous one.
 2. **Grid resolution** — grep for `nel_x`/`nel_y`/`nel_z = 1` — bump any direction to ≥ 2
    (§5.1). Otherwise: `Less than two cells are specified…`.
-3. **Mesh grading** — grep for `bias_` — drop non-unit ratios; use uniform `nseg_*`
-   segments (§5.2). Otherwise: `Non-unit bias ratios are deprecated…`.
+3. **Mesh grading** — grep for `bias_` — remove the keys; use uniform `nseg_*`
+   segments (§5.2). ⚠️ Otherwise silently ignored: each segment is meshed uniformly.
 4. **Background shear** — grep for `exz_`, `eyz_` — the out-of-plane components are gone;
    remove them (§5.3). Otherwise: required-parameter-not-found on `exz_strain_rates`.
 5. **Linear + thermal** — if you used `-snes_type ksponly` together with thermal diffusion
@@ -280,15 +280,12 @@ Classic quasi-2D setups that used `nel_y = 1` must use `nel_y = 2`.
 
 The run aborts immediately at grid setup (exit code 83).
 
-### 5.2 Mesh bias ratios deprecated
+### 5.2 Mesh bias ratios removed
 
-Non-unit `bias_x/bias_y/bias_z` (graded meshes) are now rejected (`src/fdstag.cpp:83`):
+`bias_x/bias_y/bias_z` (graded meshes) are no longer read. There is no error: every segment
+is meshed with uniform spacing, whatever the input says.
 
-```
-Non-unit bias ratios are deprecated (bias_x)
-```
-
-Use uniform segments (or split a direction into multiple `nseg_*` uniform segments).
+To refine the mesh locally, split a direction into several uniform `nseg_*` segments.
 
 ### 5.3 Background strain rates reduced
 
@@ -433,7 +430,6 @@ These abort immediately with a clear PETSc error — easy to spot and fix:
 | Symptom | Cause | Fix |
 |---|---|---|
 | `Less than two cells are specified in the y - direction` | `nel_y = 1` (or any dir < 2) | set to `≥ 2` (§5.1) |
-| `Non-unit bias ratios are deprecated (bias_x)` | graded mesh bias | use uniform segments (§5.2) |
 | `act_temp_diff = 1 and -snes_type ksponly are incompatible` | old linear-solve flag + thermal diffusion | use `set_linear_problem = 1`, or `-snes_max_it 1` (`src/nlsolve.cpp:117`) |
 | `Periodic condition is incompatible with …` | `periodic` + unsupported option | remove the conflicting option (§5.5) |
 | Required-parameter-not-found on `exz_strain_rates` | removed background shear | drop it (§5.3) |

@@ -45,9 +45,6 @@
 	coord_z = -128 0
 	
 # Bias is the size at the end of the segment divided by that of the beginning
-	bias_x = 1.0
-	bias_y = 1.0
-	bias_z = 1.0
 
 #===============================================================================
 # Free surface

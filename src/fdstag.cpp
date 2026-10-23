@@ -29,7 +29,7 @@ PetscErrorCode MeshSeg1DReadParam(
 	PetscInt    i, tcels, uniform;
 	PetscInt    ncells[_max_num_segs_];
 	PetscScalar avgsz, sz;
-	char        *nseg, *nel, *coord, *bias;
+	char        *nseg, *nel, *coord;
 
 	PetscFunctionBeginUser;
 
@@ -40,21 +40,18 @@ PetscErrorCode MeshSeg1DReadParam(
 
 	for(i = 0; i < _max_num_segs_; i++)
 	{
-		ms->biases[i] = 1.0;
-		ncells    [i] = 0.0;
+		ncells[i] = 0;
 	}
 
 	// compose option keys
 	asprintf(&nseg,      "nseg_%s",      dir);
 	asprintf(&nel,       "nel_%s",       dir);
 	asprintf(&coord,     "coord_%s",     dir);
-	asprintf(&bias,      "bias_%s",      dir);
 
 	// read parameters
 	PetscCall(getIntParam   (fb, _OPTIONAL_, nseg,      &ms->nsegs,     1,           _max_num_segs_));
 	PetscCall(getIntParam   (fb, _REQUIRED_, nel,        ncells,        ms->nsegs,   _max_num_cells_));
 	PetscCall(getScalarParam(fb, _REQUIRED_, coord,      ms->xstart,    ms->nsegs+1, leng));
-	PetscCall(getScalarParam(fb, _OPTIONAL_, bias,       ms->biases,    ms->nsegs,   1.0 ));
 
 	// compute starting node indices
 	for(i = 0, tcels = 0; i < ms->nsegs; i++)
@@ -70,16 +67,12 @@ PetscErrorCode MeshSeg1DReadParam(
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Less than two cells are specified in the %s - direction\n", dir);
 	}
 
-	// check ordering and bias factors
+	// check ordering
 	for(i = 0; i < ms->nsegs; i++)
 	{
 		if(ms->xstart[i] >= ms->xstart[i+1])
 		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unordered coordinates in parameter %s\n", coord);
-		}
-		if(ms->biases[i] != 1.0)
-		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Non-unit bias ratios are deprecated (%s)\n", bias);
 		}
 	}
 
@@ -91,7 +84,7 @@ PetscErrorCode MeshSeg1DReadParam(
 	{
 		sz = (ms->xstart[i+1] - ms->xstart[i])/(PetscScalar)ncells[i];
 
-		if(ms->biases[i] != 1.0 || PetscAbsScalar(avgsz-sz) > gtol*avgsz)
+		if(PetscAbsScalar(avgsz-sz) > gtol*avgsz)
 		{
 			uniform = 0; break;
 		}
@@ -105,7 +98,6 @@ PetscErrorCode MeshSeg1DReadParam(
 	free(nseg);
 	free(nel);
 	free(coord);
-	free(bias);
 
 	PetscFunctionReturn(0);
 }
@@ -117,10 +109,10 @@ PetscErrorCode MeshSeg1DGenCoord(
     PetscInt     istart, // index of the first node
     PetscScalar *crd)    // coordinates of the nodes
 {
-	// (partially) mesh a segment with (optionally) biased element size
+	// (partially) mesh a segment with uniform element size
 
-	PetscInt    i, N, M, sum;
-	PetscScalar xstart, xclose, bias, avgSz, begSz, endSz, dx;
+	PetscInt    i, N, M;
+	PetscScalar xstart, xclose, avgSz;
 
 	PetscFunctionBeginUser;
 
@@ -134,40 +126,13 @@ PetscErrorCode MeshSeg1DGenCoord(
 	xstart = ms->xstart[iseg];
 	xclose = ms->xstart[iseg+1];
 
-	// bias (last to first cell size ratio > 1 -> growing)
-	bias = ms->biases[iseg];
-
 	// average cell size
 	avgSz = (xclose - xstart)/(PetscScalar)M;
 
-	// uniform case
-	if(bias == 1.0)
+	// generate coordinates of local nodes
+	for(i = 0; i < nl; i++)
 	{
-		// generate coordinates of local nodes
-		for(i = 0; i < nl; i++)
-		{
-			crd[i] = xstart + (PetscScalar)(istart + i)*avgSz;
-		}
-	}
-	// non-uniform case
-	else
-	{
-		// cell size limits
-		begSz = 2.0*avgSz/(1.0 + bias);
-		endSz = bias*begSz;
-
-		// cell size increment (negative for bias < 1)
-		dx = (endSz - begSz)/(PetscScalar)(M-1);
-
-		// get accumulated sum of increments
-		for(i = 0, sum = 0; i < istart; i++) sum += i;
-
-		// generate coordinates of local nodes
-		for(i = 0; i < nl; i++)
-		{
-			crd[i] = xstart + (PetscScalar)(istart + i)*begSz + (PetscScalar)sum*dx;
-			sum += istart + i;
-		}
+		crd[i] = xstart + (PetscScalar)(istart + i)*avgSz;
 	}
 
 	// override last node coordinate

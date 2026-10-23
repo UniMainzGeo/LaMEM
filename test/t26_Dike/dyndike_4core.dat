@@ -50,9 +50,6 @@
 # Bias ratio is the size in the END divided by the size in the BEGINNING, 
 # It is LESS than unit for DECREASING cell size  e.g. 0.333/0.9 = 0.37 (bias ratio, decrease) -> 0.9 is cell size in beginning (left side)
 # It is MORE than unit for INCREASING cell size  e.g. 0.9/0.333 = 2.7 (bias ratio, increase)  -> 0.9 is cell size in the end (right side)
-        bias_x = 1.0 
-	bias_y = 1.0 
-        bias_z = 1.0
 #===============================================================================
 # Free surface
 #===============================================================================

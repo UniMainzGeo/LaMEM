@@ -96,18 +96,6 @@ void Tensor2RNView(Tensor2RN *A, const char *msg);
 
 void Tensor2RSView(Tensor2RS *A, const char *msg);
 
-PetscInt Tensor2RNEigen(Tensor2RN *L, PetscScalar tol, PetscScalar eval[]);
-
-PetscInt Tensor2RSSpectral(
-    Tensor2RS   *A,      // symmetric tensor
-    PetscScalar eval[],  // eigenvalues (sorted)
-    PetscScalar evect[], // eigenvectors (corresponding)
-    PetscScalar ttol,    // tight tolerance (convergence condition)
-    PetscScalar ltol,    // loose tolerance (divergence condition)
-    PetscInt    itmax);  // maximum number rotations
-
-PetscInt getISA(Tensor2RN *pL, PetscScalar ISA[], PetscScalar *plnrm);
-
 PetscErrorCode Tensor2RS2DSpectral(
     PetscScalar  axx,
     PetscScalar  ayy,

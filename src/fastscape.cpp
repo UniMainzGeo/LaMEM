@@ -479,7 +479,7 @@ PetscErrorCode FastScapeLoadGridInf(FastScapeLib *FSLib)
 	if(FSLib->non_uniform_grid)
 	{
 		// original grid
-		// setting bias-flag, minimum grid spacing, grid nodes
+		// setting minimum grid spacing, grid nodes
 		// x-direction
 		PetscCall(FSLoadNonUniformGrid(&FSLib->msx_fs, FSLib->rangeX_end / scal->length, fs->scal));
 		// y-direction
@@ -549,47 +549,17 @@ PetscErrorCode FastScapeLoadGridInf(FastScapeLib *FSLib)
 PetscErrorCode FSLoadNonUniformGrid(MeshSeg1DFS *ms_fs, PetscScalar xend, Scaling *scal)
 {
 	PetscInt i;
-	PetscScalar begSz, endSz, avgSz, bias;
 
 	PetscFunctionBeginUser;
 
 	// initialize
-	ms_fs->bias = 0;
 	ms_fs->xstart[ms_fs->nsegs] = xend;
-
-	// setting bias-flag, minimum grid spacing, grid nodes
-	// bias == 1.0 ?
-	for(i = 0; i < ms_fs->nsegs; i++)
-	{
-		if(ms_fs->biases[i] != 1.0)
-		{
-			ms_fs->bias = 1; break;
-		}
-	}
 
 	// obtain the minimum grid spacing
 	for(i = 0; i < ms_fs->nsegs; i++)
 	{
-		if(!ms_fs->bias)
-		{
-			ms_fs->grid_spacing_min[i]  = (ms_fs->xstart[i+1] - ms_fs->xstart[i]) * scal->length / (PetscScalar)(ms_fs->istart[i+1] - ms_fs->istart[i]);
-			ms_fs->grid_spacing_max[i]  = ms_fs->grid_spacing_min[i];
-		}
-		else
-		{
-			// bias (last to first cell size ratio > 1 -> growing)
-			bias  = ms_fs->biases[i];
-
-			// average cell size
-			avgSz = (ms_fs->xstart[i+1] - ms_fs->xstart[i]) * scal->length / (PetscScalar)(ms_fs->istart[i+1] - ms_fs->istart[i]);
-
-			// cell size limits
-			begSz = 2.0*avgSz/(1.0 + bias);
-			endSz = bias*begSz;
-
-			ms_fs->grid_spacing_min[i] = (begSz < endSz)? begSz : endSz;
-			ms_fs->grid_spacing_max[i] = (begSz > endSz)? begSz : endSz;
-		}
+		ms_fs->grid_spacing_min[i]  = (ms_fs->xstart[i+1] - ms_fs->xstart[i]) * scal->length / (PetscScalar)(ms_fs->istart[i+1] - ms_fs->istart[i]);
+		ms_fs->grid_spacing_max[i]  = ms_fs->grid_spacing_min[i];
 	}
 	ms_fs->min_spacing = *min_element(ms_fs->grid_spacing_min, ms_fs->grid_spacing_min + ms_fs->nsegs);
 	ms_fs->max_spacing = *max_element(ms_fs->grid_spacing_max, ms_fs->grid_spacing_max + ms_fs->nsegs);
@@ -615,7 +585,6 @@ PetscErrorCode FastScapeCopyMeshSeg1D(FastScapeLib *FSLib, MeshSeg1D *ms, const 
 		{
 			FSLib->msx_fs.istart[i]     = ms->istart[i];
 			FSLib->msx_fs.xstart[i]     = ms->xstart[i];
-			FSLib->msx_fs.biases[i]     = ms->biases[i];
 		}
 		FSLib->msx_fs.istart[ms->nsegs] = ms->istart[ms->nsegs];
 	}
@@ -628,7 +597,6 @@ PetscErrorCode FastScapeCopyMeshSeg1D(FastScapeLib *FSLib, MeshSeg1D *ms, const 
 		{
 			FSLib->msy_fs.istart[i]     = ms->istart[i];
 			FSLib->msy_fs.xstart[i]     = ms->xstart[i];
-			FSLib->msy_fs.biases[i]     = ms->biases[i];
 		}
 		FSLib->msy_fs.istart[ms->nsegs] = ms->istart[ms->nsegs];
 	}
@@ -888,8 +856,8 @@ PetscErrorCode FastScapeCopyVelocity(FastScapeLib *FSLib)
 //---------------------------------------------------------------------------
 PetscErrorCode FastScapeCreateGlobalGrid(PetscScalar *ncoor, MeshSeg1DFS ms_fs, PetscInt iseg, Scaling *scal)
 {
-	PetscInt    i, M, sum = 0, istart;
-	PetscScalar xstart, xclose, bias, avgSz, begSz, endSz, dx;
+	PetscInt    i, M, istart;
+	PetscScalar xstart, xclose, avgSz;
 
 	PetscFunctionBeginUser;
 
@@ -903,37 +871,13 @@ PetscErrorCode FastScapeCreateGlobalGrid(PetscScalar *ncoor, MeshSeg1DFS ms_fs, 
 	xstart = ms_fs.xstart[iseg] * scal->length;
 	xclose = ms_fs.xstart[iseg+1] * scal->length;
 
-	// bias (last to first cell size ratio > 1 -> growing)
-	bias = ms_fs.biases[iseg];
-
 	// average cell size
 	avgSz = (xclose - xstart)/(PetscScalar)M;
 
-	// uniform case
-	if(bias == 1.0)
+	// generate coordinates of local nodes
+	for(i = istart; i < M + istart + 1; i++)
 	{
-		// generate coordinates of local nodes
-		for(i = istart; i < M + istart + 1; i++)
-		{
-			ncoor[i] = xstart + (PetscScalar)(i - istart) * avgSz;
-		}
-	}
-	// non-uniform case
-	else
-	{
-		// cell size limits
-		begSz = 2.0 * avgSz / (1.0 + bias);
-		endSz = bias * begSz;
-
-		// cell size increment (negative for bias < 1)
-		dx = (endSz - begSz) / (PetscScalar)(M-1);
-
-		// generate coordinates of local nodes
-		for(i = istart; i < istart + M; i++)
-		{
-			ncoor[i] = xstart + (PetscScalar)(i - istart) * begSz + dx * (PetscScalar)sum ;
-			sum += i - istart;
-		}
+		ncoor[i] = xstart + (PetscScalar)(i - istart) * avgSz;
 	}
 
 	// override last node coordinate

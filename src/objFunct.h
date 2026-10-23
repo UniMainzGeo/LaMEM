@@ -15,7 +15,6 @@
 //---------------------------------------------------------------------------
 
 struct FB;
-struct FreeSurf;
 
 //-----------------------------------------------------------------------------
 enum PTypes// List of model parameter types (30)
@@ -85,7 +84,6 @@ struct ModParam
 	PetscScalar      factor2array[51];                  // factor that increases the convergence velocity (this value is added to itself after every successful gradient descent ; only used without tao)
 	PetscScalar      maxfac;                            // limit on the factor (only used without tao)
 	PetscScalar      vel_scale;                         // normalization of the observation (currently mean; classically the variance)
-	PetscScalar      DII_ref;                           // SUPER UNNECESSARY but DII is otherwise not accesible
 	PetscScalar      Coord[3];                          // Temp Coordinates of comparison points
 	PetscScalar      Ax[_MAX_OBS_];                     // X-coordinates of comparison points
 	PetscScalar      Ay[_MAX_OBS_];                     // Y-coordinates of comparison points
@@ -97,56 +95,6 @@ struct ModParam
 	PetscBool        Apoint_on_proc[_MAX_OBS_];         // Is the observation point on the current processor or not (simplified printing)?
 	char             ScalLawFilename[_str_len_];        // Name of scaling law file
 };
-
-// observation type
-enum ObsType
-{
-	_VELX_,            // 1: horizontal velocity (x) at the surface
-	_VELY_,            // 2: horizontal velocity (y) at the surface
-	_VELZ_,            // 3: vertical velocity (z) at the surface
-	_TOPO_,            // 4: surface topography
-	_BOUG_,            // 5: bouguer anomaly
-	_ISA_,             // 6: orientation of isa (<-> sks-seismic anisotropy)
-	_SHMAX_            // 7: orientation of SHmax
-
-};
-
-//---------------------------------------------------------------------------
-//........................ Objective function object ........................
-//---------------------------------------------------------------------------
-struct ObjFunct
-{
-	FreeSurf     *surf;                 // free surface object
-	char         *infile;               // input file name
-	PetscBool    CompMfit;              // Compute misfit?
-	PetscInt     otUse[_max_num_obs_+1];// array of boolean USED flags
-	PetscInt     otN;                   // number of USED observation types
-	PetscInt     ocN;                   // total number of observational constraints
-	PetscScalar  err[_max_num_obs_];    // array containing individual sums of errors
-	PetscScalar  errtot;                // total error
-	Vec          obs[_max_num_obs_];    // vectors containing the observations
-	Vec          qul[_max_num_obs_];    // vectors containing quality info (quality/sigma)^2, where quality (0..1)
-
-	// missing ...
-	// (data) covariance matrix
-
-};
-//---------------------------------------------------------------------------
-
-// create objective function object
-PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf, FB *fb);
-
-// destroy object
-PetscErrorCode ObjFunctDestroy(ObjFunct *objf);
-
-// read command line options
-PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[], FB *fb);
-
-// compute error
-PetscErrorCode ObjFunctCompErr(ObjFunct *objf);
-
-// compute weighted Least square error for surface vectors
-PetscErrorCode VecErrSurf(Vec mod, ObjFunct *objf, PetscInt field,PetscScalar scal);
 
 //---------------------------------------------------------------------------
 

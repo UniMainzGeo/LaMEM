@@ -1948,7 +1948,6 @@ PetscErrorCode ADVUpdateHistADVNone(AdvCtx *actx)
 	//
 	//   * _APS_
 	//   * _VORTICITY_
-	//   * _DISP_
 	//
 	//===============================================
 

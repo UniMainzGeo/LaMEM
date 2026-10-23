@@ -85,7 +85,7 @@ struct MGLevel
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md);
+PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md, Mat A);
 
 PetscErrorCode MGLevelDestroy(MGLevel *lvl);
 
@@ -155,12 +155,4 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md);
 
 //---------------------------------------------------------------------------
 
-// test codes
-PetscErrorCode compareVecs(Vec va, Vec vb);
-PetscErrorCode genRandVec(MatData *md, Vec *v);
-PetscErrorCode VecSetBC(MatData *md, Vec v);
-PetscErrorCode TestInterp(MatData *coarse, MatData *fine, Mat R, Mat P);
-PetscErrorCode TestInterpBC(MatData *coarse, MatData *fine, Mat P);
-
-//---------------------------------------------------------------------------
 #endif

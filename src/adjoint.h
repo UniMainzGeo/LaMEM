@@ -33,9 +33,6 @@ struct Controls;
 struct NLSol;
 struct ModParam;
 struct FB;
-struct ConstEqCtx;
-struct SolVarCell;
-struct SolVarEdge;
 struct BCCtx;
 
 //---------------------------------------------------------------------------
@@ -44,12 +41,10 @@ struct BCCtx;
 struct AdjGrad
 {
 	PetscScalar      FD_epsilon;              // Epsilon, employed for finite difference calculation of dres/dp
-	PetscScalar      Perturb;                 // Perturbation parameter for the finite differences
-	PetscScalar      CurScal, CurScalst;
+	PetscScalar      CurScal;
 	Vec              dF, dPardu;
 	Vec              pro;
 	Vec              vx, vy, vz, sty;
-	Vec              gradfield;                // Used if gradient at every point is computed (same size as jr->p)
 };
 
 //---------------------------------------------------------------------------
@@ -57,7 +52,7 @@ struct AdjGrad
 // Structure that holds vectors required by TAO
 struct Adjoint_Vecs
 {
-	Vec             val, Ub, Lb, grad, P;
+	Vec             Ub, Lb, grad, P;
 };
 
 //---------------------------------------------------------------------------
@@ -100,9 +95,6 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 // PSD calculations
 PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOparam);
 
-// reset the perturbed input parameter within the gradient computation
-PetscErrorCode AdjointGradientResetParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop);
-
 // Add or remove parameters from command-line database & update material DB
 PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID, PetscScalar val);
 PetscErrorCode DeleteMaterialParameterFromCommandLineOptions(char *name, PetscInt ID);
@@ -117,12 +109,6 @@ PetscErrorCode PrintScalingLaws(ModParam *IO_param);
 // Create & Destroy aop object
 PetscErrorCode AdjointCreate(AdjGrad *aop, JacRes *jr, ModParam *IOparam);
 PetscErrorCode AdjointDestroy(AdjGrad *aop, ModParam *IOparam);
-
-// Code chain to the constitutive context for direct FD pointwise
-PetscErrorCode devConstEqFD(ConstEqCtx *ctx, AdjGrad *aop, ModParam *IOparam, PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);
-PetscErrorCode cellConstEqFD(ConstEqCtx  *ctx,  SolVarCell  *svCell, PetscScalar  dxx,    PetscScalar  dyy,  PetscScalar  dzz, PetscScalar &sxx,  PetscScalar &syy,PetscScalar &szz,PetscScalar &gres,PetscScalar &rho, AdjGrad *aop,ModParam *IOparam,PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);
-PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam *IOparam, PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);
-PetscErrorCode edgeConstEqFD(ConstEqCtx  *ctx,    SolVarEdge  *svEdge, PetscScalar  d,      PetscScalar &s,AdjGrad *aop,ModParam *IOparam,PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);
 
 // Helper functions
 PetscErrorCode swapStruct(struct Material_t *A, struct Material_t *B);

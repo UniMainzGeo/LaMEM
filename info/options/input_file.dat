@@ -90,18 +90,8 @@
     coord_y = 0.0 1.0
     coord_z = 0.0 1.0
 
-# Bias ratios for all segments (default is 1.0 - uniform grid)
-# Bias ratio is the size in the END divided by the size in the BEGINNING
-# It is LESS than unit for DECREASING cell size
-# It is MORE than unit for INCREASING cell size
+# Each segment is meshed with uniform spacing (bias ratios are no longer supported)
 
-    bias_x = 1.0
-    bias_y = 1.0
-    bias_z = 1.0
-    
-# WARNING! Biased meshes perform terrible on practice. Therefore bias option is deprecated.
-# An attempt to specify a non-unit bias ratio will generate an error. 
-    
 
 # Periodic grid topology flag (affects all solvers)
 # WARNING! only implemented for x-direction
@@ -110,14 +100,13 @@
 	periodic = 1
 	
 # EXAMPLE:
-# segment 1: [0, 0.7),  10 cells, decreasing spacing  (sz.end/ sz.beg = 0.3)
-# segment 2: [0.7 0.8), 4 cells,  uniform spacing
-# segment 3: [0.8 1.0], 2 cells,  increasing spacing  (sz.end/ sz.beg = 3.0)
+# segment 1: [0, 0.7),  10 cells
+# segment 2: [0.7 0.8), 4 cells
+# segment 3: [0.8 1.0], 2 cells
 
 #   nseg_x  = 3
 #   nel_x   = 10 4 2
 #   coord_x = 0.0 0.7 0.8 1.0
-#   bias_x  = 0.3 1.0 3.0
 
 #===============================================================================
 # Free surface
@@ -924,7 +913,6 @@
     Adjoint_PrintScalingLaws            =   1                       # Output scaling laws?
     Adjoint_ScalingLawFilename          =   ScalingLaw_Test.out     
     Adjoint_ReferenceDensity            =   2800                    # Reference density 
-    Adjoint_DII_ref                     =   1e-15                   # Reference strain rate (needed for sensitivity kernels & powerlaw viscosity)
     
     // Some general Adjoint Gradient parameters:
     Inversion_EmployTAO                 =   1                       # 0=build-in gradient descent methods; 1=TAO solvers

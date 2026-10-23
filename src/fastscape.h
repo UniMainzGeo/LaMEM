@@ -31,9 +31,7 @@ struct MeshSeg1DFS
 	PetscInt    nsegs;                    // number of segments
 	PetscInt    istart[_max_num_segs_+1]; // indices of the first nodes plus last index
 	PetscScalar xstart[_max_num_segs_+1]; // coordinates of the first nodes plus total size
-	PetscScalar biases[_max_num_segs_  ]; // biases for each segment
 	PetscInt    tcels;                    // total number of cells
-	PetscInt    bias;                  // uniform grid flag
 	PetscInt    periodic;                 // periodic topology flag
 	PetscScalar grid_spacing_min[_max_num_segs_  ];
 	PetscScalar grid_spacing_max[_max_num_segs_  ];
