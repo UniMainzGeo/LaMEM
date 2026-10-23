@@ -223,3 +223,23 @@ One commit per group of A, then B, then C after discussion.
   (12 cells); `-act_temp_diff 1` now sets `ts_ksp_*`.
 - Tests: t02, t03, t07, t08, t19, t20, t28, t30 pass; t26 only dyndike_4core fails (no command-line
   options, known issue). No results change.
+
+## Group C, dead code: N-009, N-010, N-015, N-021, N-022 (2026-10-23, not committed)
+
+- N-009: `Tensor2RNEigen`, `getISA`, `Tensor2RSSpectral` removed.
+- N-010 (user: remove fully): `bias_x/y/z` no longer read; `biases` arrays, the "deprecated"
+  stop and the biased branches in fdstag.cpp and fastscape.cpp removed. Old inputs with
+  `bias_*` now run on a uniform mesh without notice; the upgrade guide (§5.2) says so. `bias_*`
+  lines dropped from t16, t19, t26 inputs and info/options/input_file.dat.
+- N-015: objFunct.cpp deleted; `ObsType`, `ObjFunct`, `_max_num_obs_` removed (objFunct.h still
+  holds `ModParam`). adjoint.cpp: `cellConstEqFD`, `edgeConstEqFD`, `devConstEqFD`,
+  `setUpPhaseFD` removed; undefined `AdjointGradientResetParameter` declaration removed; fields
+  `Perturb`, `CurScalst`, `gradfield`, `Adjoint_Vecs.val`, `DII_ref` (input `Adjoint_DII_ref`)
+  removed. `mdI < _MAX_OBS_` tests dropped: they were false with exactly `_MAX_OBS_` points,
+  which then skipped the observation points.
+- N-021 dead part: `compareVecs`, `genRandVec`, `VecSetBC`, `TestInterp`, `TestInterpBC` removed;
+  `MGLevelCreate` is used, only its header declaration had 3 instead of 4 arguments (fixed).
+- N-022 dead part: `AVDLoadPoints`, `AVDInjectDeletePoints`, `AVDExecuteMarkerInjection`,
+  `_DISP_`, commented test block in subgrid.cpp removed.
+- Tests: t02, t06-t08, t11, t15, t16, t19, t37 pass; t26 only dyndike_4core fails (known issue).
+  No results change.

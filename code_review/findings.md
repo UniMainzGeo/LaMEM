@@ -1620,7 +1620,7 @@ Next free IDs: S-049, M-074, N-030
   shear. Tensor2RSSpectral gives NaN for an all-zero tensor (max < 0 is never true, so it
   divides 0/0).
 - Fix idea: remove, or fix before using it again (test p and q, not D; return early when nrm = 0).
-- Status: open
+- Status: fixed (group C): removed
 
 ### N-010 [note, confirmed] Non-unit bias is rejected, so all bias code is dead
 - Tags: note, confirmed, cleanup, quick
@@ -1630,7 +1630,7 @@ Next free IDs: S-049, M-074, N-030
   FastScapeCreateGlobalGrid (fastscape.cpp:578-592, 921-937) never run. `bias_x` is still
   read as an input.
 - Fix idea: remove the dead branches, or drop the check if bias should come back.
-- Status: open
+- Status: fixed (group C): bias removed fully; `bias_*` keys no longer read
 
 ### N-011 [note, confirmed] Velocity cylinder/box edge cases
 - Tags: note, confirmed, input, quick
@@ -1693,7 +1693,7 @@ Next free IDs: S-049, M-074, N-030
   `aop->Perturb`, `CurScalst`, `Adjoint_Vecs.val`, `DII_ref`, `mdI<_MAX_OBS_` tests are unused
   or always true.
 - Fix idea: delete.
-- Status: open
+- Status: fixed (group C): objFunct.cpp, FD kernels and unused fields removed
 
 ### N-016 [note, confirmed] `gw_level_type = surf` gives a flat water table
 - Tags: note, confirmed, physics, medium
@@ -1763,7 +1763,7 @@ Next free IDs: S-049, M-074, N-030
     fire for `jp_type user`.
   - matAux.cpp:124/127 `VecZeroEntries` twice; matAux.cpp:65 second `MatSetFromOptions`.
   - Restriction/prolongation weights assume uniform spacing, and R is not a scaled P^T.
-- Status: open
+- Status: partly fixed (group C): dead multigrid test functions removed, MGLevelCreate declaration fixed; rest open
 
 ### N-022 [note, confirmed] Dead code, wrong comments and log lines, small clean-ups
 - Tags: note, confirmed, cleanup, medium
@@ -1781,7 +1781,7 @@ Next free IDs: S-049, M-074, N-030
   - `A->buffer = 1` (AVD.cpp:98) grows arrays one at a time (O(n²)).
   - `FreeSurfGetAirPhaseRatio` called twice per step (advect.cpp:1638, LaMEMLib.cpp:776).
   - Nearest-rock search in `ADVMarkCrossFreeSurf` depends on storage order.
-- Status: open
+- Status: partly fixed (group C): dead AVD functions, `_DISP_`, subgrid test block removed; rest open
 
 ### N-023 [note, confirmed] Phase transitions and dikes: dead code, names, small clean-ups
 - Tags: note, confirmed, cleanup, medium
