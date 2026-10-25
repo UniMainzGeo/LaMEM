@@ -65,7 +65,7 @@ PetscErrorCode JacResGetTempParam(
 	PetscInt    i, numPhases, AirPhase;
 	Material_t  *phases, *M;
 	Controls    ctrl;
-	PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k, T_Nu;
+	PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k, T_Nu, kappa, T_K;
 
 	PetscFunctionBeginUser;
 
@@ -97,7 +97,24 @@ PetscErrorCode JacResGetTempParam(
 			rho = 1.0/density;
 		}
 
-		k      +=  cf*M->k;
+		if(M->TDkappa)
+		{
+			// temperature-dependent diffusivity of average crust [mm^2/s] (Whittington et al. [2009])
+			// T in Kelvin, limited to 0 C to avoid the singularity at T = 0 K
+			T_K = PetscMax(Tc*jr->scal->temperature, 273.15);
+
+			if(T_K < 846.0) kappa = 567.3/T_K - 0.062;
+			else            kappa = 0.732 - 0.000135*T_K;
+
+			// k = kappa*rho*Cp (nondimensional)
+			kappa  =  kappa*1e-6/(jr->scal->length_si*jr->scal->length_si/jr->scal->time_si);
+			k     +=  cf*kappa*rho*M->Cp;
+		}
+		else
+		{
+			k     +=  cf*M->k;
+		}
+
 		rho_Cp +=  cf*M->Cp*rho;
 		rho_A  +=  cf*M->A*rho;
 
@@ -162,7 +179,7 @@ PetscErrorCode JacResCheckTempParam(JacRes *jr)
 		{
 			if(M->rho == 0.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define density of phase %" PetscInt_FMT "\n", i);
 		}
-		if(M->k   == 0.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define conductivity of phase %" PetscInt_FMT "\n", i);
+		if(M->k   == 0.0 && !M->TDkappa) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define conductivity of phase %" PetscInt_FMT "\n", i);
 		if(M->Cp  == 0.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define heat capacity of phase %" PetscInt_FMT "\n", i);
 	}
 

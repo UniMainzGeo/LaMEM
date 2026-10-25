@@ -893,6 +893,17 @@
         alpha      = 3e-5   # thermal expansivity
         Cp         = 1.2e3  # specific heat (capacity), J⋅K−1⋅kg−1
         k          = 2.5    # thermal conductivity
+        temperature_dependent_kappa = 0 # optional, 1: temperature-dependent thermal diffusivity of average
+                                        #   continental crust (Whittington et al., 2009, Nature 458, 319-321),
+                                        #   T in K, kappa in mm^2/s:
+                                        #     kappa = 567.3/T - 0.062       (T <  846 K)
+                                        #     kappa = 0.732 - 0.000135*T    (T >= 846 K, above quartz alpha-beta transition)
+                                        #   conductivity k = kappa(T)*rho*Cp, with rho and Cp of this phase (k is
+                                        #   ignored, a warning is printed if it is given); T is limited to >= 0 C.
+                                        #   Fitted to solid crustal rocks up to ~990 C, use for melt is an extrapolation.
+                                        #   Can be set for any phase (incl. air: there LaMEM uses rho = 1 kg/m^3).
+                                        #   Requires units = geo or si. With useTk = 1, nu_k still multiplies k below T_Nu.
+                                        #   No latent heat; dike heating (dikeHeat) is unchanged and still scales the resulting k.
         A          = 1e-9   # radiogenic heat production
         T          = 100.0  # optional temperature to set within the phase
         Latent_hx  = 5e5    # optional, used for dike heating, J/kg
