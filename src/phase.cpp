@@ -447,6 +447,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "alpha",    &m->alpha, 1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "Cp",       &m->Cp,    1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "k",        &m->k,     1, 1.0));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "temperature_dependent_kappa", &m->TDkappa, 1, 1));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "A",        &m->A,     1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "T",        &m->T,     1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "nu_k",     &m->nu_k,  1, 1.0));
@@ -475,6 +476,19 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	   (m->T_sol && (!m->Latent_hx || !m->T_liq)))
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Some but not all dike heating parameters defined for phase %" PetscInt_FMT " (T_sol, T_liq, Latent_hx) \n", ID);
+	}
+
+	// check temperature-dependent diffusivity
+	if(m->TDkappa)
+	{
+		if(scal->utype == _NONE_)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "temperature_dependent_kappa requires units = geo or si (phase %" PetscInt_FMT ") \n", ID);
+		}
+		if(m->k && PrintOutput)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "WARNING: k of phase %" PetscInt_FMT " is overwritten by k = kappa(T)*rho*Cp (temperature_dependent_kappa = 1) \n", ID);
+		}
 	}
 
 	// DEPTH-DEPENDENT
@@ -728,7 +742,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->alpha, "alpha", "[1/K]",    scal, title, &print_title);
 		MatPrintScalParam(m->Cp,    "Cp",    "[J/kg/K]", scal, title, &print_title);
 		MatPrintScalParam(m->k,     "k",     "[W/m/k]",  scal, title, &print_title);
-		MatPrintScalParam(m->A,     "A",     "[W/kg]",   scal, title, &print_title);
+		if(m->TDkappa) PetscPrintf(PETSC_COMM_WORLD, "temperature_dependent_kappa = 1  ");
+		MatPrintScalParam(m->A,    "A",     "[W/kg]",   scal, title, &print_title);
 		MatPrintScalParam(m->T,     "T",     "[C]",      scal, title, &print_title);
 		MatPrintScalParam(m->nu_k,  "nu_k",  "[]",      scal, title, &print_title);
 		MatPrintScalParam(m->T_Nu,  "T_Nu",  "[C]",      scal, title, &print_title);

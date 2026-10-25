@@ -1927,6 +1927,29 @@ if should_run_test("t41_PhaseTransitionPlugin")
 end
 end
 #---------------------------------------------------------------------------
+if should_run_test("t43_TempDepKappa")
+@testset "t43_TempDepKappa" begin
+    cd(test_dir)
+    dir = "t43_TempDepKappa"
+
+    # cooling of a 700 C magma sphere (constant conductivity) in 500 C host crust
+    # with temperature-dependent diffusivity (Whittington et al., 2009)
+    ParamFile = "TempDepKappa.dat"
+
+    keywords = ("|T|_2",)
+    acc      = ((rtol=1e-6,),)
+
+    @test perform_lamem_test(dir, ParamFile, "TempDepKappa_opt";
+        args     = "-printNorms 1",
+        keywords = keywords,
+        accuracy = acc,
+        cores    = 1,
+        mpiexec  = mpiexec,
+        create_expected_file = update_expected,
+        clean_dir            = clean_files)
+end
+end
+#---------------------------------------------------------------------------
 end
 #---------------------------------------------------------------------------
 

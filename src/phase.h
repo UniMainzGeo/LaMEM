@@ -197,6 +197,7 @@ public:
 	PetscScalar  alpha;             // thermal expansivity                        [1/K]
 	PetscScalar  Cp;                // cpecific heat (capacity)                   [J/kg/K]
 	PetscScalar  k;                 // thermal conductivity                       [W/m/k]
+	PetscInt     TDkappa;           // temperature-dependent diffusivity flag (Whittington et al. [2009]), overrides k
 	PetscScalar  A;                 // radiogenic heat production                 [W/kg]
 	PetscScalar  T;                 // optional temperature to set within the phase
 	PetscScalar  nu_k;              // optional multiplication factor that is used to compute the higher conductivtiy below the conductivity boundary temperature

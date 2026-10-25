@@ -1,0 +1,135 @@
+# Cooling of a 700 C spherical magma body (phase 1, constant conductivity) in 500 C
+# host crust with temperature-dependent thermal diffusivity (phase 0, Whittington et al., 2009)
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = geo
+
+	unit_temperature = 1.0
+	unit_length      = 1e3
+	unit_viscosity   = 1e18
+	unit_stress      = 1e6
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 0.2
+	dt        = 0.02
+	dt_min    = 0.001
+	dt_max    = 0.02
+	dt_out    = 0.2
+	inc_dt    = 0.1
+	CFL       = 0.5
+	CFLMAX    = 0.5
+	nstep_max = 10
+	nstep_out = 100
+	nstep_rdb = 0
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+	nel_x = 16
+	nel_y = 16
+	nel_z = 16
+
+	coord_x = -6.0 6.0
+	coord_y = -6.0 6.0
+	coord_z = -12.0 0.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+	temp_top = 500.0
+	temp_bot = 500.0
+
+#===============================================================================
+# Jacobian & residual evaluation parameters
+#===============================================================================
+
+	gravity       = 0.0 0.0 -1.0
+	act_temp_diff = 1
+	init_guess    = 1
+	eta_min       = 1e18
+	eta_ref       = 1e20
+	eta_max       = 1e20
+
+#===============================================================================
+# Solver options
+#===============================================================================
+
+<SolverOptionsStart>
+	nonlinear_tolerances = 1e-4 1e-6 1
+	linear_tolerances    = 1e-8 1e-9 30
+	monitor_solvers      = 1
+	stokes_solver        = block_direct
+	direct_solver_type   = superlu_dist
+<SolverOptionsEnd>
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup   = geom
+	nmark_x  = 3
+	nmark_y  = 3
+	nmark_z  = 3
+	bg_phase = 0
+
+	# host crust at a uniform temperature
+	<LayerStart>
+		phase       = 0
+		top         = 0.0
+		bottom      = -12.0
+		Temperature = constant
+		cstTemp     = 500
+	<LayerEnd>
+
+	# hot magma sphere
+	<SphereStart>
+		phase       = 1
+		radius      = 2.5
+		center      = 0.0 0.0 -6.0
+		Temperature = constant
+		cstTemp     = 700
+	<SphereEnd>
+
+#===============================================================================
+# Output
+#===============================================================================
+
+	out_file_name    = t43_TempDepKappa
+	out_pvd          = 1
+	out_temperature  = 1
+	out_conductivity = 1
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# crust: temperature-dependent diffusivity; k is given only to check the warning
+	<MaterialStart>
+		ID   = 0
+		rho  = 2700
+		eta  = 1e20
+		Cp   = 1000
+		k    = 3
+		temperature_dependent_kappa = 1
+	<MaterialEnd>
+
+	# magma: constant conductivity
+	<MaterialStart>
+		ID   = 1
+		rho  = 2700
+		eta  = 1e20
+		Cp   = 1050
+		k    = 1.5
+	<MaterialEnd>
