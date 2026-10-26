@@ -32,10 +32,14 @@ Testing:
   - Rest of N-021 (option order in nlsolve/multigrid, matData comment, lsolve bf checks,
     matAux duplicates, R/P weights).
   - N-004 (restart decision), M-056 2D (needs matrix-free MG in 2D).
-- To look at (found 2026-10-26 while testing S-014): with `rand_noise 0`, 1-core and 4-core
-  runs of examples/BuiltInSetups/Subduction2D_FreeSlip_DirectSolver.dat agree after the first
-  steps (|Div|_2 to ~1e-9) but drift apart later (dt 0.23798 vs 0.23777 at step 20). Some
-  other part still depends on the core count (marker injection noise is one candidate).
+- Core-count drift (found 2026-10-26 while testing S-014), fixed 2026-10-26: with
+  `rand_noise 0`, 1-core and 4-core runs of
+  examples/BuiltInSetups/Subduction2D_FreeSlip_DirectSolver.dat drifted apart (dt 0.23798 vs
+  0.23777 at step 20). Cause: the random shift of markers injected in empty cell corners
+  (ADVCheckCorners), seeded per rank and drawn in rank-local order. Noise removed; markers go to
+  the corner center. Now both runs agree to ~1e-10 over 21 steps. Changes results (t16, t22,
+  t27, t32, t34 references updated). Known and accepted: the parent marker is searched in local
+  cells only (no ghost markers), so it can still differ next to rank boundaries.
 - Lowest priority: S-006 test; M-026 APS not saved by ADVMarkSave.
 - Older notes below say "t37 FastScape broken" or "dyndike fails (known)": both are resolved
   (t37 needs `surf=scape`, see CLAUDE.md; dyndike fixed with the lmaxit removal).
