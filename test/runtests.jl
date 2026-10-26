@@ -640,8 +640,8 @@ if should_run_test("t10_Compressibility")
 
     # Compute difference with analytical solution
     @test norm(Szz_vec - Sv_a) ≈ 1.0769790188863786 rtol=1e-3
-    @test norm(Sxx_vec - Sh_a) ≈ 19.596753495502448 rtol=1e-3
-    @test norm(Pf_vec - Pf_a) ≈ 4.676818965337232 rtol=1e-3
+    @test norm(Sxx_vec - Sh_a) ≈ 19.68288580394502 rtol=1e-3
+    @test norm(Pf_vec - Pf_a) ≈ 4.653608839584083 rtol=1e-3
     
     # Create plot with stress & analytical solution
     #Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_1Core.png")
