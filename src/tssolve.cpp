@@ -268,7 +268,7 @@ PetscErrorCode TSSolGetCFLStep(
 		// get CFLMAX time step
 		GET_CFL_STEP(dt_cfl_max, ts->dt_max, ts->CFLMAX, gidtmax)
 
-		// restart if fixed time step is too large (elasticity, kinematic block BC)
+		// restart if fixed time step is too large (elasticity, temperature, kinematic block BC)
 		if(ts->dt > dt_cfl_max)
 		{
 			PetscPrintf(PETSC_COMM_WORLD, "Time step exceeds CFLMAX level: %7.5f %s\n", dt_cfl_max*scal->time, scal->lbl_time);

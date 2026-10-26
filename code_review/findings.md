@@ -57,7 +57,7 @@ Next free IDs: S-049, M-074, N-030
 | S-043 | major | possible | physics | design | fastscape.cpp:458-469, 646 | FastScape grid doesn't follow a stretching LaMEM box | open |
 | S-044 | major | confirmed | parallel | design | bc.cpp:2595-2604, 2648-2657 | `fix_phase` / `fix_cell` lose faces on processor boundaries; results depend on CPU count | open |
 | S-045 | major | confirmed | logic | design | advect.cpp:278,1086-1096 | With `exy_num_periods`, outflow markers are deleted, not wrapped | open |
-| S-046 | major | possible | physics | design | LaMEMLib.cpp:715; tssolve.cpp:308 | Solve and marker advection use different dt when dt is not fixed | open |
+| S-046 | major | possible | physics | design | LaMEMLib.cpp:715; tssolve.cpp:308 | Solve and marker advection use different dt when dt is not fixed | fixed (group C) |
 | S-047 | major | confirmed | parallel, memory | design | adjoint.cpp:2505-2690,102-112 | Surface observations (`Ap = 3`) use wrong grid positions and crash with several CPUs in z | open |
 | S-048 | major | possible | parallel | design | adjoint.cpp:1152-1157,1186-1189 | Parameter vectors have 100 entries per CPU, so TAO sees a vector that grows with CPU count | open |
 
@@ -762,8 +762,13 @@ Next free IDs: S-049, M-074, N-030
   viscoelastic loading rates are off. Pure viscous flow is not affected. Mechanism confirmed;
   size of the effect not measured.
 - Fix idea: advect with the solve dt and apply `dt_next` at the next step (as `fix_dt` does).
-- Status: open
-
+- Status: fixed (group C): elastic models already used fixed dt (`fix_dt`), so the claim
+  about viscoelastic loading was wrong. The mismatch was in models with temperature but no
+  elasticity (temperature solved with the old dt). `fix_dt` now also covers `act_temp_diff`
+  (solve depends on dt: elasticity, temperature, kinematic blocks; FSSA not counted, only a
+  stabilizer): advect with the solve dt, restart above CFLMAX. Purely viscous models keep the
+  exact CFL cut. Results of tests with temperature and no elasticity changed (t12 error vs
+  analytic 0.0336 -> 0.0243).
 ### S-047 [major, confirmed] Surface observations (`Ap = 3`) use wrong grid positions and crash with several CPUs in z
 - Tags: major, confirmed, parallel, memory, design
 - Where: src/adjoint.cpp:2505-2690; FindPointInCellAdjoint at 102-112

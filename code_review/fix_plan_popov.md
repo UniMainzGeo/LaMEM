@@ -101,6 +101,7 @@ All done and committed.
    intended meaning of `Lm`.
    Done 2026-10-26: bug confirmed (Anton); now `Lm/Le`, documented in input_file.dat.
 2. S-046 (dt): fix changes all viscoelastic results; test references need updating.
+   Done 2026-10-26: `fix_dt` also on with temperature (dt-dependent solve); temperature-only test results changed.
 3. S-044 (`fix_phase` on processor boundaries): ghosted flags vs ADD/MAX before scatter.
 4. S-045 (`exy_num_periods`): really wrap markers, or document deletion.
 5. S-036 (Clapeyron units in SI): with Andrea; input unit per unit system.

@@ -14,13 +14,13 @@ Total number of options added: 0
 -js_ksp_converged_reason # (source: code)
 -js_ksp_max_it 20 # (source: code)
 -js_ksp_monitor # (source: code)
--js_ksp_rtol 1e-05 # (source: code)
+-js_ksp_rtol 1.0000000000000001e-05 # (source: code)
 -js_ksp_type fgmres # (source: code)
 -options_left # (source: code)
 -ParamFile PlumeLithos_Interaction_2D_Perm.dat # (source: code)
 -snes_atol 0.0001 # (source: code)
 -snes_linesearch_max_it 5 # (source: code)
--snes_linesearch_maxstep 1.0 # (source: code)
+-snes_linesearch_maxlambda 1.0 # (source: code)
 -snes_linesearch_minlambda 0.05 # (source: code)
 -snes_linesearch_type l2 # (source: code)
 -snes_max_funcs unlimited # (source: code)
@@ -30,8 +30,8 @@ Total number of options added: 0
 -snes_newton_rtol 1.2 # (source: code)
 -snes_picard_minit 5 # (source: code)
 -snes_picard_rtol 0.0001 # (source: code)
--snes_rtol 1e-06 # (source: code)
--snes_stol 1e-32 # (source: code)
+-snes_rtol 9.9999999999999995e-07 # (source: code)
+-snes_stol 1.0000000000000001e-32 # (source: code)
 -ts_ksp_atol_auto # (source: code)
 -ts_ksp_converged_reason # (source: code)
 -ts_ksp_max_it 500 # (source: code)
@@ -41,8 +41,8 @@ Total number of options added: 0
 #End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Jul  1 2026 - Time: 19:41:29 	    
-     Version : 3.0.0 
+     Compiled: Date: Oct 26 2026 - Time: 16:43:08 	    
+     Version : 3.4.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -60,7 +60,7 @@ Time stepping parameters:
    Maximum time step            : 1. [Myr] 
    Time step increase factor    : 0.1 
    CFL criterion                : 0.5 
-   CFLMAX (fixed time steps)    : 0.8 
+   CFLMAX (restart limit)       : 0.8 
    Output every [n] steps       : 2 
    Output [n] initial steps     : 1 
    Save restart every [n] steps : 2000 
@@ -144,6 +144,7 @@ Solution parameters & controls:
    Max. melt fraction (viscosity, density) : 1.    
    Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
+   Temperature perturbation (derivatives)  : 0.001 [C] 
    Ground water level type                 : none 
 --------------------------------------------------------------------------
 Advection parameters:
@@ -156,7 +157,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.666667 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00821658 sec)
+Reading geometric primitives ... done (0.00830615 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : PlumeLithosphereInteraction 
@@ -188,10 +189,10 @@ Preconditioner parameters:
    Picard operator type          : assembled
    Preconditioner type           : user-defined
    Penalty parameter (pgamma)    : 1.000000e+03
-Initializing pressure with lithostatic pressure ... done (0.000935951 sec)
+Initializing pressure with lithostatic pressure ... done (0.00087636 sec)
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
-Saving output ... done (0.0955753 sec)
+Saving output ... done (0.0713671 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -208,13 +209,13 @@ Tentative time step : 0.01000000 [Myr]
   Residual norms for ts_ solve.
   0 KSP Residual norm 1.581139671353e-03
   1 KSP Residual norm 1.090542942391e-09
-  2 KSP Residual norm 5.205053851035e-16
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
+  2 KSP Residual norm 5.205053627899e-16
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
   1 SNES Function norm 1.169284974954e-04
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 0.227796 (sec)
+SNES solution time      : 0.226977 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -225,1434 +226,1373 @@ Residual summary:
    Energy: 
       |eRes|_2  = 2.754723988253e-15 
 --------------------------------------------------------------------------
-Actual time step : 0.01100 [Myr] 
+Actual time step : 0.01000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1480 markers and merged 1456 markers in 5.6225e-03 s
+Marker control [0]: (subgrid) cloned 1354 markers and merged 1332 markers in 5.4710e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.102546 sec)
+Saving output ... done (0.0686834 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
-Current time        : 0.01100000 [Myr] 
+Current time        : 0.01000000 [Myr] 
 Tentative time step : 0.01100000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.225563883801e-01
+  0 SNES Function norm 7.505771035722e-02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.225563883801e-01
-    1 KSP Residual norm 8.407680924493e-08
+    0 KSP Residual norm 7.505771035722e-02
+    1 KSP Residual norm 8.813313264893e-08
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.586616511861e-03
-  1 KSP Residual norm 1.337338752789e-09
-  2 KSP Residual norm 7.710398137990e-16
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.291310622605e-04
-  1 PICARD ||F||/||F0||=1.053646e-03 
+  0 KSP Residual norm 1.587441091401e-03
+  1 KSP Residual norm 1.338183120618e-09
+  2 KSP Residual norm 7.701428743056e-16
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 1.291434840124e-04
+  1 PICARD ||F||/||F0||=1.720589e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.291310622605e-04
-    1 KSP Residual norm 4.143502731413e-09
+    0 KSP Residual norm 1.291434840124e-04
+    1 KSP Residual norm 4.159560805922e-09
     Linear js_ solve converged due to CONVERGED_ATOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 2.561169640620e-15
-  1 KSP Residual norm 2.585917191396e-21
-  2 KSP Residual norm 1.622034739246e-27
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
-  2 SNES Function norm 4.143502819461e-09
+  0 KSP Residual norm 2.521039874066e-15
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 4.159560886525e-09
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.213007 (sec)
+SNES solution time      : 0.198258 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.840055549323e-09 
-      |Div|_2   = 4.143502731309e-09 
+      |Div|_inf = 1.839839364635e-09 
+      |Div|_2   = 4.159560803872e-09 
    Momentum: 
-      |mRes|_2  = 8.547024679233e-13 
+      |mRes|_2  = 8.292187465096e-13 
    Energy: 
-      |eRes|_2  = 2.454703219912e-15 
+      |eRes|_2  = 2.521039874066e-15 
+--------------------------------------------------------------------------
+Actual time step : 0.01100 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1466 markers and merged 1433 markers in 5.8386e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.0649886 sec)
+--------------------------------------------------------------------------
+================================= STEP 3 =================================
+--------------------------------------------------------------------------
+Current time        : 0.02100000 [Myr] 
+Tentative time step : 0.01210000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.166812730463e-01
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.166812730463e-01
+    1 KSP Residual norm 8.432990569875e-08
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  Residual norms for ts_ solve.
+  0 KSP Residual norm 1.605200748182e-03
+  1 KSP Residual norm 1.661389835929e-09
+  2 KSP Residual norm 1.165756471472e-15
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 1.426475357420e-04
+  1 PICARD ||F||/||F0||=1.222540e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.426475357420e-04
+    1 KSP Residual norm 4.575984877104e-09
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+  Residual norms for ts_ solve.
+  0 KSP Residual norm 2.514388873775e-15
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 4.575984954998e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 2
+SNES solution time      : 0.171433 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.021632215166e-09 
+      |Div|_2   = 4.575984876876e-09 
+   Momentum: 
+      |mRes|_2  = 8.455612391177e-13 
+   Energy: 
+      |eRes|_2  = 2.514388873775e-15 
 --------------------------------------------------------------------------
 Actual time step : 0.01210 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1600 markers and merged 1564 markers in 6.1791e-03 s
+Marker control [0]: (subgrid) cloned 1533 markers and merged 1502 markers in 5.8890e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0819635 sec)
+================================= STEP 4 =================================
 --------------------------------------------------------------------------
-================================= STEP 3 =================================
+Current time        : 0.03310000 [Myr] 
+Tentative time step : 0.01331000 [Myr] 
 --------------------------------------------------------------------------
-Current time        : 0.02310000 [Myr] 
-Tentative time step : 0.01210000 [Myr] 
---------------------------------------------------------------------------
-  0 SNES Function norm 9.554948620122e-02
+  0 SNES Function norm 1.583903237017e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 9.554948620122e-02
-    1 KSP Residual norm 1.899619346176e-08
+    0 KSP Residual norm 1.583903237017e-01
+    1 KSP Residual norm 8.597025350534e-08
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.617218046354e-03
-  1 KSP Residual norm 1.683197407129e-09
-  2 KSP Residual norm 1.195323794141e-15
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.431074293874e-04
-  1 PICARD ||F||/||F0||=1.497731e-03 
+  0 KSP Residual norm 1.631760238652e-03
+  1 KSP Residual norm 2.074707279559e-09
+  2 KSP Residual norm 1.783505274973e-15
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 1.581453332234e-04
+  1 PICARD ||F||/||F0||=9.984532e-04 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.431074293874e-04
-    1 KSP Residual norm 4.548886235636e-09
+    0 KSP Residual norm 1.581453332234e-04
+    1 KSP Residual norm 5.013171939533e-09
     Linear js_ solve converged due to CONVERGED_ATOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 2.560850678674e-15
-  1 KSP Residual norm 3.102767411949e-21
-  2 KSP Residual norm 2.446141176204e-27
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
-  2 SNES Function norm 4.548886314626e-09
+  0 KSP Residual norm 2.743322942155e-15
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 5.013172010030e-09
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.175407 (sec)
+SNES solution time      : 0.172229 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.021079163039e-09 
-      |Div|_2   = 4.548886233946e-09 
+      |Div|_inf = 2.221492865826e-09 
+      |Div|_2   = 5.013171939187e-09 
    Momentum: 
-      |mRes|_2  = 8.567466007298e-13 
+      |mRes|_2  = 8.427946223598e-13 
    Energy: 
-      |eRes|_2  = 2.260390171391e-15 
+      |eRes|_2  = 2.743322942155e-15 
 --------------------------------------------------------------------------
 Actual time step : 0.01331 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1664 markers and merged 1635 markers in 6.1378e-03 s
+Marker control [0]: (subgrid) cloned 1619 markers and merged 1597 markers in 6.3527e-03 s
 --------------------------------------------------------------------------
-================================= STEP 4 =================================
+Saving output ... done (0.0651107 sec)
 --------------------------------------------------------------------------
-Current time        : 0.03641000 [Myr] 
-Tentative time step : 0.01331000 [Myr] 
+================================= STEP 5 =================================
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.591305363964e-01
+Current time        : 0.04641000 [Myr] 
+Tentative time step : 0.01464100 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 8.774853215255e-02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.591305363964e-01
-    1 KSP Residual norm 8.207471900945e-08
+    0 KSP Residual norm 8.774853215255e-02
+    1 KSP Residual norm 5.317287826671e-08
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.633667695409e-03
-  1 KSP Residual norm 2.093782749567e-09
-  2 KSP Residual norm 1.794474166508e-15
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.580563576092e-04
-  1 PICARD ||F||/||F0||=9.932497e-04 
+  0 KSP Residual norm 1.650633776261e-03
+  1 KSP Residual norm 2.592859647697e-09
+  2 KSP Residual norm 2.685370524267e-15
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 1.740588231602e-04
+  1 PICARD ||F||/||F0||=1.983610e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.580563576092e-04
-    1 KSP Residual norm 5.008709282564e-09
+    0 KSP Residual norm 1.740588231602e-04
+    1 KSP Residual norm 5.497239151260e-09
     Linear js_ solve converged due to CONVERGED_ATOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 2.795021215800e-15
-  1 KSP Residual norm 3.868717983435e-21
-  2 KSP Residual norm 4.055068449178e-27
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
-  2 SNES Function norm 5.008709354933e-09
+  0 KSP Residual norm 3.311222576728e-15
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 5.497239212918e-09
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.175442 (sec)
+SNES solution time      : 0.171947 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.221689309184e-09 
-      |Div|_2   = 5.008709281920e-09 
+      |Div|_inf = 2.441807545389e-09 
+      |Div|_2   = 5.497239148991e-09 
    Momentum: 
-      |mRes|_2  = 8.552201939047e-13 
+      |mRes|_2  = 8.383548161382e-13 
    Energy: 
-      |eRes|_2  = 2.102798762813e-15 
+      |eRes|_2  = 3.311222576728e-15 
 --------------------------------------------------------------------------
 Actual time step : 0.01464 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1766 markers and merged 1735 markers in 6.3930e-03 s
+Marker control [0]: (subgrid) cloned 1731 markers and merged 1703 markers in 6.4639e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.083398 sec)
+================================= STEP 6 =================================
 --------------------------------------------------------------------------
-================================= STEP 5 =================================
+Current time        : 0.06105100 [Myr] 
+Tentative time step : 0.01610510 [Myr] 
 --------------------------------------------------------------------------
-Current time        : 0.05105100 [Myr] 
-Tentative time step : 0.01464100 [Myr] 
---------------------------------------------------------------------------
-  0 SNES Function norm 1.015982595398e-01
+  0 SNES Function norm 1.318169991692e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.015982595398e-01
-    1 KSP Residual norm 8.857658234649e-08
+    0 KSP Residual norm 1.318169991692e-01
+    1 KSP Residual norm 1.017104253738e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.665426419584e-03
-  1 KSP Residual norm 2.600668977227e-09
-  2 KSP Residual norm 2.741875835292e-15
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.745814837156e-04
-  1 PICARD ||F||/||F0||=1.718351e-03 
+  0 KSP Residual norm 1.652796319513e-03
+  1 KSP Residual norm 3.067826104645e-09
+  2 KSP Residual norm 3.951925038054e-15
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 1.913853704916e-04
+  1 PICARD ||F||/||F0||=1.451902e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.745814837156e-04
-    1 KSP Residual norm 5.498603037363e-09
+    0 KSP Residual norm 1.913853704916e-04
+    1 KSP Residual norm 6.055127602569e-09
     Linear js_ solve converged due to CONVERGED_ATOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 3.307327432630e-15
-  1 KSP Residual norm 5.453624132058e-21
-  2 KSP Residual norm 7.397503616359e-27
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
-  2 SNES Function norm 5.498603104071e-09
+  0 KSP Residual norm 4.331508048296e-15
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 6.055127659671e-09
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.210659 (sec)
+SNES solution time      : 0.198889 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.441449516780e-09 
-      |Div|_2   = 5.498603035586e-09 
+      |Div|_inf = 2.689374061553e-09 
+      |Div|_2   = 6.055127601181e-09 
    Momentum: 
-      |mRes|_2  = 8.678381943040e-13 
+      |mRes|_2  = 8.416198190666e-13 
    Energy: 
-      |eRes|_2  = 1.935324691588e-15 
+      |eRes|_2  = 4.331508048296e-15 
 --------------------------------------------------------------------------
 Actual time step : 0.01611 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1890 markers and merged 1867 markers in 7.2612e-03 s
+Marker control [0]: (subgrid) cloned 1872 markers and merged 1848 markers in 6.7501e-03 s
 --------------------------------------------------------------------------
-================================= STEP 6 =================================
+Saving output ... done (0.0649313 sec)
 --------------------------------------------------------------------------
-Current time        : 0.06715610 [Myr] 
-Tentative time step : 0.01610510 [Myr] 
+================================= STEP 7 =================================
 --------------------------------------------------------------------------
-  0 SNES Function norm 6.551307418187e-02
+Current time        : 0.07715610 [Myr] 
+Tentative time step : 0.01771561 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 8.586990441837e-02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 6.551307418187e-02
-    1 KSP Residual norm 2.810305263102e-08
+    0 KSP Residual norm 8.586990441837e-02
+    1 KSP Residual norm 4.988367097166e-08
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.646271728211e-03
-  1 KSP Residual norm 3.051778057525e-09
-  2 KSP Residual norm 3.937331011425e-15
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.911816220168e-04
-  1 PICARD ||F||/||F0||=2.918221e-03 
+  0 KSP Residual norm 1.641671202826e-03
+  1 KSP Residual norm 3.683750785457e-09
+  2 KSP Residual norm 5.688739077734e-15
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 2.099229679768e-04
+  1 PICARD ||F||/||F0||=2.444663e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.911816220168e-04
-    1 KSP Residual norm 6.054624305919e-09
+    0 KSP Residual norm 2.099229679768e-04
+    1 KSP Residual norm 6.650862817873e-09
     Linear js_ solve converged due to CONVERGED_ATOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 4.341433169918e-15
-  1 KSP Residual norm 8.387395021464e-21
-  2 KSP Residual norm 1.460652592580e-26
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
-  2 SNES Function norm 6.054624363035e-09
+  0 KSP Residual norm 5.890481348912e-15
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 6.650862868958e-09
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.228173 (sec)
+SNES solution time      : 0.172377 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.689493810140e-09 
-      |Div|_2   = 6.054624305510e-09 
+      |Div|_inf = 2.951104993269e-09 
+      |Div|_2   = 6.650862815903e-09 
    Momentum: 
-      |mRes|_2  = 8.346158454968e-13 
+      |mRes|_2  = 8.400718457915e-13 
    Energy: 
-      |eRes|_2  = 1.796756658834e-15 
+      |eRes|_2  = 5.890481348912e-15 
 --------------------------------------------------------------------------
 Actual time step : 0.01772 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 2020 markers and merged 1993 markers in 7.0749e-03 s
+Marker control [0]: (subgrid) cloned 2023 markers and merged 1996 markers in 6.9917e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0839477 sec)
+================================= STEP 8 =================================
 --------------------------------------------------------------------------
-================================= STEP 7 =================================
+Current time        : 0.09487171 [Myr] 
+Tentative time step : 0.01948717 [Myr] 
 --------------------------------------------------------------------------
-Current time        : 0.08487171 [Myr] 
-Tentative time step : 0.01771561 [Myr] 
---------------------------------------------------------------------------
-  0 SNES Function norm 8.549645315226e-02
+  0 SNES Function norm 9.154225630035e-02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 8.549645315226e-02
-    1 KSP Residual norm 3.869529811982e-08
+    0 KSP Residual norm 9.154225630035e-02
+    1 KSP Residual norm 3.483081037185e-08
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.642013770291e-03
-  1 KSP Residual norm 3.672360352478e-09
-  2 KSP Residual norm 5.718888450778e-15
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 2.099624969957e-04
-  1 PICARD ||F||/||F0||=2.455804e-03 
+  0 KSP Residual norm 1.630058858314e-03
+  1 KSP Residual norm 4.451753347712e-09
+  2 KSP Residual norm 8.184762558962e-15
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 2.299045774013e-04
+  1 PICARD ||F||/||F0||=2.511458e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.099624969957e-04
-    1 KSP Residual norm 6.646734148593e-09
+    0 KSP Residual norm 2.299045774013e-04
+    1 KSP Residual norm 7.303579962526e-09
     Linear js_ solve converged due to CONVERGED_ATOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 5.963868070240e-15
-  1 KSP Residual norm 1.372901685625e-20
-  2 KSP Residual norm 2.960539420325e-26
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
-  2 SNES Function norm 6.646734203148e-09
+  0 KSP Residual norm 8.331744279505e-15
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 7.303580008968e-09
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.183882 (sec)
+SNES solution time      : 0.171947 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.951238876367e-09 
-      |Div|_2   = 6.646734145469e-09 
+      |Div|_inf = 3.243369270225e-09 
+      |Div|_2   = 7.303579959018e-09 
    Momentum: 
-      |mRes|_2  = 8.756447029134e-13 
+      |mRes|_2  = 8.541819806060e-13 
    Energy: 
-      |eRes|_2  = 1.658004538973e-15 
+      |eRes|_2  = 8.331744279505e-15 
 --------------------------------------------------------------------------
 Actual time step : 0.01949 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 2199 markers and merged 2168 markers in 7.4669e-03 s
+Marker control [0]: (subgrid) cloned 2185 markers and merged 2163 markers in 7.2884e-03 s
 --------------------------------------------------------------------------
-================================= STEP 8 =================================
+Saving output ... done (0.0650684 sec)
 --------------------------------------------------------------------------
-Current time        : 0.10435888 [Myr] 
-Tentative time step : 0.01948717 [Myr] 
+================================= STEP 9 =================================
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.027890266377e-01
+Current time        : 0.11435888 [Myr] 
+Tentative time step : 0.02143589 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 3.568593979454e-02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.027890266377e-01
-    1 KSP Residual norm 3.719518835550e-08
+    0 KSP Residual norm 3.568593979454e-02
+    1 KSP Residual norm 1.223154365762e-08
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.623779963950e-03
-  1 KSP Residual norm 4.388097989893e-09
-  2 KSP Residual norm 8.085783716227e-15
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 2.296786896553e-04
-  1 PICARD ||F||/||F0||=2.234467e-03 
+  0 KSP Residual norm 1.621861729116e-03
+  1 KSP Residual norm 5.439401995428e-09
+  2 KSP Residual norm 1.182398782139e-14
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 2.532806205351e-04
+  1 PICARD ||F||/||F0||=7.097491e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.296786896553e-04
-    1 KSP Residual norm 7.304826717756e-09
+    0 KSP Residual norm 2.532806205351e-04
+    1 KSP Residual norm 8.028331718384e-09
     Linear js_ solve converged due to CONVERGED_ATOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 8.197877861930e-15
-  1 KSP Residual norm 2.240750511142e-20
-  2 KSP Residual norm 5.980424829903e-26
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
-  2 SNES Function norm 7.304826768151e-09
+  0 KSP Residual norm 1.188562323755e-14
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 8.028331760690e-09
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.175703 (sec)
+SNES solution time      : 0.172065 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.243186283933e-09 
-      |Div|_2   = 7.304826714424e-09 
+      |Div|_inf = 3.564283174344e-09 
+      |Div|_2   = 8.028331714309e-09 
    Momentum: 
-      |mRes|_2  = 8.859694511904e-13 
+      |mRes|_2  = 8.629759475591e-13 
    Energy: 
-      |eRes|_2  = 1.472988804390e-15 
+      |eRes|_2  = 1.188562323755e-14 
 --------------------------------------------------------------------------
 Actual time step : 0.02144 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 2283 markers and merged 2266 markers in 7.6645e-03 s
+Marker control [0]: (subgrid) cloned 2160 markers and merged 2139 markers in 7.3917e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0843503 sec)
+================================ STEP 10 =================================
 --------------------------------------------------------------------------
-================================= STEP 9 =================================
+Current time        : 0.13579477 [Myr] 
+Tentative time step : 0.02357948 [Myr] 
 --------------------------------------------------------------------------
-Current time        : 0.12579477 [Myr] 
-Tentative time step : 0.02143589 [Myr] 
---------------------------------------------------------------------------
-  0 SNES Function norm 5.077770796190e-02
+  0 SNES Function norm 7.080199024472e-02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 5.077770796190e-02
-    1 KSP Residual norm 2.680658949911e-08
+    0 KSP Residual norm 7.080199024472e-02
+    1 KSP Residual norm 5.186028152364e-08
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.621291090272e-03
-  1 KSP Residual norm 5.305552727496e-09
-  2 KSP Residual norm 1.174621405824e-14
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 2.526159451771e-04
-  1 PICARD ||F||/||F0||=4.974938e-03 
+  0 KSP Residual norm 1.610546294498e-03
+  1 KSP Residual norm 6.373623912194e-09
+  2 KSP Residual norm 1.684346656769e-14
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 2.779839147804e-04
+  1 PICARD ||F||/||F0||=3.926216e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.526159451771e-04
-    1 KSP Residual norm 8.032259271458e-09
+    0 KSP Residual norm 2.779839147804e-04
+    1 KSP Residual norm 8.852111713184e-09
     Linear js_ solve converged due to CONVERGED_ATOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.179102769166e-14
-  1 KSP Residual norm 3.876187943489e-20
-  2 KSP Residual norm 1.256331911193e-25
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
-  2 SNES Function norm 8.032259316102e-09
+  0 KSP Residual norm 1.687061755041e-14
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 8.852111754394e-09
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.175978 (sec)
+SNES solution time      : 0.198396 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.564572084451e-09 
-      |Div|_2   = 8.032259268000e-09 
+      |Div|_inf = 3.926102273937e-09 
+      |Div|_2   = 8.852111711191e-09 
    Momentum: 
-      |mRes|_2  = 8.790547033088e-13 
+      |mRes|_2  = 8.745625451549e-13 
    Energy: 
-      |eRes|_2  = 1.304925914614e-15 
+      |eRes|_2  = 1.687061755041e-14 
 --------------------------------------------------------------------------
 Actual time step : 0.02358 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 2382 markers and merged 2354 markers in 8.2244e-03 s
+Marker control [0]: (subgrid) cloned 2456 markers and merged 2436 markers in 7.9416e-03 s
 --------------------------------------------------------------------------
-================================ STEP 10 =================================
+Saving output ... done (0.0653451 sec)
 --------------------------------------------------------------------------
-Current time        : 0.14937425 [Myr] 
-Tentative time step : 0.02357948 [Myr] 
+================================ STEP 11 =================================
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.532599560992e-01
+Current time        : 0.15937425 [Myr] 
+Tentative time step : 0.02593742 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.063607471733e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.532599560992e-01
-    1 KSP Residual norm 8.256067182025e-08
+    0 KSP Residual norm 1.063607471733e-01
+    1 KSP Residual norm 6.857296951023e-08
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.649336716267e-03
-  1 KSP Residual norm 6.547264341157e-09
-  2 KSP Residual norm 1.790659663131e-14
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 2.795341209385e-04
-  1 PICARD ||F||/||F0||=1.823921e-03 
+  0 KSP Residual norm 1.619293078213e-03
+  1 KSP Residual norm 7.761063994748e-09
+  2 KSP Residual norm 2.504051166054e-14
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 3.059228484473e-04
+  1 PICARD ||F||/||F0||=2.876276e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.795341209385e-04
-    1 KSP Residual norm 8.863507219294e-09
+    0 KSP Residual norm 3.059228484473e-04
+    1 KSP Residual norm 9.714177766995e-09
     Linear js_ solve converged due to CONVERGED_ATOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.799237372931e-14
-  1 KSP Residual norm 7.178207302632e-20
-  2 KSP Residual norm 2.811981630995e-25
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
-  2 SNES Function norm 8.863507257508e-09
+  0 KSP Residual norm 2.509447257126e-14
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 9.714177803784e-09
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.210366 (sec)
+SNES solution time      : 0.197598 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.925188426291e-09 
-      |Div|_2   = 8.863507216100e-09 
+      |Div|_inf = 4.304320127544e-09 
+      |Div|_2   = 9.714177764858e-09 
    Momentum: 
-      |mRes|_2  = 8.567648846618e-13 
+      |mRes|_2  = 8.696326345915e-13 
    Energy: 
-      |eRes|_2  = 1.159069809848e-15 
+      |eRes|_2  = 2.509447257126e-14 
 --------------------------------------------------------------------------
 Actual time step : 0.02594 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 3104 markers and merged 3079 markers in 8.7440e-03 s
+Marker control [0]: (subgrid) cloned 3177 markers and merged 3155 markers in 8.9424e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0850004 sec)
+================================ STEP 12 =================================
 --------------------------------------------------------------------------
-================================ STEP 11 =================================
+Current time        : 0.18531167 [Myr] 
+Tentative time step : 0.02853117 [Myr] 
 --------------------------------------------------------------------------
-Current time        : 0.17531167 [Myr] 
-Tentative time step : 0.02593742 [Myr] 
---------------------------------------------------------------------------
-  0 SNES Function norm 1.723333232419e-01
+  0 SNES Function norm 1.094946790837e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.723333232419e-01
-    1 KSP Residual norm 9.680327533464e-08
+    0 KSP Residual norm 1.094946790837e-01
+    1 KSP Residual norm 6.842869888783e-08
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.686401919964e-03
-  1 KSP Residual norm 8.043651170031e-09
-  2 KSP Residual norm 2.735300551584e-14
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 3.072431835541e-04
-  1 PICARD ||F||/||F0||=1.782843e-03 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 3.072431835541e-04
-    1 KSP Residual norm 9.704238172953e-09
-    Linear js_ solve converged due to CONVERGED_ATOL iterations 1
-  Residual norms for ts_ solve.
-  0 KSP Residual norm 2.736242114757e-14
-  1 KSP Residual norm 1.334859530833e-19
-  2 KSP Residual norm 6.248414271405e-25
+  0 KSP Residual norm 1.663009536722e-03
+  1 KSP Residual norm 9.734460134132e-09
+  2 KSP Residual norm 3.874045961268e-14
   Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
-  2 SNES Function norm 9.704238208057e-09
+  1 SNES Function norm 3.372645503175e-04
+  1 PICARD ||F||/||F0||=3.080191e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.372645503175e-04
+    1 KSP Residual norm 1.065249429402e-08
+    2 KSP Residual norm 5.127665140089e-12
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  Residual norms for ts_ solve.
+  0 KSP Residual norm 3.876015843673e-14
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 5.201909769362e-12
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.209936 (sec)
+SNES solution time      : 0.203444 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.304278340785e-09 
-      |Div|_2   = 9.704238170178e-09 
+      |Div|_inf = 1.290592692903e-12 
+      |Div|_2   = 5.127665140824e-12 
    Momentum: 
-      |mRes|_2  = 8.574237474549e-13 
+      |mRes|_2  = 8.757370907781e-13 
    Energy: 
-      |eRes|_2  = 1.071793573671e-15 
+      |eRes|_2  = 3.876015843673e-14 
 --------------------------------------------------------------------------
 Actual time step : 0.02853 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 3353 markers and merged 3335 markers in 9.0815e-03 s
+Marker control [0]: (subgrid) cloned 3353 markers and merged 3333 markers in 9.1697e-03 s
 --------------------------------------------------------------------------
-================================ STEP 12 =================================
+Saving output ... done (0.0652315 sec)
 --------------------------------------------------------------------------
-Current time        : 0.20384284 [Myr] 
-Tentative time step : 0.02853117 [Myr] 
+================================ STEP 13 =================================
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.700921806188e-01
+Current time        : 0.21384284 [Myr] 
+Tentative time step : 0.03138428 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.169272806667e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.700921806188e-01
-    1 KSP Residual norm 9.068933703884e-08
+    0 KSP Residual norm 1.169272806667e-01
+    1 KSP Residual norm 7.788793736924e-08
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.726071969406e-03
-  1 KSP Residual norm 9.949405601065e-09
-  2 KSP Residual norm 4.121458141120e-14
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 3.414951203358e-04
-  1 PICARD ||F||/||F0||=2.007706e-03 
+  0 KSP Residual norm 1.664993087325e-03
+  1 KSP Residual norm 1.181470378368e-08
+  2 KSP Residual norm 5.623499254196e-14
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 3.722547810382e-04
+  1 PICARD ||F||/||F0||=3.183644e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.414951203358e-04
-    1 KSP Residual norm 1.069469355438e-08
-    2 KSP Residual norm 7.427866232105e-12
+    0 KSP Residual norm 3.722547810382e-04
+    1 KSP Residual norm 1.173691235950e-08
+    2 KSP Residual norm 7.534962993899e-12
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 4.123490914769e-14
-  1 KSP Residual norm 2.442883511409e-19
-  2 KSP Residual norm 1.377548641402e-24
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
-  2 SNES Function norm 7.476315154935e-12
+  0 KSP Residual norm 5.625004148419e-14
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 7.583496613293e-12
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.184023 (sec)
+SNES solution time      : 0.176537 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.330536580080e-12 
-      |Div|_2   = 7.427866208488e-12 
+      |Div|_inf = 1.447113009926e-12 
+      |Div|_2   = 7.534962981821e-12 
    Momentum: 
-      |mRes|_2  = 8.497598982715e-13 
+      |mRes|_2  = 8.565942717605e-13 
    Energy: 
-      |eRes|_2  = 9.611913964471e-16 
+      |eRes|_2  = 5.625004148419e-14 
 --------------------------------------------------------------------------
 Actual time step : 0.03138 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 3663 markers and merged 3649 markers in 9.5459e-03 s
+Marker control [0]: (subgrid) cloned 3678 markers and merged 3651 markers in 9.7301e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0850279 sec)
+================================ STEP 14 =================================
 --------------------------------------------------------------------------
-================================ STEP 13 =================================
+Current time        : 0.24522712 [Myr] 
+Tentative time step : 0.03452271 [Myr] 
 --------------------------------------------------------------------------
-Current time        : 0.23522712 [Myr] 
-Tentative time step : 0.03138428 [Myr] 
---------------------------------------------------------------------------
-  0 SNES Function norm 1.035167682890e-01
+  0 SNES Function norm 1.536567083779e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.035167682890e-01
-    1 KSP Residual norm 4.229502116083e-08
+    0 KSP Residual norm 1.536567083779e-01
+    1 KSP Residual norm 1.314363900701e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.681781439640e-03
-  1 KSP Residual norm 1.171608958190e-08
-  2 KSP Residual norm 5.715163943706e-14
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 3.747907294502e-04
-  1 PICARD ||F||/||F0||=3.620580e-03 
+  0 KSP Residual norm 1.660303695301e-03
+  1 KSP Residual norm 1.407880553493e-08
+  2 KSP Residual norm 8.138105134884e-14
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 4.103373740692e-04
+  1 PICARD ||F||/||F0||=2.670481e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.747907294502e-04
-    1 KSP Residual norm 1.164801496961e-08
-    2 KSP Residual norm 5.834911297791e-12
+    0 KSP Residual norm 4.103373740692e-04
+    1 KSP Residual norm 1.280101169925e-08
+    2 KSP Residual norm 6.139875399050e-12
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 5.715432857842e-14
-  1 KSP Residual norm 4.059669168925e-19
-  2 KSP Residual norm 2.777356297252e-24
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
-  2 SNES Function norm 5.898426624005e-12
+  0 KSP Residual norm 8.136984413844e-14
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 6.200914146259e-12
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.215998 (sec)
+SNES solution time      : 0.202909 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.412696444929e-12 
-      |Div|_2   = 5.834911291528e-12 
+      |Div|_inf = 1.553077481090e-12 
+      |Div|_2   = 6.139875411233e-12 
    Momentum: 
-      |mRes|_2  = 8.632768146811e-13 
+      |mRes|_2  = 8.679090872941e-13 
    Energy: 
-      |eRes|_2  = 9.392726607901e-16 
+      |eRes|_2  = 8.136984413844e-14 
 --------------------------------------------------------------------------
 Actual time step : 0.03452 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 3764 markers and merged 3753 markers in 9.9213e-03 s
+Marker control [0]: (subgrid) cloned 3800 markers and merged 3801 markers in 9.7810e-03 s
 --------------------------------------------------------------------------
-================================ STEP 14 =================================
+Saving output ... done (0.0648519 sec)
 --------------------------------------------------------------------------
-Current time        : 0.26974983 [Myr] 
-Tentative time step : 0.03452271 [Myr] 
+================================ STEP 15 =================================
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.702370143960e-01
+Current time        : 0.27974983 [Myr] 
+Tentative time step : 0.03797498 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.906703789904e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.702370143960e-01
-    1 KSP Residual norm 1.309380582179e-06
+    0 KSP Residual norm 1.906703789904e-01
+    1 KSP Residual norm 1.738604184354e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.665410228127e-03
-  1 KSP Residual norm 1.398136652727e-08
-  2 KSP Residual norm 8.081972233085e-14
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 4.109059149529e-04
-  1 PICARD ||F||/||F0||=2.413728e-03 
+  0 KSP Residual norm 1.655504823814e-03
+  1 KSP Residual norm 1.713650774621e-08
+  2 KSP Residual norm 1.172983007584e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 4.542349547008e-04
+  1 PICARD ||F||/||F0||=2.382305e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 4.109059149529e-04
-    1 KSP Residual norm 1.411578886944e-08
-    2 KSP Residual norm 4.931152513189e-11
+    0 KSP Residual norm 4.542349547008e-04
+    1 KSP Residual norm 1.409189648712e-08
+    2 KSP Residual norm 7.496307063578e-12
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 8.082937840892e-14
-  1 KSP Residual norm 6.911649370573e-19
-  2 KSP Residual norm 5.713553967871e-24
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
-  2 SNES Function norm 4.931876364153e-11
+  0 KSP Residual norm 1.173009840524e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 7.547138284976e-12
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.215404 (sec)
+SNES solution time      : 0.203858 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 6.776220775766e-12 
-      |Div|_2   = 4.931151505932e-11 
+      |Div|_inf = 1.732856093589e-12 
+      |Div|_2   = 7.496307049000e-12 
    Momentum: 
-      |mRes|_2  = 8.455351458146e-13 
+      |mRes|_2  = 8.744580719904e-13 
    Energy: 
-      |eRes|_2  = 8.206353660175e-16 
+      |eRes|_2  = 1.173009840524e-13 
 --------------------------------------------------------------------------
 Actual time step : 0.03797 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 4293 markers and merged 4292 markers in 1.0454e-02 s
+Marker control [0]: (subgrid) cloned 4206 markers and merged 4201 markers in 1.0240e-02 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0846602 sec)
+================================ STEP 16 =================================
 --------------------------------------------------------------------------
-================================ STEP 15 =================================
+Current time        : 0.31772482 [Myr] 
+Tentative time step : 0.04177248 [Myr] 
 --------------------------------------------------------------------------
-Current time        : 0.30772482 [Myr] 
-Tentative time step : 0.03797498 [Myr] 
---------------------------------------------------------------------------
-  0 SNES Function norm 1.454758868958e-01
+  0 SNES Function norm 1.390118386361e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.454758868958e-01
-    1 KSP Residual norm 1.295135435982e-06
+    0 KSP Residual norm 1.390118386361e-01
+    1 KSP Residual norm 2.268500514096e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.690508684114e-03
-  1 KSP Residual norm 1.702813387006e-08
-  2 KSP Residual norm 1.198954177851e-13
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 4.537177192006e-04
-  1 PICARD ||F||/||F0||=3.118852e-03 
+  0 KSP Residual norm 1.694356395076e-03
+  1 KSP Residual norm 2.125489706383e-08
+  2 KSP Residual norm 1.806530403906e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 5.043031578365e-04
+  1 PICARD ||F||/||F0||=3.627771e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 4.537177192006e-04
-    1 KSP Residual norm 1.445423122033e-08
-    2 KSP Residual norm 4.227641448440e-11
+    0 KSP Residual norm 5.043031578365e-04
+    1 KSP Residual norm 1.522918280287e-08
+    2 KSP Residual norm 1.245849404429e-11
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.198988539615e-13
-  1 KSP Residual norm 1.251529630122e-18
-  2 KSP Residual norm 1.240730925025e-23
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
-  2 SNES Function norm 4.228449529120e-11
+  0 KSP Residual norm 1.806567266970e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 1.248986718239e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.214331 (sec)
+SNES solution time      : 0.176305 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.246749742687e-12 
-      |Div|_2   = 4.227641181211e-11 
+      |Div|_inf = 1.907634420301e-12 
+      |Div|_2   = 1.245849396331e-11 
    Momentum: 
-      |mRes|_2  = 8.267686038992e-13 
+      |mRes|_2  = 8.847092178255e-13 
    Energy: 
-      |eRes|_2  = 7.485547168415e-16 
+      |eRes|_2  = 1.806567266970e-13 
 --------------------------------------------------------------------------
 Actual time step : 0.04177 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 4446 markers and merged 4443 markers in 1.0589e-02 s
+Marker control [0]: (subgrid) cloned 4460 markers and merged 4471 markers in 1.0779e-02 s
 --------------------------------------------------------------------------
-================================ STEP 16 =================================
+Saving output ... done (0.0645165 sec)
 --------------------------------------------------------------------------
-Current time        : 0.34949730 [Myr] 
-Tentative time step : 0.04177248 [Myr] 
+================================ STEP 17 =================================
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.709654075031e-01
+Current time        : 0.35949730 [Myr] 
+Tentative time step : 0.04594973 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.129526693996e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.709654075031e-01
-    1 KSP Residual norm 2.953843491730e-07
+    0 KSP Residual norm 1.129526693996e-01
+    1 KSP Residual norm 3.063888210596e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.680833644428e-03
-  1 KSP Residual norm 2.025372087139e-08
-  2 KSP Residual norm 1.747419766020e-13
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 4.962576206645e-04
-  1 PICARD ||F||/||F0||=2.902679e-03 
+  0 KSP Residual norm 1.688742065249e-03
+  1 KSP Residual norm 2.554152475148e-08
+  2 KSP Residual norm 2.626350123119e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 5.522942651105e-04
+  1 PICARD ||F||/||F0||=4.889608e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 4.962576206645e-04
-    1 KSP Residual norm 1.519278663744e-08
-    2 KSP Residual norm 7.914668653397e-12
+    0 KSP Residual norm 5.522942651105e-04
+    1 KSP Residual norm 1.666578867407e-08
+    2 KSP Residual norm 9.462760717408e-12
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.747413590861e-13
-  1 KSP Residual norm 2.207670233451e-18
-  2 KSP Residual norm 2.642267716837e-23
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
-  2 SNES Function norm 7.959995326467e-12
+  0 KSP Residual norm 2.626322568379e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 9.500319476553e-12
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.215216 (sec)
+SNES solution time      : 0.203518 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.849559109756e-12 
-      |Div|_2   = 7.914668653881e-12 
+      |Div|_inf = 2.038629796083e-12 
+      |Div|_2   = 9.462760704939e-12 
    Momentum: 
-      |mRes|_2  = 8.482603943657e-13 
+      |mRes|_2  = 8.439372000452e-13 
    Energy: 
-      |eRes|_2  = 6.709664300759e-16 
+      |eRes|_2  = 2.626322568379e-13 
 --------------------------------------------------------------------------
 Actual time step : 0.04595 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 5190 markers and merged 5200 markers in 1.1533e-02 s
+Marker control [0]: (subgrid) cloned 5199 markers and merged 5186 markers in 1.1441e-02 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0844345 sec)
+================================ STEP 18 =================================
 --------------------------------------------------------------------------
-================================ STEP 17 =================================
+Current time        : 0.40544703 [Myr] 
+Tentative time step : 0.05054470 [Myr] 
 --------------------------------------------------------------------------
-Current time        : 0.39544703 [Myr] 
-Tentative time step : 0.04594973 [Myr] 
---------------------------------------------------------------------------
-  0 SNES Function norm 1.310015588641e-01
+  0 SNES Function norm 1.616098082350e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.310015588641e-01
-    1 KSP Residual norm 9.295600491520e-08
+    0 KSP Residual norm 1.616098082350e-01
+    1 KSP Residual norm 1.023524289556e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.671431238959e-03
-  1 KSP Residual norm 2.400307405580e-08
-  2 KSP Residual norm 2.517165824780e-13
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 5.440964821067e-04
-  1 PICARD ||F||/||F0||=4.153359e-03 
+  0 KSP Residual norm 1.638419326327e-03
+  1 KSP Residual norm 2.954776027626e-08
+  2 KSP Residual norm 3.613548567003e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 6.024306468994e-04
+  1 PICARD ||F||/||F0||=3.727686e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 5.440964821067e-04
-    1 KSP Residual norm 1.628484804693e-08
-    2 KSP Residual norm 8.110042230925e-12
+    0 KSP Residual norm 6.024306468994e-04
+    1 KSP Residual norm 1.786020887445e-08
+    2 KSP Residual norm 1.026591090750e-11
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 2.517170132413e-13
-  1 KSP Residual norm 3.841882990828e-18
-  2 KSP Residual norm 5.523862561179e-23
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  2 SNES Function norm 8.157402420236e-12
+  0 KSP Residual norm 3.613345329956e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 1.030220490754e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.180295 (sec)
+SNES solution time      : 0.176673 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.996150289944e-12 
-      |Div|_2   = 8.110042221651e-12 
+      |Div|_inf = 2.180860364260e-12 
+      |Div|_2   = 1.026591088503e-11 
    Momentum: 
-      |mRes|_2  = 8.777410829541e-13 
+      |mRes|_2  = 8.640021166842e-13 
    Energy: 
-      |eRes|_2  = 6.231391463311e-16 
+      |eRes|_2  = 3.613345329956e-13 
 --------------------------------------------------------------------------
 Actual time step : 0.05054 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 5203 markers and merged 5160 markers in 1.1686e-02 s
+Marker control [0]: (subgrid) cloned 5230 markers and merged 5198 markers in 1.1652e-02 s
 --------------------------------------------------------------------------
-================================ STEP 18 =================================
+Saving output ... done (0.0644753 sec)
 --------------------------------------------------------------------------
-Current time        : 0.44599173 [Myr] 
-Tentative time step : 0.05054470 [Myr] 
+================================ STEP 19 =================================
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.996214036567e-01
+Current time        : 0.45599173 [Myr] 
+Tentative time step : 0.05559917 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.390646518851e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.996214036567e-01
-    1 KSP Residual norm 1.373751655629e-07
+    0 KSP Residual norm 2.390646518851e-01
+    1 KSP Residual norm 1.645435784296e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.696662511492e-03
-  1 KSP Residual norm 3.000168276101e-08
-  2 KSP Residual norm 3.801003615403e-13
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 6.031362108056e-04
-  1 PICARD ||F||/||F0||=3.021401e-03 
+  0 KSP Residual norm 1.658047316981e-03
+  1 KSP Residual norm 3.661150714873e-08
+  2 KSP Residual norm 5.418521425195e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 6.640575590165e-04
+  1 PICARD ||F||/||F0||=2.777732e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 6.031362108056e-04
-    1 KSP Residual norm 1.777269494862e-08
-    2 KSP Residual norm 8.824654413119e-12
+    0 KSP Residual norm 6.640575590165e-04
+    1 KSP Residual norm 1.953788354473e-08
+    2 KSP Residual norm 1.433290375750e-11
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 3.801106844350e-13
-  1 KSP Residual norm 7.004601303717e-18
-  2 KSP Residual norm 1.220501090874e-22
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  2 SNES Function norm 8.867795549942e-12
+  0 KSP Residual norm 5.418455057626e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 1.435843874589e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.179988 (sec)
+SNES solution time      : 0.20397 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.164787061971e-12 
-      |Div|_2   = 8.824654417433e-12 
+      |Div|_inf = 2.382262329027e-12 
+      |Div|_2   = 1.433290370309e-11 
    Momentum: 
-      |mRes|_2  = 8.736545818894e-13 
+      |mRes|_2  = 8.559408024865e-13 
    Energy: 
-      |eRes|_2  = 5.808821079672e-16 
+      |eRes|_2  = 5.418455057626e-13 
 --------------------------------------------------------------------------
 Actual time step : 0.05560 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 6025 markers and merged 5990 markers in 1.2709e-02 s
+Marker control [0]: (subgrid) cloned 5992 markers and merged 5958 markers in 1.2837e-02 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0851479 sec)
+================================ STEP 20 =================================
 --------------------------------------------------------------------------
-================================ STEP 19 =================================
+Current time        : 0.51159090 [Myr] 
+Tentative time step : 0.06115909 [Myr] 
 --------------------------------------------------------------------------
-Current time        : 0.50159090 [Myr] 
-Tentative time step : 0.05559917 [Myr] 
---------------------------------------------------------------------------
-  0 SNES Function norm 1.055319830033e-01
+  0 SNES Function norm 2.524504285173e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.055319830033e-01
-    1 KSP Residual norm 5.231001597428e-08
+    0 KSP Residual norm 2.524504285173e-01
+    1 KSP Residual norm 2.234670214526e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.657798351758e-03
-  1 KSP Residual norm 3.609063686816e-08
-  2 KSP Residual norm 5.308787376767e-13
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 6.609960922329e-04
-  1 PICARD ||F||/||F0||=6.263467e-03 
+  0 KSP Residual norm 1.605055379274e-03
+  1 KSP Residual norm 4.168002540106e-08
+  2 KSP Residual norm 7.312422499190e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 7.225484048724e-04
+  1 PICARD ||F||/||F0||=2.862140e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 6.609960922329e-04
-    1 KSP Residual norm 1.952535160985e-08
-    2 KSP Residual norm 9.617427411916e-12
+    0 KSP Residual norm 7.225484048724e-04
+    1 KSP Residual norm 2.145120462635e-08
+    2 KSP Residual norm 1.250109064926e-11
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 5.308805207037e-13
-  1 KSP Residual norm 1.157799309052e-17
-  2 KSP Residual norm 2.478375821292e-22
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  2 SNES Function norm 9.659948743840e-12
+  0 KSP Residual norm 7.312393850727e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 1.253152447506e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.18038 (sec)
+SNES solution time      : 0.177177 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.382378472491e-12 
-      |Div|_2   = 9.617427402965e-12 
+      |Div|_inf = 2.606780182067e-12 
+      |Div|_2   = 1.250109064257e-11 
    Momentum: 
-      |mRes|_2  = 9.053727863818e-13 
+      |mRes|_2  = 8.728335553107e-13 
    Energy: 
-      |eRes|_2  = 5.139989296275e-16 
+      |eRes|_2  = 7.312393850727e-13 
 --------------------------------------------------------------------------
 Actual time step : 0.06116 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 6145 markers and merged 6118 markers in 1.2799e-02 s
+Marker control [0]: (subgrid) cloned 6221 markers and merged 6192 markers in 1.3212e-02 s
 --------------------------------------------------------------------------
-================================ STEP 20 =================================
+Saving output ... done (0.0649782 sec)
 --------------------------------------------------------------------------
-Current time        : 0.56274999 [Myr] 
-Tentative time step : 0.06115909 [Myr] 
+================================ STEP 21 =================================
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.432062857869e-01
+Current time        : 0.57274999 [Myr] 
+Tentative time step : 0.06727500 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.227465270145e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.432062857869e-01
-    1 KSP Residual norm 1.878949717177e-07
+    0 KSP Residual norm 1.227465270145e-01
+    1 KSP Residual norm 1.875771936545e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.679354297197e-03
-  1 KSP Residual norm 4.369861292140e-08
-  2 KSP Residual norm 7.967257895918e-13
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 7.267210401837e-04
-  1 PICARD ||F||/||F0||=5.074645e-03 
+  0 KSP Residual norm 1.625748421610e-03
+  1 KSP Residual norm 5.052458846721e-08
+  2 KSP Residual norm 1.105674382389e-12
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 7.975241092198e-04
+  1 PICARD ||F||/||F0||=6.497325e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 7.267210401837e-04
-    1 KSP Residual norm 2.138528133669e-08
-    2 KSP Residual norm 1.035846318415e-11
+    0 KSP Residual norm 7.975241092198e-04
+    1 KSP Residual norm 2.343981585564e-08
+    2 KSP Residual norm 1.139456518887e-11
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 7.967194795399e-13
-  1 KSP Residual norm 2.127740863575e-17
-  2 KSP Residual norm 5.425169317712e-22
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  2 SNES Function norm 1.039893490886e-11
+  0 KSP Residual norm 1.105676369414e-12
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 1.142831517447e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.214003 (sec)
+SNES solution time      : 0.203071 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.620540067970e-12 
-      |Div|_2   = 1.035846317140e-11 
+      |Div|_inf = 2.870833021787e-12 
+      |Div|_2   = 1.139456519066e-11 
    Momentum: 
-      |mRes|_2  = 9.165631267740e-13 
+      |mRes|_2  = 8.776513218568e-13 
    Energy: 
-      |eRes|_2  = 4.728716957269e-16 
+      |eRes|_2  = 1.105676369414e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.06727 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 6802 markers and merged 6787 markers in 1.3645e-02 s
+Marker control [0]: (subgrid) cloned 6833 markers and merged 6814 markers in 1.3930e-02 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0854133 sec)
+================================ STEP 22 =================================
 --------------------------------------------------------------------------
-================================ STEP 21 =================================
+Current time        : 0.64002499 [Myr] 
+Tentative time step : 0.07400250 [Myr] 
 --------------------------------------------------------------------------
-Current time        : 0.63002499 [Myr] 
-Tentative time step : 0.06727500 [Myr] 
---------------------------------------------------------------------------
-  0 SNES Function norm 1.435675110957e-01
+  0 SNES Function norm 1.395024802451e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.435675110957e-01
-    1 KSP Residual norm 1.017466488347e-06
+    0 KSP Residual norm 1.395024802451e-01
+    1 KSP Residual norm 9.588109540628e-08
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.663371845101e-03
-  1 KSP Residual norm 5.163487510528e-08
-  2 KSP Residual norm 1.147242339161e-12
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 7.964491648182e-04
-  1 PICARD ||F||/||F0||=5.547558e-03 
+  0 KSP Residual norm 1.640681060893e-03
+  1 KSP Residual norm 6.115103985502e-08
+  2 KSP Residual norm 1.644197317243e-12
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 8.766644801907e-04
+  1 PICARD ||F||/||F0||=6.284221e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 7.964491648182e-04
-    1 KSP Residual norm 2.329200689292e-08
-    2 KSP Residual norm 1.518124371470e-11
+    0 KSP Residual norm 8.766644801907e-04
+    1 KSP Residual norm 2.548746399652e-08
+    2 KSP Residual norm 1.402672308735e-11
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.147231632578e-12
-  1 KSP Residual norm 3.689627457663e-17
-  2 KSP Residual norm 1.137540696990e-21
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  2 SNES Function norm 1.521434526498e-11
+  0 KSP Residual norm 1.644198522450e-12
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 1.405330024174e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.180029 (sec)
+SNES solution time      : 0.17753 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.870712892186e-12 
-      |Div|_2   = 1.518124368747e-11 
+      |Div|_inf = 3.134944379625e-12 
+      |Div|_2   = 1.402672308528e-11 
    Momentum: 
-      |mRes|_2  = 1.003066270812e-12 
+      |mRes|_2  = 8.638791428815e-13 
    Energy: 
-      |eRes|_2  = 4.342651585359e-16 
+      |eRes|_2  = 1.644198522450e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.07400 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 7777 markers and merged 7767 markers in 1.4861e-02 s
+Marker control [0]: (subgrid) cloned 7658 markers and merged 7647 markers in 1.4671e-02 s
 --------------------------------------------------------------------------
-================================ STEP 22 =================================
+Saving output ... done (0.0650021 sec)
 --------------------------------------------------------------------------
-Current time        : 0.70402749 [Myr] 
-Tentative time step : 0.07400250 [Myr] 
+================================ STEP 23 =================================
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.744461491985e-01
+Current time        : 0.71402749 [Myr] 
+Tentative time step : 0.08140275 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.416898032819e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.744461491985e-01
-    1 KSP Residual norm 5.367186279116e-07
+    0 KSP Residual norm 2.416898032819e-01
+    1 KSP Residual norm 3.794801313610e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.629844862722e-03
-  1 KSP Residual norm 6.036912009384e-08
-  2 KSP Residual norm 1.600811430616e-12
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 8.689359039660e-04
-  1 PICARD ||F||/||F0||=3.166144e-03 
+  0 KSP Residual norm 1.641319487182e-03
+  1 KSP Residual norm 7.463111981923e-08
+  2 KSP Residual norm 2.408906043722e-12
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 9.631782677947e-04
+  1 PICARD ||F||/||F0||=3.985184e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 8.689359039660e-04
-    1 KSP Residual norm 2.547708488625e-08
-    2 KSP Residual norm 1.236607878651e-11
+    0 KSP Residual norm 9.631782677947e-04
+    1 KSP Residual norm 2.798887570888e-08
+    2 KSP Residual norm 1.702462804617e-11
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.600825508527e-12
-  1 KSP Residual norm 6.196829974736e-17
-  2 KSP Residual norm 2.297175142458e-21
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  2 SNES Function norm 1.241586001458e-11
+  0 KSP Residual norm 2.408908260755e-12
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 1.704670408789e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.214742 (sec)
+SNES solution time      : 0.178367 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.121409358946e-12 
-      |Div|_2   = 1.236607879101e-11 
+      |Div|_inf = 3.442799161602e-12 
+      |Div|_2   = 1.702462802895e-11 
    Momentum: 
-      |mRes|_2  = 1.110709339149e-12 
+      |mRes|_2  = 8.672720081036e-13 
    Energy: 
-      |eRes|_2  = 4.000732960719e-16 
+      |eRes|_2  = 2.408908260755e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.08140 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 8549 markers and merged 8515 markers in 1.5517e-02 s
+Marker control [0]: (subgrid) cloned 8423 markers and merged 8408 markers in 1.5914e-02 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0865479 sec)
+================================ STEP 24 =================================
 --------------------------------------------------------------------------
-================================ STEP 23 =================================
+Current time        : 0.79543024 [Myr] 
+Tentative time step : 0.08954302 [Myr] 
 --------------------------------------------------------------------------
-Current time        : 0.78543024 [Myr] 
-Tentative time step : 0.08140275 [Myr] 
---------------------------------------------------------------------------
-  0 SNES Function norm 1.464380923821e-01
+  0 SNES Function norm 1.367032489041e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.464380923821e-01
-    1 KSP Residual norm 4.466201371147e-07
+    0 KSP Residual norm 1.367032489041e-01
+    1 KSP Residual norm 4.667159120030e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.643974418570e-03
-  1 KSP Residual norm 7.037783337257e-08
-  2 KSP Residual norm 2.316170406369e-12
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 9.578554399862e-04
-  1 PICARD ||F||/||F0||=6.541026e-03 
+  0 KSP Residual norm 1.582847115546e-03
+  1 KSP Residual norm 8.644400569993e-08
+  2 KSP Residual norm 3.165962502660e-12
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 1.046642368915e-03
+  1 PICARD ||F||/||F0||=7.656309e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 9.578554399862e-04
-    1 KSP Residual norm 2.795558103585e-08
-    2 KSP Residual norm 1.413926186796e-11
+    0 KSP Residual norm 1.046642368915e-03
+    1 KSP Residual norm 3.068829537161e-08
+    2 KSP Residual norm 1.517433139320e-11
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 2.316162466153e-12
-  1 KSP Residual norm 1.106311956924e-16
-  2 KSP Residual norm 4.820546533589e-21
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  2 SNES Function norm 1.420555674168e-11
+  0 KSP Residual norm 3.165959199712e-12
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 1.520010649318e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.214973 (sec)
+SNES solution time      : 0.203802 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.418380509551e-12 
-      |Div|_2   = 1.413926184803e-11 
+      |Div|_inf = 3.749870890418e-12 
+      |Div|_2   = 1.517433139436e-11 
    Momentum: 
-      |mRes|_2  = 1.370808788254e-12 
+      |mRes|_2  = 8.848187035414e-13 
    Energy: 
-      |eRes|_2  = 3.720589009166e-16 
+      |eRes|_2  = 3.165959199712e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.08954 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 9129 markers and merged 9090 markers in 1.6363e-02 s
+Marker control [0]: (subgrid) cloned 9077 markers and merged 9036 markers in 1.6337e-02 s
 --------------------------------------------------------------------------
-================================ STEP 24 =================================
+Saving output ... done (0.0649038 sec)
 --------------------------------------------------------------------------
-Current time        : 0.87497327 [Myr] 
-Tentative time step : 0.08954302 [Myr] 
+================================ STEP 25 =================================
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.375104810807e-01
+Current time        : 0.88497327 [Myr] 
+Tentative time step : 0.09849733 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.419332346812e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.375104810807e-01
-    1 KSP Residual norm 1.522015052200e-07
+    0 KSP Residual norm 2.419332346812e-01
+    1 KSP Residual norm 1.535853215524e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.627234687502e-03
-  1 KSP Residual norm 8.446514658604e-08
-  2 KSP Residual norm 3.312403749466e-12
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.041460504875e-03
-  1 PICARD ||F||/||F0||=4.384903e-03 
+  0 KSP Residual norm 1.619053495364e-03
+  1 KSP Residual norm 1.054958542249e-07
+  2 KSP Residual norm 4.839078915133e-12
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 1.153822668470e-03
+  1 PICARD ||F||/||F0||=4.769178e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.041460504875e-03
-    1 KSP Residual norm 3.067514950255e-08
-    2 KSP Residual norm 1.946265922064e-11
+    0 KSP Residual norm 1.153822668470e-03
+    1 KSP Residual norm 3.364876394834e-08
+    2 KSP Residual norm 1.724780633468e-11
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 3.312397561924e-12
-  1 KSP Residual norm 1.898661828857e-16
-  2 KSP Residual norm 9.973569469404e-21
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  2 SNES Function norm 1.955141581681e-11
+  0 KSP Residual norm 4.839071506837e-12
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 1.726950403496e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.214799 (sec)
+SNES solution time      : 0.204376 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.764352128215e-12 
-      |Div|_2   = 1.946265919898e-11 
+      |Div|_inf = 4.093354322694e-12 
+      |Div|_2   = 1.724780631530e-11 
    Momentum: 
-      |mRes|_2  = 1.860848555433e-12 
+      |mRes|_2  = 8.654171962566e-13 
    Energy: 
-      |eRes|_2  = 3.382125025109e-16 
+      |eRes|_2  = 4.839071506837e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.09850 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 9707 markers and merged 9703 markers in 1.7045e-02 s
+Marker control [0]: (subgrid) cloned 9627 markers and merged 9616 markers in 1.8267e-02 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0864659 sec)
+================================ STEP 26 =================================
 --------------------------------------------------------------------------
-================================ STEP 25 =================================
+Current time        : 0.98347059 [Myr] 
+Tentative time step : 0.10834706 [Myr] 
 --------------------------------------------------------------------------
-Current time        : 0.97347059 [Myr] 
-Tentative time step : 0.09849733 [Myr] 
---------------------------------------------------------------------------
-  0 SNES Function norm 1.870072307150e-01
+  0 SNES Function norm 2.022999358661e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.870072307150e-01
-    1 KSP Residual norm 3.160826124977e-07
+    0 KSP Residual norm 2.022999358661e-01
+    1 KSP Residual norm 3.236604153411e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.571642441739e-03
-  1 KSP Residual norm 9.674178572201e-08
-  2 KSP Residual norm 4.432151071107e-12
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.135333064847e-03
-  1 PICARD ||F||/||F0||=6.071065e-03 
+  0 KSP Residual norm 1.589392284758e-03
+  1 KSP Residual norm 1.208492145118e-07
+  2 KSP Residual norm 6.735139194150e-12
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 1.253341415563e-03
+  1 PICARD ||F||/||F0||=6.195461e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.135333064847e-03
-    1 KSP Residual norm 3.355490227648e-08
-    2 KSP Residual norm 1.670346497056e-11
+    0 KSP Residual norm 1.253341415563e-03
+    1 KSP Residual norm 3.681494854401e-08
+    2 KSP Residual norm 1.952242293439e-11
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 4.432148844086e-12
-  1 KSP Residual norm 3.038614176340e-16
-  2 KSP Residual norm 1.946619464257e-20
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  2 SNES Function norm 1.690579844724e-11
+  0 KSP Residual norm 6.735141326870e-12
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 1.954161922905e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.179881 (sec)
+SNES solution time      : 0.177658 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.065426433472e-12 
-      |Div|_2   = 1.670346497688e-11 
+      |Div|_inf = 4.441265572268e-12 
+      |Div|_2   = 1.952242291642e-11 
    Momentum: 
-      |mRes|_2  = 2.607734439082e-12 
+      |mRes|_2  = 8.659593327127e-13 
    Energy: 
-      |eRes|_2  = 3.262978733463e-16 
+      |eRes|_2  = 6.735141326870e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.10835 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 10248 markers and merged 10218 markers in 1.7475e-02 s
+Marker control [0]: (subgrid) cloned 10054 markers and merged 10025 markers in 1.8189e-02 s
 --------------------------------------------------------------------------
-================================ STEP 26 =================================
+Saving output ... done (0.0647187 sec)
 --------------------------------------------------------------------------
-Current time        : 1.08181765 [Myr] 
-Tentative time step : 0.10834706 [Myr] 
+================================ STEP 27 =================================
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.287278009556e-01
+Current time        : 1.09181765 [Myr] 
+Tentative time step : 0.11918177 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.518785479642e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.287278009556e-01
-    1 KSP Residual norm 1.376639579047e-07
+    0 KSP Residual norm 1.518785479642e-01
+    1 KSP Residual norm 1.464691924932e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.553722793181e-03
-  1 KSP Residual norm 1.113156066067e-07
-  2 KSP Residual norm 6.221232867308e-12
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.244551102228e-03
-  1 PICARD ||F||/||F0||=9.668083e-03 
+  0 KSP Residual norm 1.563205567289e-03
+  1 KSP Residual norm 1.476123517172e-07
+  2 KSP Residual norm 9.572617714649e-12
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 1.377432462556e-03
+  1 PICARD ||F||/||F0||=9.069302e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.244551102228e-03
-    1 KSP Residual norm 3.674279259272e-08
-    2 KSP Residual norm 1.807049654335e-11
+    0 KSP Residual norm 1.377432462556e-03
+    1 KSP Residual norm 4.031544265560e-08
+    2 KSP Residual norm 2.056370449278e-11
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 6.221239821401e-12
-  1 KSP Residual norm 5.187089833729e-16
-  2 KSP Residual norm 3.930707231586e-20
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  2 SNES Function norm 1.847775429900e-11
+  0 KSP Residual norm 9.572618533583e-12
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 2.058148568049e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.18613 (sec)
+SNES solution time      : 0.209019 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.429443265760e-12 
-      |Div|_2   = 1.807049651648e-11 
+      |Div|_inf = 4.835069146545e-12 
+      |Div|_2   = 2.056370450732e-11 
    Momentum: 
-      |mRes|_2  = 3.858051267415e-12 
+      |mRes|_2  = 8.553418917028e-13 
    Energy: 
-      |eRes|_2  = 3.028655966546e-16 
+      |eRes|_2  = 9.572618533583e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.11918 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 10781 markers and merged 10742 markers in 1.8306e-02 s
+Marker control [0]: (subgrid) cloned 10872 markers and merged 10815 markers in 1.8467e-02 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0872404 sec)
+================================ STEP 28 =================================
 --------------------------------------------------------------------------
-================================ STEP 27 =================================
+Current time        : 1.21099942 [Myr] 
+Tentative time step : 0.13109994 [Myr] 
 --------------------------------------------------------------------------
-Current time        : 1.20099942 [Myr] 
-Tentative time step : 0.11918177 [Myr] 
---------------------------------------------------------------------------
-  0 SNES Function norm 3.624428660043e-01
+  0 SNES Function norm 3.233426878552e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.624428660043e-01
-    1 KSP Residual norm 2.732442675592e-05
-    2 KSP Residual norm 2.634185203713e-08
+    0 KSP Residual norm 3.233426878552e-01
+    1 KSP Residual norm 2.717074837709e-05
+    2 KSP Residual norm 2.602769726887e-08
     Linear js_ solve converged due to CONVERGED_RTOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.530321520589e-03
-  1 KSP Residual norm 1.389091729286e-07
-  2 KSP Residual norm 8.894883977909e-12
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.357666682287e-03
-  1 PICARD ||F||/||F0||=3.745878e-03 
+  0 KSP Residual norm 1.533667328125e-03
+  1 KSP Residual norm 1.616349938383e-07
+  2 KSP Residual norm 1.293947257384e-11
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 1.496328182587e-03
+  1 PICARD ||F||/||F0||=4.627685e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.357666682287e-03
-    1 KSP Residual norm 4.028425971484e-08
-    2 KSP Residual norm 1.977064010912e-11
+    0 KSP Residual norm 1.496328182587e-03
+    1 KSP Residual norm 4.446936263201e-08
+    2 KSP Residual norm 5.611434878764e-11
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 8.894877457274e-12
-  1 KSP Residual norm 8.712758952383e-16
-  2 KSP Residual norm 8.166576578897e-20
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  2 SNES Function norm 2.062950526537e-11
+  0 KSP Residual norm 1.293947204917e-11
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 5.612117249989e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.21957 (sec)
+SNES solution time      : 0.182142 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.838596108728e-12 
-      |Div|_2   = 1.977064011676e-11 
+      |Div|_inf = 5.142527706838e-11 
+      |Div|_2   = 5.611434881003e-11 
    Momentum: 
-      |mRes|_2  = 5.890524328733e-12 
+      |mRes|_2  = 8.751344975596e-13 
    Energy: 
-      |eRes|_2  = 2.730549245589e-16 
+      |eRes|_2  = 1.293947204917e-11 
 --------------------------------------------------------------------------
 Actual time step : 0.13110 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 11455 markers and merged 11419 markers in 1.9185e-02 s
+Marker control [0]: (subgrid) cloned 11487 markers and merged 11441 markers in 1.9522e-02 s
 --------------------------------------------------------------------------
-================================ STEP 28 =================================
+Saving output ... done (0.0641438 sec)
 --------------------------------------------------------------------------
-Current time        : 1.33209936 [Myr] 
-Tentative time step : 0.13109994 [Myr] 
+================================ STEP 29 =================================
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.530727792459e-01
+Current time        : 1.34209936 [Myr] 
+Tentative time step : 0.14420994 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 3.199669312712e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.530727792459e-01
-    1 KSP Residual norm 1.325804582862e-06
+    0 KSP Residual norm 3.199669312712e-01
+    1 KSP Residual norm 2.028790897591e-07
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.545011106749e-03
-  1 KSP Residual norm 1.657608892401e-07
-  2 KSP Residual norm 1.310908730446e-11
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.494144143152e-03
-  1 PICARD ||F||/||F0||=5.904010e-03 
+  0 KSP Residual norm 1.540457100482e-03
+  1 KSP Residual norm 2.115782872784e-07
+  2 KSP Residual norm 1.921089062360e-11
+  3 KSP Residual norm 1.994599842548e-15
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 3
+  1 SNES Function norm 1.645247750659e-03
+  1 PICARD ||F||/||F0||=5.141931e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.494144143152e-03
-    1 KSP Residual norm 4.464020063227e-08
-    2 KSP Residual norm 7.314650165206e-11
+    0 KSP Residual norm 1.645247750659e-03
+    1 KSP Residual norm 4.877389036198e-08
+    2 KSP Residual norm 6.585346512693e-11
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.310908742790e-11
-  1 KSP Residual norm 1.566347574379e-15
-  2 KSP Residual norm 1.743574487059e-19
-  3 KSP Residual norm 1.244343604113e-23
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 3
-  2 SNES Function norm 7.374624462237e-11
+  0 KSP Residual norm 2.001311155659e-15
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 6.585880507419e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.180418 (sec)
+SNES solution time      : 0.178082 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.506978834194e-11 
-      |Div|_2   = 7.314650074360e-11 
+      |Div|_inf = 5.944014573080e-11 
+      |Div|_2   = 6.585346532583e-11 
    Momentum: 
-      |mRes|_2  = 9.386054808555e-12 
+      |mRes|_2  = 8.386360239634e-13 
    Energy: 
-      |eRes|_2  = 2.451271471707e-16 
+      |eRes|_2  = 2.001311155659e-15 
 --------------------------------------------------------------------------
 Actual time step : 0.14421 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 12564 markers and merged 12479 markers in 2.0316e-02 s
+Marker control [0]: (subgrid) cloned 12395 markers and merged 12357 markers in 2.0473e-02 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0868985 sec)
+================================ STEP 30 =================================
 --------------------------------------------------------------------------
-================================ STEP 29 =================================
+Current time        : 1.48630930 [Myr] 
+Tentative time step : 0.15863093 [Myr] 
 --------------------------------------------------------------------------
-Current time        : 1.47630930 [Myr] 
-Tentative time step : 0.14420994 [Myr] 
---------------------------------------------------------------------------
-  0 SNES Function norm 2.073777819000e-01
+  0 SNES Function norm 2.119300432251e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.073777819000e-01
-    1 KSP Residual norm 1.412073615553e-07
+    0 KSP Residual norm 2.119300432251e-01
+    1 KSP Residual norm 6.796022847959e-08
     Linear js_ solve converged due to CONVERGED_RTOL iterations 1
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.539161603357e-03
-  1 KSP Residual norm 2.025302413757e-07
-  2 KSP Residual norm 1.902492998600e-11
-  3 KSP Residual norm 1.983883924564e-15
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 3
-  1 SNES Function norm 1.647529331240e-03
-  1 PICARD ||F||/||F0||=7.944580e-03 
+  0 KSP Residual norm 1.519180190020e-03
+  1 KSP Residual norm 2.391426891990e-07
+  2 KSP Residual norm 2.679392157342e-11
+  3 KSP Residual norm 3.399227729099e-15
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 3
+  1 SNES Function norm 1.801556906306e-03
+  1 PICARD ||F||/||F0||=8.500715e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.647529331240e-03
-    1 KSP Residual norm 4.872845240304e-08
-    2 KSP Residual norm 7.364082614133e-11
+    0 KSP Residual norm 1.801556906306e-03
+    1 KSP Residual norm 5.330234364502e-08
+    2 KSP Residual norm 7.102736770380e-11
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
   Residual norms for ts_ solve.
-  0 KSP Residual norm 1.996833849897e-15
-  1 KSP Residual norm 3.081924102155e-19
-  2 KSP Residual norm 3.372763504275e-23
-  3 KSP Residual norm 3.826208866415e-27
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 3
-  2 SNES Function norm 7.364584118401e-11
+  0 KSP Residual norm 3.401589786509e-15
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 7.103286175543e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.215228 (sec)
+SNES solution time      : 0.204019 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 6.897248787732e-11 
-      |Div|_2   = 7.364082607026e-11 
+      |Div|_inf = 6.564281925100e-11 
+      |Div|_2   = 7.102736765056e-11 
    Momentum: 
-      |mRes|_2  = 8.594529592575e-13 
+      |mRes|_2  = 8.834556001690e-13 
    Energy: 
-      |eRes|_2  = 2.323345752667e-16 
+      |eRes|_2  = 3.401589786509e-15 
 --------------------------------------------------------------------------
 Actual time step : 0.15863 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 11947 markers and merged 11921 markers in 1.9777e-02 s
+Marker control [0]: (subgrid) cloned 11928 markers and merged 11877 markers in 1.9905e-02 s
 --------------------------------------------------------------------------
-================================ STEP 30 =================================
---------------------------------------------------------------------------
-Current time        : 1.63494023 [Myr] 
-Tentative time step : 0.15863093 [Myr] 
---------------------------------------------------------------------------
-  0 SNES Function norm 2.330350000256e-01
-  0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 2.330350000256e-01
-    1 KSP Residual norm 1.638874033273e-06
-    Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  Residual norms for ts_ solve.
-  0 KSP Residual norm 1.533838542502e-03
-  1 KSP Residual norm 2.361026700493e-07
-  2 KSP Residual norm 2.667232940471e-11
-  3 KSP Residual norm 3.423250540338e-15
-  Linear ts_ solve converged due to CONVERGED_RTOL iterations 3
-  1 SNES Function norm 1.799895788284e-03
-  1 PICARD ||F||/||F0||=7.723714e-03 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 1.799895788284e-03
-    1 KSP Residual norm 5.327788451470e-08
-    2 KSP Residual norm 6.816828970357e-11
-    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
-  Residual norms for ts_ solve.
-  0 KSP Residual norm 3.430992466430e-15
-  1 KSP Residual norm 6.364788420501e-19
-  2 KSP Residual norm 8.462572191425e-23
-  3 KSP Residual norm 1.139141708909e-26
-  Linear ts_ solve converged due to CONVERGED_ATOL iterations 3
-  2 SNES Function norm 6.817352715935e-11
---------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 2
-SNES solution time      : 0.196905 (sec)
---------------------------------------------------------------------------
-Residual summary: 
-   Continuity: 
-      |Div|_inf = 6.147131263214e-11 
-      |Div|_2   = 6.816828999481e-11 
-   Momentum: 
-      |mRes|_2  = 8.450115564735e-13 
-   Energy: 
-      |eRes|_2  = 2.194733753865e-16 
---------------------------------------------------------------------------
-Actual time step : 0.17449 [Myr] 
---------------------------------------------------------------------------
-Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 12985 markers and merged 12941 markers in 2.0817e-02 s
---------------------------------------------------------------------------
-Saving output ... done (0.0874444 sec)
+Saving output ... done (0.0636489 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 9.97545 (sec) 
+Total solution time : 9.24984 (sec) 
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
 -jp_pc_factor_mat_solver_type mumps # (source: code)
@@ -1663,13 +1603,13 @@ Total solution time : 9.97545 (sec)
 -js_ksp_converged_reason # (source: code)
 -js_ksp_max_it 20 # (source: code)
 -js_ksp_monitor # (source: code)
--js_ksp_rtol 1e-05 # (source: code)
+-js_ksp_rtol 1.0000000000000001e-05 # (source: code)
 -js_ksp_type fgmres # (source: code)
 -options_left # (source: code)
 -ParamFile PlumeLithos_Interaction_2D_Perm.dat # (source: code)
 -snes_atol 0.0001 # (source: code)
 -snes_linesearch_max_it 5 # (source: code)
--snes_linesearch_maxstep 1.0 # (source: code)
+-snes_linesearch_maxlambda 1.0 # (source: code)
 -snes_linesearch_minlambda 0.05 # (source: code)
 -snes_linesearch_type l2 # (source: code)
 -snes_max_funcs unlimited # (source: code)
@@ -1679,8 +1619,8 @@ Total solution time : 9.97545 (sec)
 -snes_newton_rtol 1.2 # (source: code)
 -snes_picard_minit 5 # (source: code)
 -snes_picard_rtol 0.0001 # (source: code)
--snes_rtol 1e-06 # (source: code)
--snes_stol 1e-32 # (source: code)
+-snes_rtol 9.9999999999999995e-07 # (source: code)
+-snes_stol 1.0000000000000001e-32 # (source: code)
 -ts_ksp_atol_auto # (source: code)
 -ts_ksp_converged_reason # (source: code)
 -ts_ksp_max_it 500 # (source: code)
@@ -1688,7 +1628,4 @@ Total solution time : 9.97545 (sec)
 -ts_ksp_rtol 1e-08 # (source: code)
 -ts_ksp_type fgmres # (source: code)
 #End of PETSc Option Table entries
-WARNING! There are options you set that were not used!
-WARNING! could be spelling mistake, etc!
-There is one unused database option. It is:
-Option left: name:-ParamFile value: PlumeLithos_Interaction_2D_Perm.dat source: code
+There are no unused options.

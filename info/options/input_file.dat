@@ -47,7 +47,7 @@
     time_dt_periods = 0 20 50 60 100 # timestamps where timestep should be fixed (first entry has to 0)
     step_dt_periods = 1 5 5 2 3      # target timesteps ar timestamps above 
     CFL             = 0.5            # CFL (Courant-Friedrichs-Lewy) criterion
-    CFLMAX          = 0.8            # CFL criterion for elasticity
+    CFLMAX          = 0.8            # restart time step above this CFL (elasticity, temperature, kinematic blocks)
     nstep_max       = 50             # maximum allowed number of steps (lower bound: time_end/dt_max)
     nstep_out       = -1             # save output every n steps. Set this to -1 to deactivate saving output
     nstep_ini       = 5              # save output for n initial steps

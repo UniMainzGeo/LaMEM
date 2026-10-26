@@ -160,8 +160,8 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		PetscPrintf(PETSC_COMM_WORLD, " Warning: True pressure-dependent rheology requires open top boundary (Vd, Vn, Vp, fr, Kb, beta, p_litho_visc, p_litho_plast, open_top_bound)\n");
 	}
 
-	// fix advection time steps for elasticity or kinematic block BC
-	if(is_elastic || jr->bc->nblocks)
+	// fix advection time steps if the solve depends on time step (elasticity, temperature, kinematic block BC)
+	if(is_elastic || ctrl->actTemp || jr->bc->nblocks)
 	{
 		jr->ts->fix_dt = 1;
 	}

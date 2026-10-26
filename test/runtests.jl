@@ -695,7 +695,7 @@ if should_run_test("t12_Temperature_diffusion")
     z = data.z.val[1,1,:]
 
     T_a5 = Analytical_1D(z, t5)
-    @test norm(T_a5 - T5)/length(T5) ≈ 0.033567 rtol = 1e-3
+    @test norm(T_a5 - T5)/length(T5) ≈ 0.0242918 rtol = 1e-3
 
     if create_plots
         Plot_Analytics_vs_Numerics(z,T_a5, T5, dir, "T_anal3.png")
@@ -920,8 +920,8 @@ if should_run_test("t14_1DStrengthEnvelope")
     τ_anal  =  Analytical_StrengthEnvelop(phase, T, P, τy)      # analytical solution 
 
     @test norm(τII_1 - τII_2)  ≈ 18.63   rtol = 1e-3
-    @test norm(τII_1 - τII_3)  ≈ 11.61   rtol = 1e-3
-    @test norm(τII_1 - τII_4)  ≈ 13.35   rtol = 1e-3
+    @test norm(τII_1 - τII_3)  ≈ 11.67   rtol = 1e-3
+    @test norm(τII_1 - τII_4)  ≈ 13.37   rtol = 1e-3
     @test norm(τII_1 - τ_anal) ≈ 147.48  rtol = 1e-3
     
     # Create plot
