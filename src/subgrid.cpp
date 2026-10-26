@@ -35,7 +35,7 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	// check marker distribution and merge or clone markers based on subgrid
 
 	FDSTAG           *fs;
-	PetscInt          icell, isubcell, imark, I, J, K, i, j, ib, ie;
+	PetscInt          icell, isubcell, imark, I, J, K, i, j, ib, ie, cnt[2];
 	PetscInt          ncx, ncy, npx, npy, npz, nmark, ncell, nclone, nmerge;
 	PetscInt         *markind;
 	PetscScalar       s[3], h[3], *x;
@@ -171,9 +171,16 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 
 	// print info
 	PetscCall(PetscTime(&t1));
+
+	// total counts over all ranks
+	cnt[0] = nclone;
+	cnt[1] = nmerge;
+
+	PetscCallMPI(MPI_Allreduce(MPI_IN_PLACE, cnt, 2, MPIU_INT, MPI_SUM, actx->icomm));
+
 	PetscPrintf(PETSC_COMM_WORLD,
-	            "Marker control [%" PetscInt_FMT "]: (subgrid) cloned %" PetscInt_FMT " markers and merged %" PetscInt_FMT " markers in %1.4e s\n",
-	            actx->iproc, nclone, nmerge, t1-t0);
+	            "Marker control: (subgrid) cloned %" PetscInt_FMT " markers and merged %" PetscInt_FMT " markers in %1.4e s\n",
+	            cnt[0], cnt[1], t1-t0);
 
 	PetscFunctionReturn(0);
 }
@@ -476,6 +483,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp, *X, *IX;
 	spair           d;
 	vector <spair>  dist;
+	vector <PetscInt> phase0;
 
 	PetscFunctionBeginUser;
 
@@ -499,6 +507,15 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 
 	// reserve marker distance buffer
 	dist.reserve(_mark_buff_sz_);
+
+	// phases before the update (numerical sedimentation copies the closest of these rock phases,
+	// so the result does not depend on the marker storage order)
+	if(surf->SurfMode != 2 && !surf->SedimentModel)
+	{
+		phase0.resize((size_t)actx->nummark);
+
+		for(jj = 0; jj < actx->nummark; jj++) phase0[(size_t)jj] = actx->markers[jj].phase;
+	}
 
 	// request local vector for reference sedimentation phases
 	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &vphase));
@@ -575,7 +592,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 					IP     = &actx->markers[markid];
 
 					// sort out air markers
-					if(IP->phase == AirPhase) continue;
+					if(phase0[(size_t)markid] == AirPhase) continue;
 
 					// get marker coordinates
 					IX = IP->X;
@@ -594,9 +611,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 					sort(dist.begin(), dist.end());
 
 					// copy phase from closest marker
-					IP = &actx->markers[dist.begin()->second];
-
-					P->phase = IP->phase;
+					P->phase = phase0[(size_t)dist.begin()->second];
 				}
 				else
 				{

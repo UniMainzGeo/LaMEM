@@ -29,10 +29,8 @@ Testing:
   - 11. M-063: "Incorrect sedimentation phase" stop (subgrid.cpp:608).
   - 13. Rest of N-025 / N-026: dt_out, time_end trimming, fwrite per value, total_pressure edges.
   - Rest of N-021 (option order in nlsolve/multigrid, matData comment, lsolve bf checks,
-    matAux duplicates, R/P weights) and N-022 (cvi "RK 4th" comment, rank-0 log counts,
-    Temperature strings, A->buffer = 1, FreeSurfGetAirPhaseRatio
-    twice, nearest-rock search order). Ellipsoid `fb->ID` already set. nbyte overflow: error
-    check added 2026-10-26 (no datatype change).
+    matAux duplicates, R/P weights).
+  - N-022 done 2026-10-26 (see findings.md).
   - S-014 (2 ghost layers), N-004 (restart decision), M-056 2D (needs matrix-free MG in 2D).
 - Lowest priority: S-006 test; M-026 APS not saved by ADVMarkSave.
 - Older notes below say "t37 FastScape broken" or "dyndike fails (known)": both are resolved

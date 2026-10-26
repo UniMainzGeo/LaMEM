@@ -164,7 +164,7 @@ Next free IDs: S-049, M-074, N-030
 | N-019 | note | confirmed | logic | medium | nlsolve.cpp:216-238 | Newton/Picard switch: divergence test uses initial residual; max-Newton gives one Picard step | fixed (group C) |
 | N-020 | note | confirmed | physics | medium | lsolve.cpp, matrix.cpp, matAux.cpp | `jp_pgamma` means different things per solver; inv_eta Schur with penalty drops the eta term | not an issue |
 | N-021 | note | confirmed | cleanup | medium | nlsolve, lsolve, multigrid, matData, matFree (various) | Option overrides, stale comments, dead test code, small clean-ups | partly fixed |
-| N-022 | note | confirmed | cleanup | medium | marker, advect, AVD, cvi, subgrid (various) | Dead code, wrong comments and log lines, small clean-ups | partly fixed |
+| N-022 | note | confirmed | cleanup | medium | marker, advect, AVD, cvi, subgrid (various) | Dead code, wrong comments and log lines, small clean-ups | fixed |
 | N-023 | note | confirmed | cleanup | medium | phase_transition.cpp, dike.cpp (various) | Dead code, misleading names and comments, small clean-ups | open |
 | N-024 | note | confirmed | input | medium | parsing.cpp (various) | Input parsing: silent bad numbers, octal integers, dropped values, rank-0 error hang | fixed |
 | N-025 | note | confirmed | cleanup | medium | options.cpp, tssolve.cpp, scaling.cpp, LaMEMLib.cpp, docs | Output and time-step quirks, labels, docs | partly fixed |
@@ -1793,9 +1793,14 @@ Next free IDs: S-049, M-074, N-030
   - `A->buffer = 1` (AVD.cpp:98) grows arrays one at a time (O(n²)).
   - `FreeSurfGetAirPhaseRatio` called twice per step (advect.cpp:1638, LaMEMLib.cpp:776).
   - Nearest-rock search in `ADVMarkCrossFreeSurf` depends on storage order.
-- Status: partly fixed (group C): dead AVD functions, `_DISP_`, subgrid test block removed;
-  ellipsoid `fb->ID` already set (marker.cpp:1123); marker exchange stops with an error when
-  the message would exceed the MPI count (advect.cpp, cvi.cpp; PetscInt is 32-bit here); rest open
+- Status: fixed (group C): dead code removed (3c04c606); ellipsoid `fb->ID` already set; marker
+  exchange stops with an error above the MPI count (d3a18147); comments fixed (cvi.cpp, marker.cpp
+  cosine); AVD and subgrid logs print totals over all ranks (one MPI_Allreduce each); unknown
+  `Temperature` strings stop the run; AVD chains double their capacity (old copy read past the
+  array for buffer > 1); polygon noise uses the marker spacing as in ADVMarkInitCoord;
+  nearest-rock search uses the phases from before the update. FreeSurfGetAirPhaseRatio kept
+  twice (only call with advect = none, second call is a no-op). Also fixed: layer `rand_ampl`
+  was scaled by maxPhaseID instead of the length unit. All tests pass, no reference changes.
 
 ### N-023 [note, confirmed] Phase transitions and dikes: dead code, names, small clean-ups
 - Tags: note, confirmed, cleanup, medium

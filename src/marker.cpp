@@ -981,7 +981,7 @@ static PetscErrorCode ADVMarkReadGeom(AdvCtx *actx, FB *fb, GeomPrim *geom, Geom
 		PetscCall(getScalarParam(fb, _REQUIRED_, "bottom", &layer->bot,    1, chLen));
 
 		// optional sinusoidal perturbation of layer interface:
-		//  (adds amplitude*sin(2*pi/wavelength*x) to the interface)
+		//  (adds -amplitude*cos(2*pi/wavelength*x) to the interface)
 		layer->cosine = 0;
 		PetscCall(getIntParam   (fb, _OPTIONAL_, "cosine",  &layer->cosine,  1, maxPhaseID));
 		if (layer->cosine==1)
@@ -992,7 +992,7 @@ static PetscErrorCode ADVMarkReadGeom(AdvCtx *actx, FB *fb, GeomPrim *geom, Geom
 
 		// random noise
 		layer->rand_amplitude = 0.0;
-		PetscCall(getScalarParam   (fb, _OPTIONAL_, "rand_ampl",  &layer->rand_amplitude,  1, (PetscScalar) maxPhaseID));
+		PetscCall(getScalarParam   (fb, _OPTIONAL_, "rand_ampl",  &layer->rand_amplitude,  1, chLen));
 
 		// Optional temperature options:
 		layer->setTemp = 0;
@@ -1000,6 +1000,7 @@ static PetscErrorCode ADVMarkReadGeom(AdvCtx *actx, FB *fb, GeomPrim *geom, Geom
 		if      (!strcmp(TemperatureStructure, "constant"))     {layer->setTemp=1;}
 		else if (!strcmp(TemperatureStructure, "linear"))       {layer->setTemp=2;}
 		else if (!strcmp(TemperatureStructure, "halfspace"))    {layer->setTemp=3;}
+		else if (TemperatureStructure[0])                    {SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown Temperature type for %s %" PetscInt_FMT ": %s", "layer", jj, TemperatureStructure);}
 
 		// Depending on temperature options, get required input parameters
 		if (layer->setTemp==1)
@@ -1054,6 +1055,7 @@ static PetscErrorCode ADVMarkReadGeom(AdvCtx *actx, FB *fb, GeomPrim *geom, Geom
 		sphere->setTemp = 0;
 		PetscCall(getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ));
 		if      (!strcmp(TemperatureStructure, "constant"))     {sphere->setTemp=1;}
+		else if (TemperatureStructure[0])                    {SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown Temperature type for %s %" PetscInt_FMT ": %s", "sphere", jj, TemperatureStructure);}
 
 		// Depending on temperature options, get required input parameters
 		if (sphere->setTemp==1)
@@ -1092,6 +1094,7 @@ static PetscErrorCode ADVMarkReadGeom(AdvCtx *actx, FB *fb, GeomPrim *geom, Geom
 		ellipsoid->setTemp = 0;
 		PetscCall(getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ));
 		if      (!strcmp(TemperatureStructure, "constant"))     {ellipsoid->setTemp=1;}
+		else if (TemperatureStructure[0])                    {SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown Temperature type for %s %" PetscInt_FMT ": %s", "ellipsoid", jj, TemperatureStructure);}
 
 		// Depending on temperature options, get required input parameters
 		if (ellipsoid->setTemp==1)
@@ -1134,6 +1137,7 @@ static PetscErrorCode ADVMarkReadGeom(AdvCtx *actx, FB *fb, GeomPrim *geom, Geom
 		if      (!strcmp(TemperatureStructure, "constant"))     {box->setTemp=1;}
 		else if (!strcmp(TemperatureStructure, "linear"))       {box->setTemp=2;}
 		else if (!strcmp(TemperatureStructure, "halfspace"))    {box->setTemp=3;}
+		else if (TemperatureStructure[0])                    {SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown Temperature type for %s %" PetscInt_FMT ": %s", "box", jj, TemperatureStructure);}
 
 		// Depending on temperature options, get required input parameters
 		if (box->setTemp==1)
@@ -1212,7 +1216,8 @@ static PetscErrorCode ADVMarkReadGeom(AdvCtx *actx, FB *fb, GeomPrim *geom, Geom
 		// Temperature options (actually required to be setTemp==4)
 		PetscCall(getStringParam(fb, _OPTIONAL_, "Temperature",    TemperatureStructure,   NULL ));
 
-		if (!strcmp(TemperatureStructure, "halfspace_age"))    {ridge->setTemp=4;}
+		if      (!strcmp(TemperatureStructure, "halfspace_age")) {ridge->setTemp=4;}
+		else if (TemperatureStructure[0])                      {SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown Temperature type for %s %" PetscInt_FMT ": %s", "ridge", jj, TemperatureStructure);}
 
 		if (ridge->setTemp==4)
 		{
@@ -1285,6 +1290,7 @@ static PetscErrorCode ADVMarkReadGeom(AdvCtx *actx, FB *fb, GeomPrim *geom, Geom
 		cylinder->setTemp = 0;
 		PetscCall(getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ));
 		if      (!strcmp(TemperatureStructure, "constant"))     {cylinder->setTemp=1;}
+		else if (TemperatureStructure[0])                    {SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown Temperature type for %s %" PetscInt_FMT ": %s", "cylinder", jj, TemperatureStructure);}
 
 		// Depending on temperature options, get required input parameters
 		if (cylinder->setTemp==1)
@@ -1570,11 +1576,12 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 				{
 					// add random noise
 					PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
-					actx->markers[imark].X[0] += (cf_rand-0.5)*dx/( (PetscScalar) actx->NumPartX);
+					// (same amplitude as ADVMarkInitCoord: dx is the marker spacing)
+					actx->markers[imark].X[0] += (cf_rand-0.5)*dx;
 					PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
-					actx->markers[imark].X[1] += (cf_rand-0.5)*dy/( (PetscScalar) actx->NumPartY);
+					actx->markers[imark].X[1] += (cf_rand-0.5)*dy;
 					PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
-					actx->markers[imark].X[2] += (cf_rand-0.5)*dz/( (PetscScalar) actx->NumPartZ);
+					actx->markers[imark].X[2] += (cf_rand-0.5)*dz;
 				}
 
 				// increment local counter

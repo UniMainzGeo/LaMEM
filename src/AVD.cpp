@@ -371,35 +371,41 @@ PetscErrorCode AVDUpdateChain(AVD *A, const PetscInt ip)
 //---------------------------------------------------------------------------
 PetscErrorCode AVDReAlloc(AVDChain *chain, PetscInt buffer)
 {
-	PetscInt *temp;
+	// double the capacity (at least by buffer), so that growing costs O(n) in total
+
+	PetscInt *temp, n;
 
 	PetscFunctionBeginUser;
 
 	// 1. allocate memory for claimed cells
-	PetscCall(makeIntArray(&temp, NULL, chain->iclaim + buffer));
+	n = PetscMax(buffer, chain->iclaim);
+
+	PetscCall(makeIntArray(&temp, NULL, chain->iclaim + n));
 
 	// copy current data
-	PetscCall(PetscMemcpy(temp, chain->claim, (size_t)(chain->nclaimed + buffer)*sizeof(PetscInt)));
+	PetscCall(PetscMemcpy(temp, chain->claim, (size_t)chain->iclaim*sizeof(PetscInt)));
 
 	// delete previous storage
 	PetscCall(PetscFree(chain->claim));
 
 	// save new capacity & storage
 	chain->claim      = temp;
-	chain->iclaim    += buffer;
+	chain->iclaim    += n;
 
 	// 2. allocate memory for boundary cells
-	PetscCall(makeIntArray(&temp, NULL, chain->ibound + buffer));
+	n = PetscMax(buffer, chain->ibound);
+
+	PetscCall(makeIntArray(&temp, NULL, chain->ibound + n));
 
 	// copy current data
-	PetscCall(PetscMemcpy(temp, chain->bound, (size_t)(chain->length + buffer)*sizeof(PetscInt)));
+	PetscCall(PetscMemcpy(temp, chain->bound, (size_t)chain->ibound*sizeof(PetscInt)));
 
 	// delete previous storage
 	PetscCall(PetscFree(chain->bound));
 
 	// save new capacity & storage
 	chain->bound      = temp;
-	chain->ibound    += buffer;
+	chain->ibound    += n;
 
 	PetscFunctionReturn(0);
 }
@@ -478,7 +484,7 @@ PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	// check marker distribution and delete or inject markers if necessary
 	PetscScalar    xs[3], xe[3];
 	PetscInt       ind, i, j, k, M, N;
-	PetscInt       n, ninj, ndel, nmin, nmax;
+	PetscInt       n, ninj, ndel, nmin, nmax, cnt[2];
 	PetscLogDouble t0,t1;
 	char           lbl[_lbl_sz_];
 
@@ -513,8 +519,7 @@ PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 		if (n > nmax) ndel += n - nmax;
 	}
 
-	// if no need for injection/deletion
-	if ((!ninj) && (!ndel)) PetscFunctionReturn(0);
+	// no early return without injection/deletion: the counts are summed over all ranks below
 
 	actx->nrecv = ninj;
 	actx->ndel  = ndel;
@@ -565,7 +570,16 @@ PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	else if (dir== 1) sprintf(lbl,"XZED");
 	else if (dir== 2) sprintf(lbl,"XYED");
 
-	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%" PetscInt_FMT "]: (AVD %s) injected %" PetscInt_FMT " markers and deleted %" PetscInt_FMT " markers in %1.4e s\n",actx->iproc,lbl, ninj, ndel, t1-t0);
+	// total counts over all ranks
+	cnt[0] = ninj;
+	cnt[1] = ndel;
+
+	PetscCallMPI(MPI_Allreduce(MPI_IN_PLACE, cnt, 2, MPIU_INT, MPI_SUM, actx->icomm));
+
+	if(cnt[0] || cnt[1])
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"Marker control: (AVD %s) injected %" PetscInt_FMT " markers and deleted %" PetscInt_FMT " markers in %1.4e s\n", lbl, cnt[0], cnt[1], t1-t0);
+	}
 
 	PetscFunctionReturn(0);
 }

@@ -10,7 +10,7 @@
 //---------------------------------------------------------------------------
 // Extended Advection and Conservative Velocity Interpolation Routines (CVI)
 //---------------------------------------------------------------------------
-// extended advection schemes for Runge-Kutta 2nd order and Runge-Kutta 4th order
+// extended advection schemes (Euler and Runge-Kutta 2nd order)
 // also testing velocity interpolation routines
 // by A. Pusok, July 2015
 //---------------------------------------------------------------------------
