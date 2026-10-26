@@ -21,21 +21,33 @@ Testing:
 - C done: items 1 (S-002, 5fb3350a), 2 (S-046, b41cef9a), 4 (S-045, ea809634),
   7 (92b20ac3; M-049 changes t10, 2eb1e72b), 9, 10, 12; S-023 and the local-iteration /
   T-coupling work; t16 and t26 workarounds removed; t16, t19 sped up (e38ee480).
-- C open (checked in code 2026-10-26, nothing done yet):
+- C done 2026-10-26: M-063 (bff40e9f, stop kept), N-022 (d3a18147, 88e7fbf5),
+  S-014 (b7a5c143, cell-center velocities precomputed, see below).
+- C open (checked in code 2026-10-26):
   - 3. S-044: `fix_phase` / `fix_cell` faces on processor boundaries (bc.cpp BCApplyPhase/Cells).
   - 5. S-036: Clapeyron units (with Andrea).
   - 6. M-048: T = 0 means unset (phase.cpp, marker.cpp).
   - 8. M-046, M-067 (with Garrett).
-  - 11. M-063: "Incorrect sedimentation phase" stop (subgrid.cpp:608). Done 2026-10-26 (stop kept).
   - 13. Rest of N-025 / N-026: dt_out, time_end trimming, fwrite per value, total_pressure edges.
   - Rest of N-021 (option order in nlsolve/multigrid, matData comment, lsolve bf checks,
     matAux duplicates, R/P weights).
-  - N-022 done 2026-10-26 (see findings.md).
-  - S-014 done 2026-10-26 (cell-center velocities precomputed, see below).
   - N-004 (restart decision), M-056 2D (needs matrix-free MG in 2D).
+- To look at (found 2026-10-26 while testing S-014): with `rand_noise 0`, 1-core and 4-core
+  runs of examples/BuiltInSetups/Subduction2D_FreeSlip_DirectSolver.dat agree after the first
+  steps (|Div|_2 to ~1e-9) but drift apart later (dt 0.23798 vs 0.23777 at step 20). Some
+  other part still depends on the core count (marker injection noise is one candidate).
 - Lowest priority: S-006 test; M-026 APS not saved by ADVMarkSave.
 - Older notes below say "t37 FastScape broken" or "dyndike fails (known)": both are resolved
   (t37 needs `surf=scape`, see CLAUDE.md; dyndike fixed with the lmaxit removal).
+
+## Random noise seeding (checked 2026-10-26, dropped)
+
+All random sources start from a fixed seed (PETSc default 0x12345678, seed 1 + rank +
+nproc*step for injection, unseeded rand() = seed 1, FreeSurf_NoiseSeed, std::mt19937 default),
+none uses the clock. So runs are the same from run to run on the same number of cores, which
+is all the tests need. Noise still depends on the core count (each rank draws its own
+sequence). No code change; a note to always use a fixed seed was added to the development
+guide (doc/src/man/LaMEM_Development.md, 6.3.2).
 
 ## A. Fix right away (small, clear, local)
 
