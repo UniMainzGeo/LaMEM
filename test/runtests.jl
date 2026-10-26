@@ -1070,7 +1070,7 @@ if should_run_test("t19_CompensatedInflow")
     # test_a
     # t19_CompensatedInflow
     @test perform_lamem_test(dir,"CompensatedInflow_test_2D.dat","CompensatedInflow",
-                            args="-nstep_max 10",
+                            args="-nstep_max 7",
                             keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 

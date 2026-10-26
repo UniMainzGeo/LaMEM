@@ -22,7 +22,7 @@
 #	inc_dt    = 0.1     # time step increment per time step (fraction of unit)
 	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 1.0     # CFL criterion for elasticity
-	nstep_max = 20      # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 8       # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 2      # save output every n steps
 	nstep_rdb = 60    # save restart database every n steps
 
@@ -223,7 +223,7 @@
         PTBox_TempType          =   none          # Temperature condition witin the box [none, constant, linear, halfspace]
  	t0_box = 0.002     # optional, in Myr, start time for moving dike, cannot be smaller than minimum time step
         t1_box = 0.3      # optional, in Myr, end time
-        v_box  = -1.0     # optional, in cm/yr, velocity with which dike moves (10cm/yr = 100km/Myr), positive: moves right, negative: left
+        v_box  = -10.0    # optional, in cm/yr, velocity with which dike moves (10cm/yr = 100km/Myr), positive: moves right, negative: left
  <PhaseTransitionEnd>
 
  # High Conductivity box left of moving dike

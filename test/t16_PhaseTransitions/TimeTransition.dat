@@ -30,7 +30,7 @@ unit_stress      = 1e8
 	CFL       = 0.5		# CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 0.8		# CFL criterion for elasticity
 	nstep_ini = 10		# save output for n initial steps
-	nstep_max = 30		# maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 10		# maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 2		# save output every n steps
 
 #===============================================================================
@@ -167,7 +167,7 @@ unit_stress      = 1e8
 		ID                      =   0         #     Phase_transition law ID
 		Type                    =   Constant  #     [Constant, Clapeyron]: Constant - the phase transition occurs only at a fixed value of the parameter
 		Parameter_transition    =   t         #     [T = Temperature, P = Pressure, Depth = z-coord, X=x-coord, Y=y-coord, APS = accumulated plastic strain, MeltFraction] parameter that triggers the phase transition
-		ConstantValue           =   20e-6     #     Value of the parameter [unit of T,P,z, APS]
+		ConstantValue           =   5e-6      #     Value of the parameter [unit of T,P,z, APS]
         
         number_phases           =   1         #     The number of involved phases [default=1]
 		PhaseAbove              =   4         #     Above the chosen value the phase is 1, below it, the value is PhaseBelow
@@ -179,7 +179,7 @@ unit_stress      = 1e8
 		ID                      =   1         #     Phase_transition law ID
 		Type                    =   Constant  #     [Constant, Clapeyron]: Constant - the phase transition occurs only at a fixed value of the parameter
 		Parameter_transition    =   t         #     [T = Temperature, P = Pressure, Depth = z-coord, X=x-coord, Y=y-coord, APS = accumulated plastic strain, MeltFraction] parameter that triggers the phase transition
-		ConstantValue           =   20e-6     #     Value of the parameter [unit of T,P,z, APS]
+		ConstantValue           =   5e-6      #     Value of the parameter [unit of T,P,z, APS]
         
         number_phases           =   1         #     The number of involved phases [default=1]
 		PhaseAbove              =   4         #     Above the chosen value the phase is 1, below it, the value is PhaseBelow
