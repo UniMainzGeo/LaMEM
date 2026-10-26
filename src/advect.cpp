@@ -1352,8 +1352,6 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	PetscInt       ninj = 0, nind = 0, sind = 0, ninj_tot;
 	PetscScalar    dx[3], xp[3], xc[3], xs[3], xe[3], *X;
 	PetscScalar    x, sumind = 0.0;
-	PetscScalar    cf_rand;
-	PetscRandom    rctx;
 	PetscLogDouble t0,t1;
 
 	PetscFunctionBeginUser;
@@ -1442,14 +1440,6 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	actx->nrecv = ninj;
 	PetscCall(PetscMalloc((size_t)actx->nrecv*sizeof(Marker), &actx->recvbuf));
 	PetscCall(PetscMemzero(actx->recvbuf, (size_t)actx->nrecv*sizeof(Marker)));
-
-	// initialize the random number generator
-	PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &rctx));
-	PetscCall(PetscRandomSetFromOptions(rctx));
-
-	// different noise on every rank and time step
-	PetscCall(PetscRandomSetSeed(rctx, (unsigned long)(1 + actx->iproc + actx->nproc*actx->jr->ts->istep)));
-	PetscCall(PetscRandomSeed(rctx));
 
 	// inject markers in corners
 	for(i = 0; i < fs->nCells; i++)
@@ -1556,14 +1546,6 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 				if (j == 6) { xp[0] = (xs[0]+xc[0])*0.5; xp[1] = (xe[1]+xc[1])*0.5; xp[2] = (xe[2]+xc[2])*0.5;}
 				if (j == 7) { xp[0] = (xe[0]+xc[0])*0.5; xp[1] = (xe[1]+xc[1])*0.5; xp[2] = (xe[2]+xc[2])*0.5;}
 
-				// add some random noise
-				PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
-				xp[0] += (cf_rand-0.5)*((xc[0]-xs[0])*0.5)*0.5;
-				PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
-				xp[1] += (cf_rand-0.5)*((xc[1]-xs[1])*0.5)*0.5;
-				PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
-				xp[2] += (cf_rand-0.5)*((xc[2]-xs[2])*0.5)*0.5;
-
 				// calculate the closest (parent marker)
 				for (ii = 0; ii < n; ii++)
 				{
@@ -1594,9 +1576,6 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 			}
 		}
 	}
-
-	// destroy random context
-	PetscCall(PetscRandomDestroy(&rctx));
 
 	// store new markers (skipped corners are not injected)
 	actx->nrecv = nind;
