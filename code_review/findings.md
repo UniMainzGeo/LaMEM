@@ -25,7 +25,7 @@ Next free IDs: S-049, M-074, N-030
 | S-011 | major | confirmed | restart | quick | bc.cpp:1704-1715 | After restart, net-only inflow adds the net offset twice (function `static`) | fixed |
 | S-012 | major | confirmed | physics | quick | bc.cpp:3125-3134 | 3D Gaussian plume inflow is not mass-conserving (missing radius² factor) | open |
 | S-013 | major | confirmed | logic | quick | advect.cpp:1217-1228 | Garbage collection deletes the wrong markers when the AVD delete list is unsorted | fixed |
-| S-014 | major | confirmed | parallel | quick | cvi.cpp:1305-1414 | STAGP interpolation treats processor boundaries as domain walls | open |
+| S-014 | major | confirmed | parallel | quick | cvi.cpp:1305-1414 | STAGP interpolation treats processor boundaries as domain walls | done |
 | S-015 | major | confirmed | logic | quick | marker.cpp:2358 | Oblique ridge axis is wrong unless the front edge is at y = 0 | open |
 | S-016 | major | confirmed | input | quick | marker.cpp:984 | Layer `rand_ampl` is divided by the max phase ID instead of the length scale | open |
 | S-017 | major | confirmed | input, memory | quick | marker.cpp:1996-2094 | Phase diagram load fails silently (density 0); size not checked against buffer | open |
@@ -336,7 +336,8 @@ Next free IDs: S-049, M-074, N-030
 - Why it matters: `interp = stagp` gives different marker paths for different CPU counts.
 - Fix idea: test global indices (`sx+IN == 0`, `sx+IN == global nx`). The comment "ONLY FOR
   FREE SLIP BC" (cvi.cpp:1298) is not enforced either.
-- Status: open (moved from A to C: needs 2 ghost layers or another stencil)
+- Status: done 2026-10-26 (cell-center velocities are computed first and exchanged with one
+  ghost layer; also fixes a 2-cell interval at upper walls in the old code)
 
 ### S-015 [major, confirmed] Oblique ridge axis is wrong unless the front edge is at y = 0
 - Tags: major, confirmed, logic, quick

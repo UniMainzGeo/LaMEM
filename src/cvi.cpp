@@ -1203,17 +1203,14 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 
 	FDSTAG      *fs;
 	JacRes      *jr;
-	PetscInt    sx, sy, sz, nx, ny, nz, nmark;
+	PetscInt    sx, sy, sz, nx, ny, nmark;
 	PetscInt    jj, ID, I, J, K, II, JJ, KK;
-	PetscInt    IN, JN, KN;
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar *ccx, *ccy, *ccz;
 	PetscScalar v[3], vp[3];
-	Vec         lbvx, lbvy, lbvz;
-	PetscScalar ***lvx, ***lvy, ***lvz;
+	Vec         lbvx, lbvy, lbvz, lcvx, lcvy, lcvz;
+	PetscScalar ***lvx, ***lvy, ***lvz, ***cvx, ***cvy, ***cvz;
 	PetscScalar xc, yc, zc, xp, yp, zp;
-	PetscScalar vii[12], vxp[8], vyp[8], vzp[8];
-	PetscScalar nxs, nxe, nys, nye, nzs, nze, xpl, ypl, zpl;
 	PetscScalar A, B;
 
 	PetscFunctionBeginUser;
@@ -1234,7 +1231,7 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 	// starting indices & number of cells
 	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
 	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
-	sz = fs->dsz.pstart; nz = fs->dsz.ncels;
+	sz = fs->dsz.pstart;
 
 	// node & cell coordinates
 	ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
@@ -1244,10 +1241,20 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 	// get velocity vectors
 	PetscCall(JacResGetSolution(jr, jr->gsol, &lbvx, &lbvy, &lbvz, NULL, NULL, _interp_));
 
+	// get cell-center velocities
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &lcvx));
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &lcvy));
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &lcvz));
+
+	PetscCall(ADVelGetCellVel(fs, jr->bc, lbvx, lbvy, lbvz, lcvx, lcvy, lcvz));
+
 	// access velocity vectors
-	PetscCall(DMDAVecGetArray(fs->DA_X, lbvx, &lvx));
-	PetscCall(DMDAVecGetArray(fs->DA_Y, lbvy, &lvy));
-	PetscCall(DMDAVecGetArray(fs->DA_Z, lbvz, &lvz));
+	PetscCall(DMDAVecGetArray(fs->DA_X,   lbvx, &lvx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   lbvy, &lvy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   lbvz, &lvz));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lcvx, &cvx));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lcvy, &cvy));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lcvz, &cvz));
 
 	// scan all markers
 	for(jj = 0; jj < nmark; jj++)
@@ -1278,158 +1285,10 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 		v[1] = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, xp, yp, zp, ccx, ncy, ccz);
 		v[2] = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
 
-		// check marker position relative to pressure cube
-		// WARNING! ONLY FOR FREE SLIP BC
-
-		// ----------------
-		// VX
-		// ----------------
-		if(xp > xc)  IN = I+1;  else  IN = I;
-
-		if (IN == 0)
-		{
-			vii[0] = 2*lvx[sz+KK  ][sy+JJ  ][sx+IN]-lvx[sz+KK  ][sy+JJ  ][sx+IN+1]; vii[1]  = lvx[sz+KK  ][sy+JJ  ][sx+IN  ]; vii[2]  = lvx[sz+KK  ][sy+JJ  ][sx+IN+1];
-			vii[3] = 2*lvx[sz+KK  ][sy+JJ+1][sx+IN]-lvx[sz+KK  ][sy+JJ+1][sx+IN+1]; vii[4]  = lvx[sz+KK  ][sy+JJ+1][sx+IN  ]; vii[5]  = lvx[sz+KK  ][sy+JJ+1][sx+IN+1];
-			vii[6] = 2*lvx[sz+KK+1][sy+JJ  ][sx+IN]-lvx[sz+KK+1][sy+JJ  ][sx+IN+1]; vii[7]  = lvx[sz+KK+1][sy+JJ  ][sx+IN  ]; vii[8]  = lvx[sz+KK+1][sy+JJ  ][sx+IN+1];
-			vii[9] = 2*lvx[sz+KK+1][sy+JJ+1][sx+IN]-lvx[sz+KK+1][sy+JJ+1][sx+IN+1]; vii[10] = lvx[sz+KK+1][sy+JJ+1][sx+IN  ]; vii[11] = lvx[sz+KK+1][sy+JJ+1][sx+IN+1];
-
-			nxs = 2*ccx[IN]-ccx[IN+1]; nxe = ccx[IN];
-		}
-		else if (IN == nx)
-		{
-			vii[0] = lvx[sz+KK  ][sy+JJ  ][sx+IN-1]; vii[1]  = lvx[sz+KK  ][sy+JJ  ][sx+IN  ]; vii[2]  = 2*lvx[sz+KK  ][sy+JJ  ][sx+IN]-lvx[sz+KK  ][sy+JJ  ][sx+IN-1];
-			vii[3] = lvx[sz+KK  ][sy+JJ+1][sx+IN-1]; vii[4]  = lvx[sz+KK  ][sy+JJ+1][sx+IN  ]; vii[5]  = 2*lvx[sz+KK  ][sy+JJ+1][sx+IN]-lvx[sz+KK  ][sy+JJ+1][sx+IN-1];
-			vii[6] = lvx[sz+KK+1][sy+JJ  ][sx+IN-1]; vii[7]  = lvx[sz+KK+1][sy+JJ  ][sx+IN  ]; vii[8]  = 2*lvx[sz+KK+1][sy+JJ  ][sx+IN]-lvx[sz+KK+1][sy+JJ  ][sx+IN-1];
-			vii[9] = lvx[sz+KK+1][sy+JJ+1][sx+IN-1]; vii[10] = lvx[sz+KK+1][sy+JJ+1][sx+IN  ]; vii[11] = 2*lvx[sz+KK+1][sy+JJ+1][sx+IN]-lvx[sz+KK+1][sy+JJ+1][sx+IN-1];
-
-			nxs = ccx[IN-1]; nxe = 2*ccx[IN]-ccx[IN-1];
-		}
-		else
-		{
-			vii[0] = lvx[sz+KK  ][sy+JJ  ][sx+IN-1]; vii[1]  = lvx[sz+KK  ][sy+JJ  ][sx+IN  ]; vii[2]  = lvx[sz+KK  ][sy+JJ  ][sx+IN+1];
-			vii[3] = lvx[sz+KK  ][sy+JJ+1][sx+IN-1]; vii[4]  = lvx[sz+KK  ][sy+JJ+1][sx+IN  ]; vii[5]  = lvx[sz+KK  ][sy+JJ+1][sx+IN+1];
-			vii[6] = lvx[sz+KK+1][sy+JJ  ][sx+IN-1]; vii[7]  = lvx[sz+KK+1][sy+JJ  ][sx+IN  ]; vii[8]  = lvx[sz+KK+1][sy+JJ  ][sx+IN+1];
-			vii[9] = lvx[sz+KK+1][sy+JJ+1][sx+IN-1]; vii[10] = lvx[sz+KK+1][sy+JJ+1][sx+IN  ]; vii[11] = lvx[sz+KK+1][sy+JJ+1][sx+IN+1];
-
-			nxs = ccx[IN-1]; nxe = ccx[IN  ];
-		}
-
-		// get velocities and boundaries
-		vxp[0] = (vii[0] + vii[1] )/2; vxp[1] = (vii[1]  + vii[2] )/2;
-		vxp[2] = (vii[3] + vii[4] )/2; vxp[3] = (vii[4]  + vii[5] )/2;
-		vxp[4] = (vii[6] + vii[7] )/2; vxp[5] = (vii[7]  + vii[8] )/2;
-		vxp[6] = (vii[9] + vii[10])/2; vxp[7] = (vii[10] + vii[11])/2;
-
-		// transform into local coordinates
-		nys = ccy[JJ  ]; nye = ccy[JJ+1];
-		nzs = ccz[KK  ]; nze = ccz[KK+1];
-
-		xpl = (xp-nxs)/(nxe-nxs);
-		ypl = (yp-nys)/(nye-nys);
-		zpl = (zp-nzs)/(nze-nzs);
-
-		// calculate velocity in pressure points
-		vp[0] = GenInterpLin3D(vxp,xpl,ypl,zpl);
-
-		// ----------------
-		// VY
-		// ----------------
-		if(yp > yc) JN = J+1;  else  JN = J;
-
-		if (JN == 0)
-		{
-			vii[0] = 2*lvy[sz+KK  ][sy+JN][sx+II  ]-lvy[sz+KK  ][sy+JN+1][sx+II  ]; vii[1]  = lvy[sz+KK  ][sy+JN][sx+II  ]; vii[2]  = lvy[sz+KK  ][sy+JN+1][sx+II  ];
-			vii[3] = 2*lvy[sz+KK  ][sy+JN][sx+II+1]-lvy[sz+KK  ][sy+JN+1][sx+II+1]; vii[4]  = lvy[sz+KK  ][sy+JN][sx+II+1]; vii[5]  = lvy[sz+KK  ][sy+JN+1][sx+II+1];
-			vii[6] = 2*lvy[sz+KK+1][sy+JN][sx+II  ]-lvy[sz+KK+1][sy+JN+1][sx+II  ]; vii[7]  = lvy[sz+KK+1][sy+JN][sx+II  ]; vii[8]  = lvy[sz+KK+1][sy+JN+1][sx+II  ];
-			vii[9] = 2*lvy[sz+KK+1][sy+JN][sx+II+1]-lvy[sz+KK+1][sy+JN+1][sx+II+1]; vii[10] = lvy[sz+KK+1][sy+JN][sx+II+1]; vii[11] = lvy[sz+KK+1][sy+JN+1][sx+II+1];
-
-			nys = 2*ccy[JN]-ccy[JN+1]; nye = ccy[JN];
-		}
-		else if (JN == ny)
-		{
-			vii[0] = lvy[sz+KK  ][sy+JN-1][sx+II  ]; vii[1]  = lvy[sz+KK  ][sy+JN][sx+II  ]; vii[2]  = 2*lvy[sz+KK  ][sy+JN][sx+II  ]-lvy[sz+KK  ][sy+JN-1][sx+II  ];
-			vii[3] = lvy[sz+KK  ][sy+JN-1][sx+II+1]; vii[4]  = lvy[sz+KK  ][sy+JN][sx+II+1]; vii[5]  = 2*lvy[sz+KK  ][sy+JN][sx+II+1]-lvy[sz+KK  ][sy+JN-1][sx+II+1];
-			vii[6] = lvy[sz+KK+1][sy+JN-1][sx+II  ]; vii[7]  = lvy[sz+KK+1][sy+JN][sx+II  ]; vii[8]  = 2*lvy[sz+KK+1][sy+JN][sx+II  ]-lvy[sz+KK+1][sy+JN-1][sx+II  ];
-			vii[9] = lvy[sz+KK+1][sy+JN-1][sx+II+1]; vii[10] = lvy[sz+KK+1][sy+JN][sx+II+1]; vii[11] = 2*lvy[sz+KK+1][sy+JN][sx+II+1]-lvy[sz+KK+1][sy+JN-1][sx+II+1];
-
-			nys = ccy[JN-1]; nye = 2*ccy[JN]-ccy[JN-1];
-		}
-		else
-		{
-			vii[0] = lvy[sz+KK  ][sy+JN-1][sx+II  ]; vii[1]  = lvy[sz+KK  ][sy+JN][sx+II  ]; vii[2]  = lvy[sz+KK  ][sy+JN+1][sx+II  ];
-			vii[3] = lvy[sz+KK  ][sy+JN-1][sx+II+1]; vii[4]  = lvy[sz+KK  ][sy+JN][sx+II+1]; vii[5]  = lvy[sz+KK  ][sy+JN+1][sx+II+1];
-			vii[6] = lvy[sz+KK+1][sy+JN-1][sx+II  ]; vii[7]  = lvy[sz+KK+1][sy+JN][sx+II  ]; vii[8]  = lvy[sz+KK+1][sy+JN+1][sx+II  ];
-			vii[9] = lvy[sz+KK+1][sy+JN-1][sx+II+1]; vii[10] = lvy[sz+KK+1][sy+JN][sx+II+1]; vii[11] = lvy[sz+KK+1][sy+JN+1][sx+II+1];
-
-			nys = ccy[JN-1]; nye = ccy[JN  ];
-		}
-
-		// get velocities and boundaries
-		vyp[0] = (vii[0] + vii[1] )/2; vyp[1] = (vii[3]  + vii[4] )/2;
-		vyp[2] = (vii[1] + vii[2] )/2; vyp[3] = (vii[4]  + vii[5] )/2;
-		vyp[4] = (vii[6] + vii[7] )/2; vyp[5] = (vii[9]  + vii[10])/2;
-		vyp[6] = (vii[7] + vii[8] )/2; vyp[7] = (vii[10] + vii[11])/2;
-
-		// transform into local coordinates
-		nxs = ccx[II  ]; nxe = ccx[II+1];
-		nzs = ccz[KK  ]; nze = ccz[KK+1];
-
-		xpl = (xp-nxs)/(nxe-nxs);
-		ypl = (yp-nys)/(nye-nys);
-		zpl = (zp-nzs)/(nze-nzs);
-
-		// calculate velocity in pressure points
-		vp[1] = GenInterpLin3D(vyp,xpl,ypl,zpl);
-
-		// ----------------
-		// VZ
-		// ----------------
-		if(zp > zc)  KN = K+1;  else  KN = K;
-
-		if (KN == 0)
-		{
-			vii[0] = 2*lvz[sz+KN][sy+JJ  ][sx+II  ]-lvz[sz+KN+1][sy+JJ  ][sx+II  ]; vii[1]  = lvz[sz+KN][sy+JJ  ][sx+II  ]; vii[2]  = lvz[sz+KN+1][sy+JJ  ][sx+II  ];
-			vii[3] = 2*lvz[sz+KN][sy+JJ  ][sx+II+1]-lvz[sz+KN+1][sy+JJ  ][sx+II+1]; vii[4]  = lvz[sz+KN][sy+JJ  ][sx+II+1]; vii[5]  = lvz[sz+KN+1][sy+JJ  ][sx+II+1];
-			vii[6] = 2*lvz[sz+KN][sy+JJ+1][sx+II  ]-lvz[sz+KN+1][sy+JJ+1][sx+II  ]; vii[7]  = lvz[sz+KN][sy+JJ+1][sx+II  ]; vii[8]  = lvz[sz+KN+1][sy+JJ+1][sx+II  ];
-			vii[9] = 2*lvz[sz+KN][sy+JJ+1][sx+II+1]-lvz[sz+KN+1][sy+JJ+1][sx+II+1]; vii[10] = lvz[sz+KN][sy+JJ+1][sx+II+1]; vii[11] = lvz[sz+KN+1][sy+JJ+1][sx+II+1];
-
-			nzs = 2*ccz[KN]-ccz[KN+1]; nze = ccz[KN];
-		}
-		else if (KN == nz)
-		{
-			vii[0] = lvz[sz+KN-1][sy+JJ  ][sx+II  ]; vii[1]  = lvz[sz+KN][sy+JJ  ][sx+II  ]; vii[2]  = 2*lvz[sz+KN][sy+JJ  ][sx+II  ]-lvz[sz+KN-1][sy+JJ  ][sx+II  ];
-			vii[3] = lvz[sz+KN-1][sy+JJ  ][sx+II+1]; vii[4]  = lvz[sz+KN][sy+JJ  ][sx+II+1]; vii[5]  = 2*lvz[sz+KN][sy+JJ  ][sx+II+1]-lvz[sz+KN-1][sy+JJ  ][sx+II+1];
-			vii[6] = lvz[sz+KN-1][sy+JJ+1][sx+II  ]; vii[7]  = lvz[sz+KN][sy+JJ+1][sx+II  ]; vii[8]  = 2*lvz[sz+KN][sy+JJ+1][sx+II  ]-lvz[sz+KN-1][sy+JJ+1][sx+II  ];
-			vii[9] = lvz[sz+KN-1][sy+JJ+1][sx+II+1]; vii[10] = lvz[sz+KN][sy+JJ+1][sx+II+1]; vii[11] = 2*lvz[sz+KN][sy+JJ+1][sx+II+1]-lvz[sz+KN-1][sy+JJ+1][sx+II+1];
-
-			nzs = ccz[KN-1]; nze = 2*ccz[KN]-ccz[KN-1];
-		}
-		else
-		{
-			vii[0] = lvz[sz+KN-1][sy+JJ  ][sx+II  ]; vii[1]  = lvz[sz+KN][sy+JJ  ][sx+II  ]; vii[2]  = lvz[sz+KN+1][sy+JJ  ][sx+II  ];
-			vii[3] = lvz[sz+KN-1][sy+JJ  ][sx+II+1]; vii[4]  = lvz[sz+KN][sy+JJ  ][sx+II+1]; vii[5]  = lvz[sz+KN+1][sy+JJ  ][sx+II+1];
-			vii[6] = lvz[sz+KN-1][sy+JJ+1][sx+II  ]; vii[7]  = lvz[sz+KN][sy+JJ+1][sx+II  ]; vii[8]  = lvz[sz+KN+1][sy+JJ+1][sx+II  ];
-			vii[9] = lvz[sz+KN-1][sy+JJ+1][sx+II+1]; vii[10] = lvz[sz+KN][sy+JJ+1][sx+II+1]; vii[11] = lvz[sz+KN+1][sy+JJ+1][sx+II+1];
-
-			nzs = ccz[KN-1]; nze = ccz[KN  ];
-		}
-
-		// get velocities and boundaries
-		vzp[0] = (vii[0] + vii[1] )/2; vzp[1] = (vii[3]  + vii[4] )/2;
-		vzp[2] = (vii[6] + vii[7] )/2; vzp[3] = (vii[9]  + vii[10])/2;
-		vzp[4] = (vii[1] + vii[2] )/2; vzp[5] = (vii[4]  + vii[5] )/2;
-		vzp[6] = (vii[7] + vii[8] )/2; vzp[7] = (vii[10] + vii[11])/2;
-
-		// transform into local coordinates
-		nxs = ccx[II  ]; nxe = ccx[II+1];
-		nys = ccy[JJ  ]; nye = ccy[JJ+1];
-
-		xpl = (xp-nxs)/(nxe-nxs);
-		ypl = (yp-nys)/(nye-nys);
-		zpl = (zp-nzs)/(nze-nzs);
-
-		// calculate velocity in pressure points
-		vp[2] = GenInterpLin3D(vzp,xpl,ypl,zpl);
+		// interpolate velocity from cell centers
+		vp[0] = InterpLin3D(cvx, II, JJ, KK, sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
+		vp[1] = InterpLin3D(cvy, II, JJ, KK, sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
+		vp[2] = InterpLin3D(cvz, II, JJ, KK, sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
 
 		// interpolate velocity
 		vi->interp[jj].v[0] = A*v[0] + B*vp[0];
@@ -1438,11 +1297,146 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 	}
 
 	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_X, lbvx, &lvx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y, lbvy, &lvy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z, lbvz, &lvz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   lbvx, &lvx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   lbvy, &lvy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   lbvz, &lvz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lcvx, &cvx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lcvy, &cvy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lcvz, &cvz));
+
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &lcvx));
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &lcvy));
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &lcvz));
 
 	PetscCall(JacResRestoreSolution(jr, &lbvx, &lbvy, &lbvz, NULL, NULL));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode ADVelGetCellVel(FDSTAG *fs, BCCtx *bc, Vec lbvx, Vec lbvy, Vec lbvz, Vec lcvx, Vec lcvy, Vec lcvz)
+{
+	// get cell-center velocities (face averages) including ghost points
+	// boundary ghost points are set in the same order as for the faces:
+	// tangential components first (two-point constraint of the lower face of the cell), then
+	// the normal component is extrapolated through the wall velocity (edges and corners included)
+
+	PetscInt    mcx, mcy, mcz;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar ***vx, ***vy, ***vz;
+	PetscScalar ***cvx, ***cvy, ***cvz;
+	PetscScalar ***bcvx, ***bcvy, ***bcvz;
+	Vec         gcvx, gcvy, gcvz;
+
+	PetscFunctionBeginUser;
+
+	// initialize maximal index in all directions
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+	mcz = fs->dsz.tcels - 1;
+
+	// get buffer vectors
+	PetscCall(DMGetGlobalVector(fs->DA_CEN, &gcvx));
+	PetscCall(DMGetGlobalVector(fs->DA_CEN, &gcvy));
+	PetscCall(DMGetGlobalVector(fs->DA_CEN, &gcvz));
+
+	// access vectors
+	PetscCall(DMDAVecGetArray(fs->DA_X,   lbvx, &vx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   lbvy, &vy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   lbvz, &vz));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, gcvx, &cvx));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, gcvy, &cvy));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, gcvz, &cvz));
+
+	// average face velocities in local cells
+	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
+
+	START_STD_LOOP
+	{
+		cvx[k][j][i] = (vx[k][j][i] + vx[k][j][i+1])/2.0;
+		cvy[k][j][i] = (vy[k][j][i] + vy[k][j+1][i])/2.0;
+		cvz[k][j][i] = (vz[k][j][i] + vz[k+1][j][i])/2.0;
+	}
+	END_STD_LOOP
+
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, gcvx, &cvx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, gcvy, &cvy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, gcvz, &cvz));
+
+	// fill internal ghost points
+	GLOBAL_TO_LOCAL(fs->DA_CEN, gcvx, lcvx)
+	GLOBAL_TO_LOCAL(fs->DA_CEN, gcvy, lcvy)
+	GLOBAL_TO_LOCAL(fs->DA_CEN, gcvz, lcvz)
+
+	PetscCall(DMRestoreGlobalVector(fs->DA_CEN, &gcvx));
+	PetscCall(DMRestoreGlobalVector(fs->DA_CEN, &gcvy));
+	PetscCall(DMRestoreGlobalVector(fs->DA_CEN, &gcvz));
+
+	// set tangential boundary ghost points
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lcvx,     &cvx));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lcvy,     &cvy));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lcvz,     &cvz));
+	PetscCall(DMDAVecGetArray(fs->DA_X,   bc->bcvx, &bcvx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   bc->bcvy, &bcvy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz));
+
+	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		if(!fs->dsx.periodic)
+		{
+			if(i == 0)   { SET_TPC(bcvy, cvy, k, j, i-1, cvy[k][j][i]) SET_TPC(bcvz, cvz, k, j, i-1, cvz[k][j][i]) }
+			if(i == mcx) { SET_TPC(bcvy, cvy, k, j, i+1, cvy[k][j][i]) SET_TPC(bcvz, cvz, k, j, i+1, cvz[k][j][i]) }
+		}
+		if(j == 0)   { SET_TPC(bcvx, cvx, k, j-1, i, cvx[k][j][i]) SET_TPC(bcvz, cvz, k, j-1, i, cvz[k][j][i]) }
+		if(j == mcy) { SET_TPC(bcvx, cvx, k, j+1, i, cvx[k][j][i]) SET_TPC(bcvz, cvz, k, j+1, i, cvz[k][j][i]) }
+		if(k == 0)   { SET_TPC(bcvx, cvx, k-1, j, i, cvx[k][j][i]) SET_TPC(bcvy, cvy, k-1, j, i, cvy[k][j][i]) }
+		if(k == mcz) { SET_TPC(bcvx, cvx, k+1, j, i, cvx[k][j][i]) SET_TPC(bcvy, cvy, k+1, j, i, cvy[k][j][i]) }
+	}
+	END_STD_LOOP
+
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lcvx,     &cvx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lcvy,     &cvy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lcvz,     &cvz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz));
+
+	// set edges and corners (the normal ones are overwritten below)
+	PetscCall(FDSTAGSetEdgeCornerCenter(fs, lcvx));
+	PetscCall(FDSTAGSetEdgeCornerCenter(fs, lcvy));
+	PetscCall(FDSTAGSetEdgeCornerCenter(fs, lcvz));
+
+	// set normal boundary ghost points
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lcvx, &cvx));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lcvy, &cvy));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lcvz, &cvz));
+
+	PetscCall(DMDAGetGhostCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
+
+	START_STD_LOOP
+	{
+		if(!fs->dsx.periodic)
+		{
+			if(i == 0)   cvx[k][j][i-1] = 2.0*vx[k][j][i]   - cvx[k][j][i];
+			if(i == mcx) cvx[k][j][i+1] = 2.0*vx[k][j][i+1] - cvx[k][j][i];
+		}
+		if(j == 0)   cvy[k][j-1][i] = 2.0*vy[k][j][i]   - cvy[k][j][i];
+		if(j == mcy) cvy[k][j+1][i] = 2.0*vy[k][j+1][i] - cvy[k][j][i];
+		if(k == 0)   cvz[k-1][j][i] = 2.0*vz[k][j][i]   - cvz[k][j][i];
+		if(k == mcz) cvz[k+1][j][i] = 2.0*vz[k+1][j][i] - cvz[k][j][i];
+	}
+	END_STD_LOOP
+
+	// restore access
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   lbvx, &vx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   lbvy, &vy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   lbvz, &vz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lcvx, &cvx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lcvy, &cvy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lcvz, &cvz));
 
 	PetscFunctionReturn(0);
 }

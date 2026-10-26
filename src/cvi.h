@@ -17,6 +17,7 @@
 struct FDSTAG;
 struct JacRes;
 struct AdvCtx;
+struct BCCtx;
 
 //-----------------------------------------------------------------------------
 
@@ -112,6 +113,7 @@ PetscErrorCode ADVelInterpMain       (AdvVelCtx *vi);
 PetscErrorCode ADVelInterpSTAG       (AdvVelCtx *vi);
 PetscErrorCode ADVelInterpMINMOD     (AdvVelCtx *vi);
 PetscErrorCode ADVelInterpSTAGP      (AdvVelCtx *vi);
+PetscErrorCode ADVelGetCellVel       (FDSTAG *fs, BCCtx *bc, Vec lbvx, Vec lbvy, Vec lbvz, Vec lcvx, Vec lcvy, Vec lcvz);
 
 //-----------------------------------------------------------------------------
 // service functions

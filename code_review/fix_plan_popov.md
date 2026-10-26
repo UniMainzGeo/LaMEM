@@ -31,7 +31,8 @@ Testing:
   - Rest of N-021 (option order in nlsolve/multigrid, matData comment, lsolve bf checks,
     matAux duplicates, R/P weights).
   - N-022 done 2026-10-26 (see findings.md).
-  - S-014 (2 ghost layers), N-004 (restart decision), M-056 2D (needs matrix-free MG in 2D).
+  - S-014 done 2026-10-26 (cell-center velocities precomputed, see below).
+  - N-004 (restart decision), M-056 2D (needs matrix-free MG in 2D).
 - Lowest priority: S-006 test; M-026 APS not saved by ADVMarkSave.
 - Older notes below say "t37 FastScape broken" or "dyndike fails (known)": both are resolved
   (t37 needs `surf=scape`, see CLAUDE.md; dyndike fixed with the lmaxit removal).
@@ -163,6 +164,12 @@ All done and committed.
 - S-014: the local wall tests also protect the upper side. With one ghost layer, node `nx+1`
   does not exist at an internal boundary, so global tests alone would read out of range.
   Needs a 2-layer ghost vector or a different stencil.
+  Done 2026-10-26 without extra ghost layers: `ADVelGetCellVel` (cvi.cpp) computes cell-center
+  velocities (face averages) on owned cells, exchanges one ghost layer of DA_CEN, then sets wall
+  ghosts (tangential: two-point constraint of the lower face; normal: extrapolation through the
+  wall velocity). STAGP interpolates `v_p` from these. Serial results equal the old code to
+  rounding, except at upper walls (x right, y back, z top), where the old code used a 2-cell
+  interval (`nxe = 2*ccx[nx]-ccx[nx-1]`, `ccx[nx]` is already the ghost cell); this changes t16.
 - N-004: `eta && Bd` is accepted on purpose for restarts (phases are re-read into a struct
   that still holds the old Bd/Bn, see c8ec3931). A strict check needs a decision on restart.
 
