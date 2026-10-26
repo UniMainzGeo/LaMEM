@@ -657,6 +657,9 @@ PetscErrorCode ADVelExchangeMark(AdvVelCtx *vi)
 	{
 		if(vi->nsendm[k])
 		{
+			// message size must fit the MPI count
+			if(vi->nsendm[k] > PETSC_MPI_INT_MAX/(PetscInt)sizeof(VelInterp)) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_SUP, "Too many markers exchanged with a neighbor process (%" PetscInt_FMT "), use more processes", vi->nsendm[k]);
+
 			nbyte = vi->nsendm[k]*(PetscInt)sizeof(VelInterp);
 
 			PetscCallMPI(MPI_Isend(&vi->sendbuf[vi->ptsend[k]], (PetscMPIInt)nbyte, MPI_BYTE,
@@ -670,6 +673,9 @@ PetscErrorCode ADVelExchangeMark(AdvVelCtx *vi)
 	{
 		if(vi->nrecvm[k])
 		{
+			// message size must fit the MPI count
+			if(vi->nrecvm[k] > PETSC_MPI_INT_MAX/(PetscInt)sizeof(VelInterp)) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_SUP, "Too many markers exchanged with a neighbor process (%" PetscInt_FMT "), use more processes", vi->nrecvm[k]);
+
 			nbyte = vi->nrecvm[k]*(PetscInt)sizeof(VelInterp);
 
 			PetscCallMPI(MPI_Irecv(&vi->recvbuf[vi->ptrecv[k]], (PetscMPIInt)nbyte, MPI_BYTE,

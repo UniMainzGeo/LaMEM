@@ -1794,7 +1794,8 @@ Next free IDs: S-049, M-074, N-030
   - `FreeSurfGetAirPhaseRatio` called twice per step (advect.cpp:1638, LaMEMLib.cpp:776).
   - Nearest-rock search in `ADVMarkCrossFreeSurf` depends on storage order.
 - Status: partly fixed (group C): dead AVD functions, `_DISP_`, subgrid test block removed;
-  ellipsoid `fb->ID` already set (marker.cpp:1123); rest open
+  ellipsoid `fb->ID` already set (marker.cpp:1123); marker exchange stops with an error when
+  the message would exceed the MPI count (advect.cpp, cvi.cpp; PetscInt is 32-bit here); rest open
 
 ### N-023 [note, confirmed] Phase transitions and dikes: dead code, names, small clean-ups
 - Tags: note, confirmed, cleanup, medium
