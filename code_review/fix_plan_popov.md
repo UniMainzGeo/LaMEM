@@ -10,7 +10,7 @@ Testing:
   `make mode=opt surf=scape all` in `src/`. Tests use both binaries (most use opt, a few use
   deb). Hand runs use `bin/opt` or `bin/deb` directly, so a stale binary gives wrong conclusions.
 - Use test selectors and run only the tests that touch the changed code: `make test 30 31` or
-  `make test 03-07` in `test/`. Run the full suite (>10 min) only when asked.
+  `make test 03-07` in `test/`. Run the full suite (>10 min) only when needed.
 - `make update NN` rewrites all references in those test folders. Keep them all (no need to
   revert the ones whose tests passed before; they do the same job).
 
@@ -46,12 +46,13 @@ Testing:
 
 ## Random noise seeding (checked 2026-10-26, dropped)
 
-All random sources start from a fixed seed (PETSc default 0x12345678, seed 1 + rank +
-nproc*step for injection, unseeded rand() = seed 1, FreeSurf_NoiseSeed, std::mt19937 default),
-none uses the clock. So runs are the same from run to run on the same number of cores, which
-is all the tests need. Noise still depends on the core count (each rank draws its own
-sequence). No code change; a note to always use a fixed seed was added to the development
-guide (doc/src/man/LaMEM_Development.md, 6.3.2).
+All random sources start from a fixed seed (PETSc default 0x12345678, unseeded rand() =
+seed 1, FreeSurf_NoiseSeed, std::mt19937 default), none uses the clock. So runs are the same
+from run to run on the same number of cores, which is all the tests need. Noise still depends
+on the core count (each rank draws its own sequence). No code change; a note to always use a
+fixed seed was added to the development guide (doc/src/man/LaMEM_Development.md, 6.3.2).
+The corner-injection noise (seed 1 + rank + nproc*step) was removed later the same day, see
+"Core-count drift" in the status above (6df70c04).
 
 ## A. Fix right away (small, clear, local)
 
@@ -155,7 +156,8 @@ All done and committed.
 9. Low value: M-009, M-023, M-054, M-057, N-008, N-014 (code or docs?), N-017, N-020.
    Done 2026-10-23: M-009 surface z clamped to box on bottom/top ranks; M-023 RK2 midpoint clamped
    (not deleted); M-054 closed box with unbalanced CompensatingInflow stops with an error (Anton:
-   imbalance not allowed); M-057 seed per rank and step, `>=` on upper side, total count printed;
+   imbalance not allowed); M-057 seed per rank and step (noise removed 2026-10-26, 6df70c04), `>=` on upper side,
+   total count printed;
    N-008 area-weighted avg_topo; N-014 Clapeyron parameters override a predefined law.
    N-017, N-020: non-issues (Anton). References updated: t22, t27, t32, t34; t15 RTI error
    0.00148 -> 0.00041 (closer to analytical). Only dyndike fails (known).
