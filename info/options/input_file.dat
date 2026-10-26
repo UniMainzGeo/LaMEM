@@ -711,7 +711,8 @@
         APS2        =   1.0     # end of softening APS
         APSheal2    =   1.0     # APS when healTau2 activates
         A           =   0.7     # reduction ratio
-        Lm          =   0.2     # material length scale (in selected units, e.g. km in geo)
+        Lm          =   0.2     # material length scale (in selected units, e.g. km in geo);
+                                # APS1, APS2 are scaled by Lm/Le (Le = cell diagonal)
         healTau     =   1e-3    # healing timescale parameter [Myr]  
         healTau2     =   1e-3    # healing timescale parameter [Myr]  starting at APS=APSheal2
     <SofteningEnd>

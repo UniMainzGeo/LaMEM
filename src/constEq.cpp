@@ -587,8 +587,8 @@ PetscScalar applyStrainSoft(
 	// Fracture Energy Regularization
 	if(Lm)
 	{
-		APS1 *= Le/Lm;
-		APS2 *= Le/Lm;
+		APS1 *= Lm/Le;
+		APS2 *= Lm/Le;
 	}
 
 	// compute scaling ratio

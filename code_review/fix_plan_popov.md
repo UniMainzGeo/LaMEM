@@ -99,6 +99,7 @@ All done and committed.
 
 1. S-002 (`Lm`): code uses `Le/Lm`; fixed softening displacement suggests `Lm/Le`. Depends on the
    intended meaning of `Lm`.
+   Done 2026-10-26: bug confirmed (Anton); now `Lm/Le`, documented in input_file.dat.
 2. S-046 (dt): fix changes all viscoelastic results; test references need updating.
 3. S-044 (`fix_phase` on processor boundaries): ghosted flags vs ADD/MAX before scatter.
 4. S-045 (`exy_num_periods`): really wrap markers, or document deletion.

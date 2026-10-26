@@ -13,7 +13,7 @@ Next free IDs: S-049, M-074, N-030
 | ID | Severity | Confidence | Kind | Effort | Where | Title | Status |
 |----|----------|------------|------|--------|-------|-------|--------|
 | S-001 | major | confirmed | memory | quick | JacRes.cpp:1524 | `init_pres` without `fix_phase` reads `phRat[-1]` | fixed |
-| S-002 | major | possible | physics | quick | constEq.cpp:587-592 | Softening length scale `Lm` looks inverted (Le/Lm instead of Lm/Le) | open |
+| S-002 | major | possible | physics | quick | constEq.cpp:587-592 | Softening length scale `Lm` looks inverted (Le/Lm instead of Lm/Le) | fixed (group C) |
 | S-003 | major | confirmed | physics | quick | phase.cpp:1049 | Profile "Diabase-Caristan_1982" has activation volume Vn = 1 m^3/mol | fixed |
 | S-004 | major | confirmed | logic | quick | surf.cpp:1444-1462 | Sediment model 2 uses values left over from the previous node | fixed |
 | S-005 | major | confirmed | restart | quick | fastscape.cpp:2910, 2747 | FastScape restart loses basement and silt fraction if their output is off | open |
@@ -200,7 +200,8 @@ Next free IDs: S-049, M-074, N-030
   worse.
 - Why it matters: anyone using `Lm` to reduce mesh dependence gets the reverse effect.
   There's no documentation, so check the intended definition with the author.
-- Status: open
+- Status: fixed (group C): confirmed by Anton (finer meshes must finish softening at larger
+  strain); now `Lm/Le`, scaling documented in input_file.dat. No test uses `Lm`.
 
 ### S-003 [major, confirmed] Profile "Diabase-Caristan_1982" has Vn = 1 m^3/mol
 - Tags: major, confirmed, physics, quick
