@@ -14,13 +14,26 @@ Testing:
 - `make update NN` rewrites all references in those test folders. Keep them all (no need to
   revert the ones whose tests passed before; they do the same job).
 
-## Status (2026-10-23)
+## Status (2026-10-26, checked against commits and code)
 
-- A: done, committed (14425854..876978e4; S-006 test not added, M-026 APS not saved).
+- A: done, committed (14425854..876978e4).
 - B: done, committed (see each batch below for the commits).
-- C: items 9, 10, 12 done; S-023 and the local-iteration / T-coupling work done; t16 and
-  t26 convergence workarounds removed. Open: C items 1-8, 11 (M-063), 13, S-014, N-004.
-- Lowest priority: S-006 test.
+- C done: items 1 (S-002, 5fb3350a), 2 (S-046, b41cef9a), 4 (S-045, ea809634),
+  7 (92b20ac3; M-049 changes t10, 2eb1e72b), 9, 10, 12; S-023 and the local-iteration /
+  T-coupling work; t16 and t26 workarounds removed; t16, t19 sped up (e38ee480).
+- C open (checked in code 2026-10-26, nothing done yet):
+  - 3. S-044: `fix_phase` / `fix_cell` faces on processor boundaries (bc.cpp BCApplyPhase/Cells).
+  - 5. S-036: Clapeyron units (with Andrea).
+  - 6. M-048: T = 0 means unset (phase.cpp, marker.cpp).
+  - 8. M-046, M-067 (with Garrett).
+  - 11. M-063: "Incorrect sedimentation phase" stop (subgrid.cpp:608).
+  - 13. Rest of N-025 / N-026: dt_out, time_end trimming, fwrite per value, total_pressure edges.
+  - Rest of N-021 (option order in nlsolve/multigrid, matData comment, lsolve bf checks,
+    matAux duplicates, R/P weights) and N-022 (cvi "RK 4th" comment, rank-0 log counts,
+    nbyte cast to PetscMPIInt, Temperature strings, A->buffer = 1, FreeSurfGetAirPhaseRatio
+    twice, nearest-rock search order). Ellipsoid `fb->ID` already set.
+  - S-014 (2 ghost layers), N-004 (restart decision), M-056 2D (needs matrix-free MG in 2D).
+- Lowest priority: S-006 test; M-026 APS not saved by ADVMarkSave.
 - Older notes below say "t37 FastScape broken" or "dyndike fails (known)": both are resolved
   (t37 needs `surf=scape`, see CLAUDE.md; dyndike fixed with the lmaxit removal).
 
@@ -99,17 +112,18 @@ All done and committed.
 
 1. S-002 (`Lm`): code uses `Le/Lm`; fixed softening displacement suggests `Lm/Le`. Depends on the
    intended meaning of `Lm`.
-   Done 2026-10-26: bug confirmed (Anton); now `Lm/Le`, documented in input_file.dat.
+   Done 2026-10-26: bug confirmed (Anton); now `Lm/Le`, documented in input_file.dat. Committed 5fb3350a.
 2. S-046 (dt): fix changes all viscoelastic results; test references need updating.
-   Done 2026-10-26: `fix_dt` also on with temperature (dt-dependent solve); temperature-only test results changed.
+   Done 2026-10-26: `fix_dt` also on with temperature (dt-dependent solve); temperature-only test results changed. Committed b41cef9a.
 3. S-044 (`fix_phase` on processor boundaries): ghosted flags vs ADD/MAX before scatter.
+   Still open (2026-10-26).
 4. S-045 (`exy_num_periods`): really wrap markers, or document deletion.
    Done 2026-10-26: periodic marker advection != periodic mechanical BC (Anton). Marker
    neighbour list made periodic in x for Exy (`FDSTAGGetNeighbProc(fs, ptx)`), outflow markers
-   wrap instead of being deleted. t18 unchanged.
+   wrap instead of being deleted. t18 unchanged. Committed ea809634.
 5. S-036 (Clapeyron units in SI): with Andrea; input unit per unit system.
 6. M-048 (T = 0 means unset): DBL_MAX sentinel may change existing inputs.
-7. Intended? M-047, M-049, N-003, N-016, N-019.
+7. Intended? M-047, M-049, N-003, N-016, N-019. Done, committed 92b20ac3 (t10 refs 2eb1e72b).
    M-047 (2026-10-26): setting only the pressure history (cells, markers) is intended (Anton);
    zero pressure sum (no gravity) now counts as converged, no NaN / false warning.
    M-049 (2026-10-26): G averaging kept (history stress is averaged the same way, so a non-elastic
@@ -138,9 +152,9 @@ All done and committed.
     Small clean-ups: N-002, N-007 (mostly Wenrong/Yun), N-011, N-018.
     Done 2026-10-23: M-019, N-028, N-029 marked won't fix. N-002, N-007, N-011 (input checks
     only; initial-guess skip of boxes/cylinders kept), N-018 fixed. Committed a868c954.
-13. Left from B (N-025, N-026): fix_dt schedule one step late, dt_out without effect when
-    nstep_out = 1, no dt trimming at time_end / output times; one value per fwrite in
-    marker/tracer/AVD files, total_pressure edge values.
+13. Left from B (N-025, N-026): dt_out without effect when nstep_out = 1, no dt trimming at
+    time_end / output times; one value per fwrite in marker/tracer/AVD files, total_pressure
+    edge values. fix_dt schedule one step late: already fixed (Anton, 2026-10-26).
 
 ## Moved from A to C while fixing
 

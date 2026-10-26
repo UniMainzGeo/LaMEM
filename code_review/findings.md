@@ -111,9 +111,9 @@ Next free IDs: S-049, M-074, N-030
 | M-044 | minor | confirmed | logic | quick | adjoint.cpp:1866,1995,1328 | A parameter value of 0 gives a zero FD step (division by zero) | open |
 | M-045 | minor | confirmed | parallel | medium | JacRes.cpp:1004-1017 | Dike strain-rate correction is missing in ghost cells, so results depend on CPU count | open |
 | M-046 | minor | possible | physics | medium | constEq.cpp:798-822 | Dike opening still enters the stabilization stress and shear heating | open |
-| M-047 | minor | possible | logic | medium | JacRes.cpp:1545-1703 | `init_lith_pres` only sets the pressure history, and its stop test is weak | open |
+| M-047 | minor | possible | logic | medium | JacRes.cpp:1545-1703 | `init_lith_pres` only sets the pressure history, and its stop test is weak | fixed (group C) |
 | M-048 | minor | confirmed | input | medium | phase.cpp:798-803; marker.cpp:523 | Phase temperature `T = 0` (°C) is treated as "not set" | open |
-| M-049 | minor | possible | physics | medium | constEq.cpp:603-626, 697, 756 | Shear and bulk moduli averaged with non-elastic phases counted as 0 | open |
+| M-049 | minor | possible | physics | medium | constEq.cpp:603-626, 697, 756 | Shear and bulk moduli averaged with non-elastic phases counted as 0 | fixed (group C) |
 | M-050 | minor | confirmed | logic | medium | surf.cpp:1167, 1223, 1643 | Slope erosion and topographic diffusion ignore periodic x | open |
 | M-051 | minor | confirmed | parallel, restart | medium | tools.cpp:80, 293-322; fdstag.cpp:292-294 | Rank-0-only errors can hang; restart reads aren't checked | fixed |
 | M-052 | minor | confirmed | input | medium | bc.cpp:2103-2123, 2167-2187 | Sign of `velin` on Right/Back faces flips depending on `bvel_face_out` | open |
@@ -145,7 +145,7 @@ Next free IDs: S-049, M-074, N-030
 |----|----------|------------|------|--------|-------|-------|--------|
 | N-001 | note | confirmed | logic | quick | JacRes.cpp:917 | `dikeRHS` is not set when dikes are off | open |
 | N-002 | note | confirmed | cleanup | quick | JacResAux.cpp:389; JacResTemp.cpp:85,107 | Material data changed inside compute loops; Controls copied for every cell | fixed |
-| N-003 | note | confirmed | physics | quick | phase.cpp:1511; constEq.cpp:375,798 | `eta_min` is not a cutoff; it's added to every phase's viscosity | open |
+| N-003 | note | confirmed | physics | quick | phase.cpp:1511; constEq.cpp:375,798 | `eta_min` is not a cutoff; it's added to every phase's viscosity | won't fix |
 | N-004 | note | confirmed | input | quick | phase.cpp:526-548 | Creep input checks never fire; `Bd`/`Bn` are silently overwritten by `eta`/`eta0` | open |
 | N-005 | note | confirmed | cleanup | quick | meltParam.cpp | Whole file is dead code (no callers) | open |
 | N-006 | note | confirmed | logic | quick | phase.cpp:1471,1479 | PrintMatProp prints wrong values under some labels | open |
@@ -158,10 +158,10 @@ Next free IDs: S-049, M-074, N-030
 | N-013 | note | possible | logic | quick | AVD.cpp:1123-1125 | AVD point with no cells gives NaN coordinates | fixed |
 | N-014 | note | confirmed | input | quick | input_file.dat:747-749; phase_transition.cpp:562-580 | Docs say Clapeyron parameters overwrite a predefined law; they are ignored | fixed |
 | N-015 | note | confirmed | cleanup | quick | objFunct.cpp; adjoint.cpp:3684-4150 | Dead code: whole ObjFunct module and the pointwise FD kernels | fixed |
-| N-016 | note | confirmed | physics | medium | JacResAux.cpp:357 | `gw_level_type = surf` gives a flat water table at the mean topography | open |
+| N-016 | note | confirmed | physics | medium | JacResAux.cpp:357 | `gw_level_type = surf` gives a flat water table at the mean topography | not an issue |
 | N-017 | note | possible | physics | medium | phase.cpp:888-1352 | Experiment type of the creep profiles not checked against the sources | not an issue |
 | N-018 | note | confirmed | memory | medium | tools.cpp:608-609, 658-662 | Polygon helpers use stack arrays and can divide by zero | fixed |
-| N-019 | note | confirmed | logic | medium | nlsolve.cpp:216-238 | Newton/Picard switch: divergence test uses initial residual; max-Newton gives one Picard step | open |
+| N-019 | note | confirmed | logic | medium | nlsolve.cpp:216-238 | Newton/Picard switch: divergence test uses initial residual; max-Newton gives one Picard step | fixed (group C) |
 | N-020 | note | confirmed | physics | medium | lsolve.cpp, matrix.cpp, matAux.cpp | `jp_pgamma` means different things per solver; inv_eta Schur with penalty drops the eta term | not an issue |
 | N-021 | note | confirmed | cleanup | medium | nlsolve, lsolve, multigrid, matData, matFree (various) | Option overrides, stale comments, dead test code, small clean-ups | partly fixed |
 | N-022 | note | confirmed | cleanup | medium | marker, advect, AVD, cvi, subgrid (various) | Dead code, wrong comments and log lines, small clean-ups | partly fixed |
@@ -1252,7 +1252,8 @@ Next free IDs: S-049, M-074, N-030
   it runs all iterations and prints a false warning.
 - Why it matters: the option name suggests the solution pressure is initialized, but it
   isn't. Check whether that's intended.
-- Status: open
+- Status: fixed (group C, 92b20ac3): setting only the pressure history is intended (Anton); zero
+  pressure (no gravity) now counts as converged, no NaN or false warning
 
 ### M-048 [minor, confirmed] Phase temperature `T = 0` (°C) is treated as "not set"
 - Tags: minor, confirmed, input, medium
@@ -1273,7 +1274,8 @@ Next free IDs: S-049, M-074, N-030
   either phase.
 - Why it matters: elastic stress history is too strong in mixed cells, for example at the
   free surface. It's hard to see, but it isn't consistent.
-- Status: open
+- Status: fixed (group C, 92b20ac3): G averaging kept (history stress averaged the same way);
+  Kb now averages compressibility 1/Kb (non-elastic = incompressible). Changes t10 (2eb1e72b)
 
 ### M-050 [minor, confirmed] Slope erosion and topographic diffusion ignore periodic x
 - Tags: minor, confirmed, logic, medium
@@ -1573,7 +1575,7 @@ Next free IDs: S-049, M-074, N-030
 - Why it matters: the effective viscosity is eta + eta_min, not max(eta, eta_min). Stress
   can be above the yield stress by 2*eta_min*DII. Fine if eta_min is small; misleading
   otherwise. The docs should say so.
-- Status: open
+- Status: won't fix (group C): soft eta_min/eta_max limits are intended (Anton)
 
 ### N-004 [note, confirmed] Creep input checks never fire; `Bd`/`Bn` silently overwritten
 - Tags: note, confirmed, input, quick
@@ -1710,7 +1712,7 @@ Next free IDs: S-049, M-074, N-030
 - What: it uses `surf->avg_topo`, the mean topography, not the local surface height.
 - Why it matters: with real topography, pore pressure is too high under valleys and too low
   under hills. Users may expect the water table to follow the surface.
-- Status: open
+- Status: not an issue (group C, Anton): flat level at average topography is intended; comment added
 
 ### N-017 [note, possible] Creep profile experiment types not checked
 - Tags: note, possible, physics, medium
@@ -1738,7 +1740,8 @@ Next free IDs: S-049, M-074, N-030
   still below `rtolPic*refRes`). Printed label says "MMFD" instead of "MFFD".
 - Fix idea: confirm this is intended; otherwise store the residual at the switch and use it
   for the divergence test.
-- Status: open
+- Status: fixed (group C, 92b20ac3): -snes_newton_maxit is the Newton budget per solve, then
+  Picard only; MFFD label fixed; divergence test vs first residual of the step kept
 
 ### N-020 [note, confirmed] `jp_pgamma` means different things per solver; inv_eta Schur drops a term
 - Tags: note, confirmed, physics, medium
@@ -1790,7 +1793,8 @@ Next free IDs: S-049, M-074, N-030
   - `A->buffer = 1` (AVD.cpp:98) grows arrays one at a time (O(n²)).
   - `FreeSurfGetAirPhaseRatio` called twice per step (advect.cpp:1638, LaMEMLib.cpp:776).
   - Nearest-rock search in `ADVMarkCrossFreeSurf` depends on storage order.
-- Status: partly fixed (group C): dead AVD functions, `_DISP_`, subgrid test block removed; rest open
+- Status: partly fixed (group C): dead AVD functions, `_DISP_`, subgrid test block removed;
+  ellipsoid `fb->ID` already set (marker.cpp:1123); rest open
 
 ### N-023 [note, confirmed] Phase transitions and dikes: dead code, names, small clean-ups
 - Tags: note, confirmed, cleanup, medium
@@ -1848,7 +1852,8 @@ Next free IDs: S-049, M-074, N-030
   - `lbl_heat_production` says `[W/m3]` but the unit is power/mass, W/kg (scaling.cpp:188, 246).
     "WRNING! ... scaling is employed" has a typo and no newline (scaling.cpp:123).
   - GettingStarted.md:49-60 says `nstep_out` sets the number of time steps; it is `nstep_max`.
-- Status: partly fixed (group B): labels/typos fixed; fix_dt, dt_out, time_end trimming left for C
+- Status: partly fixed (group B): labels/typos fixed; fix_dt schedule fixed; dt_out, time_end
+  trimming left for C
 
 ### N-026 [note, confirmed] Output quirks: names, stale residual, dead vectors, unchecked inputs
 - Tags: note, confirmed, cleanup, medium
