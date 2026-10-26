@@ -104,6 +104,9 @@ All done and committed.
    Done 2026-10-26: `fix_dt` also on with temperature (dt-dependent solve); temperature-only test results changed.
 3. S-044 (`fix_phase` on processor boundaries): ghosted flags vs ADD/MAX before scatter.
 4. S-045 (`exy_num_periods`): really wrap markers, or document deletion.
+   Done 2026-10-26: periodic marker advection != periodic mechanical BC (Anton). Marker
+   neighbour list made periodic in x for Exy (`FDSTAGGetNeighbProc(fs, ptx)`), outflow markers
+   wrap instead of being deleted. t18 unchanged.
 5. S-036 (Clapeyron units in SI): with Andrea; input unit per unit system.
 6. M-048 (T = 0 means unset): DBL_MAX sentinel may change existing inputs.
 7. Intended? M-047, M-049, N-003, N-016, N-019.

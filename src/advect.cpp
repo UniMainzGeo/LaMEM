@@ -296,6 +296,9 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 	// set periodic advection flag
 	if(fs->periodic || bc->ExyNumPeriods) { actx->periodic = 1; }
 
+	// simple shear wraps markers in x without periodic grid (exchange them across x-boundaries)
+	if(actx->periodic && !fs->periodic) { PetscCall(FDSTAGGetNeighbProc(fs, 1)); }
+
 	if(actx->periodic && (actx->advect == EULER || actx->advect == RUNGE_KUTTA_2))
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic marker advection is only compatible with BASIC_EULER (advect, periodic, exy_num_periods)");

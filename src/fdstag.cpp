@@ -963,7 +963,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	PetscCall(Discret1DGenCoord(&fs->dsz, &msz));
 
 	// get ranks of neighbor processes
-	PetscCall(FDSTAGGetNeighbProc(fs));
+	PetscCall(FDSTAGGetNeighbProc(fs, fs->periodic));
 
 	// print essential grid details
 	if(complete_build)
@@ -1244,11 +1244,12 @@ PetscErrorCode FDSTAGSetNum(FDSTAG *fs)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs)
+PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs, PetscInt ptx)
 {
 	// return an array with the global ranks of adjacent processes (including itself)
+	// ptx - periodic topology in x (set by marker advection also without periodic grid)
 
-	PetscInt i, j, k, rx, ry, rz, Px, Py, Pz, ptx, pty, ptz, cnt;
+	PetscInt i, j, k, rx, ry, rz, Px, Py, Pz, pty, ptz, cnt;
 	PetscFunctionBeginUser;
 
 	// get ranks
@@ -1262,7 +1263,6 @@ PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs)
 	Pz = fs->dsz.nproc;
 
 	// get periodic topology flags
-	ptx = fs->periodic;
 	pty = 0;
 	ptz = 0;
 

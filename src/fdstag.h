@@ -216,7 +216,7 @@ PetscErrorCode FDSTAGCreateDMDA(FDSTAG   *fs,
 PetscErrorCode FDSTAGSetNum(FDSTAG *fs);
 
 // return an array with the global ranks of adjacent processes (including itself)
-PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs);
+PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs, PetscInt ptx);
 
 // get local & global ranks of a domain containing a point (only neighbors are checked)
 PetscErrorCode FDSTAGGetPointRanks(FDSTAG *fs, PetscScalar *X, PetscInt *lrank, PetscInt *grank);

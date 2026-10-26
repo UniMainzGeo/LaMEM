@@ -56,7 +56,7 @@ Next free IDs: S-049, M-074, N-030
 | S-042 | major | confirmed | parallel | medium | adjoint.cpp:1744-1749 | `Adjoint_AdvectPoint` moves points on one CPU only, and again in every forward run | open |
 | S-043 | major | possible | physics | design | fastscape.cpp:458-469, 646 | FastScape grid doesn't follow a stretching LaMEM box | open |
 | S-044 | major | confirmed | parallel | design | bc.cpp:2595-2604, 2648-2657 | `fix_phase` / `fix_cell` lose faces on processor boundaries; results depend on CPU count | open |
-| S-045 | major | confirmed | logic | design | advect.cpp:278,1086-1096 | With `exy_num_periods`, outflow markers are deleted, not wrapped | open |
+| S-045 | major | confirmed | logic | design | advect.cpp:278,1086-1096 | With `exy_num_periods`, outflow markers are deleted, not wrapped | fixed |
 | S-046 | major | possible | physics | design | LaMEMLib.cpp:715; tssolve.cpp:308 | Solve and marker advection use different dt when dt is not fixed | fixed (group C) |
 | S-047 | major | confirmed | parallel, memory | design | adjoint.cpp:2505-2690,102-112 | Surface observations (`Ap = 3`) use wrong grid positions and crash with several CPUs in z | open |
 | S-048 | major | possible | parallel | design | adjoint.cpp:1152-1157,1186-1189 | Parameter vectors have 100 entries per CPU, so TAO sees a vector that grows with CPU count | open |
@@ -749,7 +749,10 @@ Next free IDs: S-049, M-074, N-030
   marker control is on. The flag also forces BASIC_EULER (advect.cpp:280) for no gain.
 - Fix idea: really wrap (periodic neighbours in the exchange), or drop `ExyNumPeriods` from the
   flag and document that outflow markers are deleted.
-- Status: open
+- Status: fixed (group C): periodic marker advection is separate from the periodic mechanical BC
+  (Anton). With Exy the marker neighbour list is now periodic in x, so outflow markers wrap to
+  the opposite side (also on one CPU). Marker count stays constant (t18, 30 steps, no marker
+  control: 13824 kept; before 336 lost). t18 unchanged.
 
 ### S-046 [major, possible] Solve and marker advection use different dt when dt is not fixed
 - Tags: major, possible, physics, design
