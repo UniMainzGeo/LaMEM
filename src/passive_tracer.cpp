@@ -944,7 +944,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 
 						if(phaseID < 0)
 						{
-							SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect sedimentation phase");
+							SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "No sedimentation phase: surface rose more than one cell above the rock in one step (reduce the time step)");
 						}
 
 						phaseptr[jj] = (PetscScalar) phaseID;

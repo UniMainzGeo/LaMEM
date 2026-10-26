@@ -374,7 +374,7 @@ Next free IDs: S-049, M-074, N-030
 | M-060 | minor | confirmed | memory | medium | marker.cpp:1466,1622-1744 | Polygon file sizes not checked against buffers | fixed | Arne Spang |
 | M-061 | minor | confirmed | logic | medium | interpolate.cpp:102,158,220,377 | Corner output at the periodic x seam uses one side only | fixed | Anton Popov |
 | M-062 | minor | confirmed | physics | medium | marker.cpp:1013,1152,1215; phase_transition.cpp:1197,1339 | Halfspace temperatures use hard-coded kappa = 1e-6 (wrong in non-dim mode) | open | Boris Kaus (+Schierjott) |
-| M-063 | minor | confirmed | parallel | medium | subgrid.cpp:85,606-608; advect.cpp:1906; tools.cpp:293,798 | Rank-local hard errors can hang; sedimentation-phase error on fast uplift | partly fixed | Anton Popov (+Püsök) |
+| M-063 | minor | confirmed | parallel | medium | subgrid.cpp:85,606-608; advect.cpp:1906; tools.cpp:293,798 | Rank-local hard errors can hang; sedimentation-phase error on fast uplift | fixed | Anton Popov (+Püsök) |
 | M-064 | minor | confirmed | logic | medium | phase_transition.cpp:883-905,922,1026-1029 | `ResetParam = APS` resets every step; side depends on type; broken for NotInAirBox | open | Boris Kaus (+Schierjott) |
 | M-065 | minor | confirmed | logic | medium | phase_transition.cpp:851-864 | `BoxVicinity` uses y-size for z, and stale or zero bounds for NotInAirBox | open | Boris Kaus (+Ito) |
 | M-066 | minor | confirmed | memory | medium | tssolve.cpp:381-423, 457-462 | Time-step schedule can overflow its 2000-entry arrays and cuts nstep_max | fixed | Arne Spang |
@@ -2195,7 +2195,7 @@ Next free IDs: S-049, M-074, N-030
   - Anton Popov — 1a6c9c56 # (2017-02-20) — DirMake rank-0 only error
 - At HEAD: still present, src/subgrid.cpp:85,606-608; src/advect.cpp:1906-1908; src/tools.cpp:295,798-800
 - Feedback requested from: Anton Popov
-- Status: partly fixed: hang part not real (PETSc aborts all ranks); sedimentation-phase stop moved to discuss (C)
+- Status: fixed: hang part not real (PETSc aborts all ranks); sedimentation-phase stop kept (Anton) with a clearer message; `-2` mark no longer overwrites overhang rock cells
 
 ### M-064 [minor, confirmed] `ResetParam = APS` is applied every step and inconsistently
 - Tags: minor, confirmed, logic, medium

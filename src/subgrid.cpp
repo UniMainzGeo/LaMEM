@@ -620,7 +620,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 
 					if(phaseID < 0)
 					{
-						SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect sedimentation phase");
+						SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "No sedimentation phase: surface rose more than one cell above the rock in one step (reduce the time step)");
 					}
 
 					P->phase = phaseID;
@@ -738,8 +738,10 @@ PetscErrorCode ADVGetSedPhase(AdvCtx *actx, Vec vphase)
 	{
 		if(phase[k][j][i] == -1.0 && phase[k-1][j][i] >= 0.0)
 		{
-			phase[k][j][i]   =  phase[k-1][j][i];
-			phase[k+1][j][i] = -2.0;
+			phase[k][j][i] = phase[k-1][j][i];
+
+			// stop propagation above (do not overwrite rock cells of overhangs)
+			if(phase[k+1][j][i] == -1.0) phase[k+1][j][i] = -2.0;
 		}
 	}
 	END_STD_LOOP

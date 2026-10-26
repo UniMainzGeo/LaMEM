@@ -26,7 +26,7 @@ Testing:
   - 5. S-036: Clapeyron units (with Andrea).
   - 6. M-048: T = 0 means unset (phase.cpp, marker.cpp).
   - 8. M-046, M-067 (with Garrett).
-  - 11. M-063: "Incorrect sedimentation phase" stop (subgrid.cpp:608).
+  - 11. M-063: "Incorrect sedimentation phase" stop (subgrid.cpp:608). Done 2026-10-26 (stop kept).
   - 13. Rest of N-025 / N-026: dt_out, time_end trimming, fwrite per value, total_pressure edges.
   - Rest of N-021 (option order in nlsolve/multigrid, matData comment, lsolve bf checks,
     matAux duplicates, R/P weights).
@@ -147,6 +147,9 @@ All done and committed.
     Done 2026-10-23 (3c04c606), see "Group C, dead code" below.
 11. M-063 (from B): "Incorrect sedimentation phase" stop in subgrid.cpp when the surface rises
     more than one cell per step or has overhangs. Relax, or keep the stop?
+    Done 2026-10-26 (Anton: keep the stop). Clearer message (reduce the time step) in subgrid.cpp
+    and passive_tracer.cpp; the `-2` stop mark in `ADVGetSedPhase` no longer overwrites a rock
+    cell above an air cell (overhang). No results change (t03, t15, t20, t21, t24, t35, t36, t38).
 12. Nothing to do: M-019 (mitigated by `-snes_max_funcs unlimited`); N-028, N-029 (Boris: leave).
     Small clean-ups: N-002, N-007 (mostly Wenrong/Yun), N-011, N-018.
     Done 2026-10-23: M-019, N-028, N-029 marked won't fix. N-002, N-007, N-011 (input checks
