@@ -231,7 +231,7 @@ Include tests which cover any changes to the source code.  Create a new director
 
 Run the full test suite on your machine – i.e. `make test` in the `LaMEM/test` directory before a pull request. All tests should pass; if not ensure that.
 
-Tests compare against fixed reference files, so a run must give the same result every time on the same number of cores. If you add random noise, always use a fixed seed (e.g. `PetscRandomSetSeed` + `PetscRandomSeed`, as in the marker injection in `advect.cpp`). Never seed from the clock (`time()`, `std::random_device`) and do not use an unseeded `rand()`.
+Tests compare against fixed reference files, so a run must give the same result every time on the same number of cores. If you add random noise, always use a fixed seed (e.g. `PetscRandomSetSeed` + `PetscRandomSeed`, as for the free-surface noise in `surf.cpp`). Never seed from the clock (`time()`, `std::random_device`) and do not use an unseeded `rand()`.
 
 #### 6.3.2.1 Test targets
 
