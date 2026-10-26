@@ -9,7 +9,7 @@ OPTIONS & PREFIXES
 	-snes_picard_rtol [value] - relative tolerance to switch to Newton (convergence)
 	-snes_picard_minit[value] - minimum number of Picard iterations forced at every step
 	-snes_newton_rtol [value] - relative tolerance to switch to Picard (divergence)
-	-snes_newton_maxit[value] - maximum number of Newton iterations to switch to Picard (divergence)
+	-snes_newton_maxit[value] - maximum number of Newton iterations per solve, then Picard only
 	-snes_atol_auto           - automatic selection of absolute tolerance
 	-snes_continue_on_fail    - continue simulation if nonlinear solver diverged
 	-snes_track_stages        - activates staged logging (off by default)

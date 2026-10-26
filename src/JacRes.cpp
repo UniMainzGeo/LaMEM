@@ -1669,8 +1669,9 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx,TSSol *ts)
 			norm = lnorm;
 		}
 
-		// get stop criterion
-		stop = PetscAbsScalar((norm - nprev)) / (norm + nprev);
+		// get stop criterion (zero pressure, e.g. no gravity, is converged)
+		if(norm == 0.0) stop = 0.0;
+		else            stop = PetscAbsScalar((norm - nprev)) / (norm + nprev);
 
 		conv = stop < tol;
 

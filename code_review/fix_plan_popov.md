@@ -105,6 +105,17 @@ All done and committed.
 5. S-036 (Clapeyron units in SI): with Andrea; input unit per unit system.
 6. M-048 (T = 0 means unset): DBL_MAX sentinel may change existing inputs.
 7. Intended? M-047, M-049, N-003, N-016, N-019.
+   M-047 (2026-10-26): setting only the pressure history (cells, markers) is intended (Anton);
+   zero pressure sum (no gravity) now counts as converged, no NaN / false warning.
+   M-049 (2026-10-26): G averaging kept (history stress is averaged the same way, so a non-elastic
+   phase drops out); Kb now averages compressibility 1/Kb (non-elastic = incompressible).
+   t03, t04 unchanged (all their phases have the same Kb).
+   I2Gdt left as is: it goes away with the planned switch to a material point method (Anton).
+   N-003 (2026-10-26): won't fix, soft eta_min/eta_max limits are intended and obvious (Anton).
+   N-016 (2026-10-26): flat water table at average topography is intended (Anton); comment added.
+   N-019 (2026-10-26): -snes_newton_maxit is now the Newton budget per solve; once used up, Picard
+   only (no Picard/Newton ping-pong). MMFD label fixed to MFFD. Divergence test vs first residual
+   of the step kept. t03, t13, t14, t26, t32 pass.
 8. With Garrett: M-046, M-067.
 9. Low value: M-009, M-023, M-054, M-057, N-008, N-014 (code or docs?), N-017, N-020.
    Done 2026-10-23: M-009 surface z clamped to box on bottom/top ranks; M-023 RK2 midpoint clamped

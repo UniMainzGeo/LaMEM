@@ -633,7 +633,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	SolVarBulk  *svBulk;
 	Material_t  *mat, *phases;
 	PetscInt     i, numPhases;
-	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
+	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, IKavg, rho;
 
 	PetscFunctionBeginUser;
 
@@ -652,10 +652,11 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	p         = p+ctrl->pShift;
 
 	// initialize effective density, thermal expansion & inverse bulk elastic parameter
+	// (compressibility 1/Kb is averaged, phases without Kb are incompressible)
 	svBulk->rho    = 0.0;
 	svBulk->alpha  = 0.0;
 	svBulk->IKdt   = 0.0;
-	Kavg           = 0.0;
+	IKavg          = 0.0;
 	svBulk->mf     = 0.0;
 	svBulk->rho_pf = 0.0;
 
@@ -694,7 +695,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			// ro/ro_0 = (1 + Kb'*P/Kb)^(1/Kb')
 			if(mat->Kb)
 			{
-				Kavg += phRat[i]*mat->Kb;
+				IKavg += phRat[i]/mat->Kb;
 
 				if(mat->Kp) cf_comp = pow(1.0 + mat->Kp*(p/mat->Kb), 1.0/mat->Kp);
 				else        cf_comp = 1.0 + p/mat->Kb;
@@ -753,7 +754,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 		}
 	}
 
-	if(Kavg) svBulk->IKdt = 1.0/Kavg/dt;
+	svBulk->IKdt = IKavg/dt;
 
 	PetscFunctionReturn(0);
 }

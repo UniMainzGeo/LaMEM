@@ -355,7 +355,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 	// get top boundary coordinate
 	PetscCall(FDSTAGGetGlobalBox(fs, NULL, NULL, NULL, NULL, NULL, &ztop));
 
-	// set ground water level
+	// set ground water level (surf: flat level at average topography, by design)
 	if     (ctrl->gwType == _GW_TOP_)   gwLevel = ztop;
 	else if(ctrl->gwType == _GW_SURF_)  gwLevel = jr->surf->avg_topo;
 	else if(ctrl->gwType == _GW_LEVEL_) gwLevel = ctrl->gwLevel;

@@ -30,14 +30,14 @@ struct NLSol
 	Mat         PICARD;   // Picard Jacobian
 
 	PetscInt    it;       // iteration counter
-	PetscInt    itNwt;    // Newton iteration counter
+	PetscInt    itNwt;    // Newton iteration counter (per solve)
 	PetscScalar refRes;   // reference residual norm
 	JacType     jtype;    // actual type of Jacobian operator
 
 	PetscScalar rtolPic;  // relative tolerance to switch to Newton (convergence)
 	PetscInt    minItPic; // minimum number Picard iterations forced at every step
 	PetscScalar rtolNwt;  // relative tolerance to switch to Picard (divergence)
-	PetscInt    maxItNwt; // maximum number Newton iterations to switch to Picard (divergence)
+	PetscInt    maxItNwt; // maximum number of Newton iterations per solve, then Picard only
 
 	// automatic absolute tolerance initialization flags
 	PetscInt    snes_atol_auto;
