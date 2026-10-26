@@ -23,7 +23,7 @@ Total number of options added: 0
 #End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Oct 23 2026 - Time: 16:30:54 	    
+     Compiled: Date: Oct 26 2026 - Time: 18:07:03 	    
      Version : 3.4.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -92,7 +92,7 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000481851 sec)
+Reading geometric primitives ... done (0.000488842 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : 2D_push_test 
@@ -112,7 +112,7 @@ Preconditioner parameters:
    Preconditioner type           : user-defined
    Penalty parameter (pgamma)    : 1.000000e+03
 --------------------------------------------------------------------------
-Saving output ... done (0.0262779 sec)
+Saving output ... done (0.0269481 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -130,7 +130,7 @@ Tentative time step : 0.01000000 [ ]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.354453 (sec)
+SNES solution time      : 0.354471 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -144,7 +144,7 @@ Actual time step : 0.01000 [ ]
 Performing marker control (standard algorithm)
 Marker control: (Corners ) injected 0 markers
 --------------------------------------------------------------------------
-Saving output ... done (0.0308749 sec)
+Saving output ... done (0.0303053 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
@@ -162,7 +162,7 @@ Tentative time step : 0.01100000 [ ]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.21499 (sec)
+SNES solution time      : 0.212202 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -176,7 +176,7 @@ Actual time step : 0.01100 [ ]
 Performing marker control (standard algorithm)
 Marker control: (Corners ) injected 0 markers
 --------------------------------------------------------------------------
-Saving output ... done (0.0287884 sec)
+Saving output ... done (0.0284661 sec)
 --------------------------------------------------------------------------
 ================================= STEP 3 =================================
 --------------------------------------------------------------------------
@@ -194,7 +194,7 @@ Tentative time step : 0.01210000 [ ]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.214574 (sec)
+SNES solution time      : 0.211316 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -208,7 +208,7 @@ Actual time step : 0.01210 [ ]
 Performing marker control (standard algorithm)
 Marker control: (Corners ) injected 0 markers
 --------------------------------------------------------------------------
-Saving output ... done (0.0313054 sec)
+Saving output ... done (0.0298568 sec)
 --------------------------------------------------------------------------
 ================================= STEP 4 =================================
 --------------------------------------------------------------------------
@@ -226,7 +226,7 @@ Tentative time step : 0.01331000 [ ]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.217777 (sec)
+SNES solution time      : 0.212448 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -240,7 +240,7 @@ Actual time step : 0.01331 [ ]
 Performing marker control (standard algorithm)
 Marker control: (Corners ) injected 0 markers
 --------------------------------------------------------------------------
-Saving output ... done (0.0330083 sec)
+Saving output ... done (0.0302931 sec)
 --------------------------------------------------------------------------
 ================================= STEP 5 =================================
 --------------------------------------------------------------------------
@@ -258,7 +258,7 @@ Tentative time step : 0.01464100 [ ]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.213919 (sec)
+SNES solution time      : 0.212097 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -270,9 +270,9 @@ Residual summary:
 Actual time step : 0.01464 [ ] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control: (Corners ) injected 316 markers in 1.4197e-03 s 
+Marker control: (Corners ) injected 316 markers in 1.3261e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0305993 sec)
+Saving output ... done (0.0301649 sec)
 --------------------------------------------------------------------------
 ================================= STEP 6 =================================
 --------------------------------------------------------------------------
@@ -290,7 +290,7 @@ Tentative time step : 0.01610510 [ ]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.213729 (sec)
+SNES solution time      : 0.208445 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -302,9 +302,9 @@ Residual summary:
 Actual time step : 0.01611 [ ] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control: (Corners ) injected 314 markers in 1.4912e-03 s 
+Marker control: (Corners ) injected 314 markers in 1.4461e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0316605 sec)
+Saving output ... done (0.030501 sec)
 --------------------------------------------------------------------------
 ================================= STEP 7 =================================
 --------------------------------------------------------------------------
@@ -322,7 +322,7 @@ Tentative time step : 0.01771561 [ ]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.214924 (sec)
+SNES solution time      : 0.211622 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -334,109 +334,109 @@ Residual summary:
 Actual time step : 0.01772 [ ] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control: (Corners ) injected 704 markers in 2.4093e-03 s 
+Marker control: (Corners ) injected 704 markers in 2.3366e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0326801 sec)
+Saving output ... done (0.0320023 sec)
 --------------------------------------------------------------------------
 ================================= STEP 8 =================================
 --------------------------------------------------------------------------
 Current time        : 0.09487171 [ ] 
 Tentative time step : 0.01948717 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 7.664738648962e+03
+  0 SNES Function norm 7.659589030055e+03
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 7.664738648962e+03
-    1 KSP Residual norm 2.730313039640e-02
-    2 KSP Residual norm 3.576934327097e-05
+    0 KSP Residual norm 7.659589030055e+03
+    1 KSP Residual norm 2.704477425861e-02
+    2 KSP Residual norm 3.464483620994e-05
     Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 3.576934327103e-05
+  1 SNES Function norm 3.464483620968e-05
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.210118 (sec)
+SNES solution time      : 0.20877 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 5.758960063051e-06 
-      |Div|_2   = 3.576934327103e-05 
+      |Div|_inf = 5.786732540591e-06 
+      |Div|_2   = 3.464483620968e-05 
    Momentum: 
-      |mRes|_2  = 7.825594592313e-12 
+      |mRes|_2  = 7.691883825560e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.01949 [ ] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control: (Corners ) injected 782 markers in 2.6666e-03 s 
+Marker control: (Corners ) injected 804 markers in 2.6927e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0328866 sec)
+Saving output ... done (0.0321439 sec)
 --------------------------------------------------------------------------
 ================================= STEP 9 =================================
 --------------------------------------------------------------------------
 Current time        : 0.11435888 [ ] 
 Tentative time step : 0.02143589 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.182988527212e+02
+  0 SNES Function norm 3.233893287574e+02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.182988527212e+02
-    1 KSP Residual norm 1.222308285252e-03
-    2 KSP Residual norm 1.441844382111e-06
+    0 KSP Residual norm 3.233893287574e+02
+    1 KSP Residual norm 1.244924788006e-03
+    2 KSP Residual norm 1.459758297796e-06
     Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.441844381986e-06
+  1 SNES Function norm 1.459758297646e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.216807 (sec)
+SNES solution time      : 0.208747 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.566507184554e-07 
-      |Div|_2   = 1.441844381981e-06 
+      |Div|_inf = 2.777363341533e-07 
+      |Div|_2   = 1.459758297641e-06 
    Momentum: 
-      |mRes|_2  = 3.655913514676e-12 
+      |mRes|_2  = 3.770922708394e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.02144 [ ] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control: (Corners ) injected 851 markers in 2.9611e-03 s 
+Marker control: (Corners ) injected 818 markers in 2.9421e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0347036 sec)
+Saving output ... done (0.0336287 sec)
 --------------------------------------------------------------------------
 ================================ STEP 10 =================================
 --------------------------------------------------------------------------
 Current time        : 0.13579477 [ ] 
 Tentative time step : 0.02357948 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.388404567210e+02
+  0 SNES Function norm 2.450212657756e+02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.388404567210e+02
-    1 KSP Residual norm 7.151493301910e-04
-    2 KSP Residual norm 1.041653923198e-06
+    0 KSP Residual norm 2.450212657756e+02
+    1 KSP Residual norm 7.818545087425e-04
+    2 KSP Residual norm 1.118101614325e-06
     Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.041653923373e-06
+  1 SNES Function norm 1.118101614189e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.214564 (sec)
+SNES solution time      : 0.211124 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.740140649353e-07 
-      |Div|_2   = 1.041653923366e-06 
+      |Div|_inf = 2.039450905933e-07 
+      |Div|_2   = 1.118101614183e-06 
    Momentum: 
-      |mRes|_2  = 3.735418573580e-12 
+      |mRes|_2  = 3.687870366725e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.02358 [ ] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control: (Corners ) injected 931 markers in 3.1783e-03 s 
+Marker control: (Corners ) injected 918 markers in 3.0681e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0340458 sec)
+Saving output ... done (0.0343003 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 2.79686 (sec) 
+Total solution time : 2.7534 (sec) 
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
 -jp_pc_factor_mat_solver_type mumps # (source: code)
