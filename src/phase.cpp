@@ -297,6 +297,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Duplicate phase definition!");
 	}
 
+	// clear parameters (on restart the struct still holds the values of the previous run)
+	PetscCall(PetscMemzero(m, sizeof(Material_t)));
+
 	// set ID
 	m->ID = ID;
 
@@ -523,10 +526,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// DIFFUSION
 
-	if(!(( eta && !m->Bd)  || // eta
-	     (!eta &&  m->Bd)  || // Bd
-	     (!eta && !m->Bd)  || // nothing
-	     ( eta &&  m->Bd)))
+	if(eta && m->Bd)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Diffusion creep parameters are not unique for phase %" PetscInt_FMT " (eta, Bd)\n", ID);
 	}
@@ -538,8 +538,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	if(!(( eta0 &&  e0 &&   m->n &&  !m->Bn) || // eta0, e0, n
 	     (!eta0 && !e0 &&   m->n &&   m->Bn) || // Bn, n
-	     (!eta0 && !e0 &&  !m->n &&  !m->Bn) || // nothing
-	     ( eta0 &&  e0 &&   m->n &&   m->Bn )))
+	     (!eta0 && !e0 &&  !m->n &&  !m->Bn)))  // nothing
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Dislocation creep parameters are not unique for phase %" PetscInt_FMT " (eta0 + e0 + n, Bn + n)\n", ID);
 	}
@@ -1483,6 +1482,22 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
 
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode DBMatSetDefaultEtaSt(DBMat *dbm, PetscScalar eta_min)
+{
+	// set stabilization viscosity of phases that do not define eta_st
+
+	PetscInt i;
+
+	PetscFunctionBeginUser;
+
+	for(i = 0; i < dbm->numPhases; i++)
+	{
+		if(!dbm->phases[i].eta_st) dbm->phases[i].eta_st = eta_min;
+	}
 
 	PetscFunctionReturn(0);
 }

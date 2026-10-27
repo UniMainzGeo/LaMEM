@@ -149,10 +149,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		if(((m->Vd || m->Vn || m->Vp) && !ctrl->pLithoVisc)  ||
 		   ( m->fr                    && !ctrl->pLithoPlast) ||
 		   ( m->Kb || m->beta))       need_top_open  = 1;
-
-		// set default stabilization viscosity
-		if(!m->eta_st) m->eta_st = ctrl->eta_min/scal->viscosity;
-
 	}
 
 	if(need_top_open && !bc->top_open)
@@ -332,6 +328,9 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->Adiabatic_gr   = (ctrl->Adiabatic_gr/scal->temperature)*scal->length;
 	ctrl->TRamp          /=  scal->temperature;
 	ctrl->TPert          /=  scal->temperature;
+
+	// set default stabilization viscosity
+	PetscCall(DBMatSetDefaultEtaSt(jr->dbm, ctrl->eta_min));
 
 	// create Jacobian & residual evaluation context
 	PetscCall(JacResCreateData(jr));

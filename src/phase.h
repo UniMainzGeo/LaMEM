@@ -279,6 +279,9 @@ void MatPrintScalParam(
 // Overwrite material phase parameters with global values
 PetscErrorCode DBMatOverwriteWithGlobalVariables(DBMat *dbm, FB *fb);
 
+// set default stabilization viscosity (eta_min is scaled)
+PetscErrorCode DBMatSetDefaultEtaSt(DBMat *dbm, PetscScalar eta_min);
+
 //---------------------------------------------------------------------------
 //............ PREDEFINED RHEOLOGICAL PROFILES (from literature) ............
 //---------------------------------------------------------------------------

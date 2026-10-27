@@ -297,6 +297,9 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm, FB *fb)
 	// override material database
 	PetscCall(DBMatCreate(&lm->dbm, fb, PETSC_TRUE));
 
+	// set default stabilization viscosity (eta_min is restored from the restart file)
+	PetscCall(DBMatSetDefaultEtaSt(&lm->dbm, lm->jr.ctrl.eta_min));
+
 	// close temporary restart file
 	fclose(fp);
 
