@@ -833,12 +833,18 @@ PetscErrorCode MatDataRestrictBC2D(MatData *coarse, MatData *fine)
 	// automatically. The finest grid uses standard boundary condition vectors.
 
 	PetscInt    I, J, K;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mcx, mcy, mcz, periodic;
 	PetscScalar ***ivx,   ***ivy,   ***ivz,   ***ip;
 	PetscScalar ***fbcvx, ***fbcvy, ***fbcvz, ***fbcp;
 	PetscScalar ***cbcvx, ***cbcvy, ***cbcvz, ***cbcp;
 
 	PetscFunctionBeginUser;
+
+	// initialize index bounds (coarse grid)
+	mcx      = coarse->fs->dsx.tcels - 1;
+	mcy      = coarse->fs->dsy.tcels - 1;
+	mcz      = coarse->fs->dsz.tcels - 1;
+	periodic = coarse->fs->periodic;
 
 	// mark all variables unconstrained
 	PetscCall(VecSet(coarse->bcvx, DBL_MAX));
@@ -883,6 +889,12 @@ PetscErrorCode MatDataRestrictBC2D(MatData *coarse, MatData *fine)
 			// store parent DOF index
 			cbcvx[k][j][i] = ivx[K][J][I];
 		}
+
+		// restrict two-point constraints on boundary ghost points (no parent DOF)
+		if(j == 0   && fbcvx[K  ][J-1][I] != DBL_MAX && fbcvx[K+1][J-1][I] != DBL_MAX) { cbcvx[k  ][j-1][i] = -1.0; }
+		if(j == mcy && fbcvx[K  ][J+1][I] != DBL_MAX && fbcvx[K+1][J+1][I] != DBL_MAX) { cbcvx[k  ][j+1][i] = -1.0; }
+		if(k == 0   && fbcvx[K-1][J  ][I] != DBL_MAX)                                  { cbcvx[k-1][j  ][i] = -1.0; }
+		if(k == mcz && fbcvx[K+2][J  ][I] != DBL_MAX)                                  { cbcvx[k+1][j  ][i] = -1.0; }
 	}
 	END_STD_LOOP
 
@@ -907,6 +919,15 @@ PetscErrorCode MatDataRestrictBC2D(MatData *coarse, MatData *fine)
 			// store parent DOF index
 			cbcvy[k][j][i] = ivy[K][J][I];
 		}
+
+		// restrict two-point constraints on boundary ghost points (no parent DOF)
+		if(!periodic)
+		{
+			if(i == 0   && fbcvy[K  ][J][I-1] != DBL_MAX && fbcvy[K+1][J][I-1] != DBL_MAX) { cbcvy[k  ][j][i-1] = -1.0; }
+			if(i == mcx && fbcvy[K  ][J][I+2] != DBL_MAX && fbcvy[K+1][J][I+2] != DBL_MAX) { cbcvy[k  ][j][i+1] = -1.0; }
+		}
+		if(k == 0   && fbcvy[K-1][J][I] != DBL_MAX && fbcvy[K-1][J][I+1] != DBL_MAX) { cbcvy[k-1][j][i] = -1.0; }
+		if(k == mcz && fbcvy[K+2][J][I] != DBL_MAX && fbcvy[K+2][J][I+1] != DBL_MAX) { cbcvy[k+1][j][i] = -1.0; }
 	}
 	END_STD_LOOP
 
@@ -929,6 +950,15 @@ PetscErrorCode MatDataRestrictBC2D(MatData *coarse, MatData *fine)
 			// store parent DOF index
 			cbcvz[k][j][i] = ivz[K][J][I];
 		}
+
+		// restrict two-point constraints on boundary ghost points (no parent DOF)
+		if(!periodic)
+		{
+			if(i == 0   && fbcvz[K][J][I-1] != DBL_MAX) { cbcvz[k][j][i-1] = -1.0; }
+			if(i == mcx && fbcvz[K][J][I+2] != DBL_MAX) { cbcvz[k][j][i+1] = -1.0; }
+		}
+		if(j == 0   && fbcvz[K][J-1][I] != DBL_MAX && fbcvz[K][J-1][I+1] != DBL_MAX) { cbcvz[k][j-1][i] = -1.0; }
+		if(j == mcy && fbcvz[K][J+1][I] != DBL_MAX && fbcvz[K][J+1][I+1] != DBL_MAX) { cbcvz[k][j+1][i] = -1.0; }
 	}
 	END_STD_LOOP
 
@@ -953,6 +983,17 @@ PetscErrorCode MatDataRestrictBC2D(MatData *coarse, MatData *fine)
 			// store parent DOF index
 			cbcp[k][j][i] = ip[K][J][I];
 		}
+
+		// restrict pressure constraints on boundary ghost points (no parent DOF)
+		if(!periodic)
+		{
+			if(i == 0   && fbcp[K  ][J][I-1] != DBL_MAX && fbcp[K+1][J][I-1] != DBL_MAX) { cbcp[k  ][j][i-1] = -1.0; }
+			if(i == mcx && fbcp[K  ][J][I+2] != DBL_MAX && fbcp[K+1][J][I+2] != DBL_MAX) { cbcp[k  ][j][i+1] = -1.0; }
+		}
+		if(j == 0   && fbcp[K  ][J-1][I] != DBL_MAX && fbcp[K  ][J-1][I+1] != DBL_MAX && fbcp[K+1][J-1][I] != DBL_MAX && fbcp[K+1][J-1][I+1] != DBL_MAX) { cbcp[k  ][j-1][i] = -1.0; }
+		if(j == mcy && fbcp[K  ][J+1][I] != DBL_MAX && fbcp[K  ][J+1][I+1] != DBL_MAX && fbcp[K+1][J+1][I] != DBL_MAX && fbcp[K+1][J+1][I+1] != DBL_MAX) { cbcp[k  ][j+1][i] = -1.0; }
+		if(k == 0   && fbcp[K-1][J][I] != DBL_MAX && fbcp[K-1][J][I+1] != DBL_MAX) { cbcp[k-1][j][i] = -1.0; }
+		if(k == mcz && fbcp[K+2][J][I] != DBL_MAX && fbcp[K+2][J][I+1] != DBL_MAX) { cbcp[k+1][j][i] = -1.0; }
 	}
 	END_STD_LOOP
 
