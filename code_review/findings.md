@@ -110,7 +110,7 @@ Next free IDs: S-049, M-074, N-030
 | M-043 | minor | confirmed | physics | quick | adjoint.cpp:3024-3040,3080-3095 | Scaling-law exponents are wrong for `log10` parameters | open |
 | M-044 | minor | confirmed | logic | quick | adjoint.cpp:1866,1995,1328 | A parameter value of 0 gives a zero FD step (division by zero) | open |
 | M-045 | minor | confirmed | parallel | medium | JacRes.cpp:1004-1017 | Dike strain-rate correction is missing in ghost cells, so results depend on CPU count | open |
-| M-046 | minor | possible | physics | medium | constEq.cpp:798-822 | Dike opening still enters the stabilization stress and shear heating | open |
+| M-046 | minor | possible | physics | medium | constEq.cpp:798-822 | Dike opening still enters the stabilization stress and shear heating | fixed |
 | M-047 | minor | possible | logic | medium | JacRes.cpp:1545-1703 | `init_lith_pres` only sets the pressure history, and its stop test is weak | fixed (group C) |
 | M-048 | minor | confirmed | input | medium | phase.cpp:798-803; marker.cpp:523 | Phase temperature `T = 0` (°C) is treated as "not set" | not an issue |
 | M-049 | minor | possible | physics | medium | constEq.cpp:603-626, 697, 756 | Shear and bulk moduli averaged with non-elastic phases counted as 0 | fixed (group C) |
@@ -1247,7 +1247,9 @@ Next free IDs: S-049, M-074, N-030
   used only for the main stress.
 - Why it matters: dike opening creates false stabilization stress and false shear heating
   in dike cells.
-- Status: open
+- Status: fixed (group C, 2026-10-27): cellConstEq removes the dike opening (from dikeRHS) from
+  the total strain rate used for the stabilization stress and Hr. Changes t26 (only |Div|_inf
+  failed in dyndike_4core and dike_variableM; all t26 references updated)
 
 ### M-047 [minor, possible] `init_lith_pres` only sets the pressure history; weak stop test
 - Tags: minor, possible, logic, medium
