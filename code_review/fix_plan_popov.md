@@ -25,7 +25,7 @@ Testing:
   S-014 (b7a5c143, cell-center velocities precomputed, see below).
 - C done 2026-10-27: S-044 (1f57d0ed, ghosted fixed-cell flag, owned faces only);
   M-048 not an issue (air gets Ttop); N-004 (2c3f19d3, fresh phase read on restart, strict checks).
-- C done 2026-10-27: N-021 rest except R/P weights (1a67766e, option order in nlsolve/multigrid, MFFD type
+- C done 2026-10-27: N-021 rest (1a67766e, option order in nlsolve/multigrid, MFFD type
   set once, matData comment, lsolve bf-only checks, matAux duplicates). No results change
   (t01-t08, t15, t20 pass).
 - C done 2026-10-27: 13, rest of N-025 (ea15ddba: nstep_out = 0 is output by dt_out only, < 0 no
@@ -33,7 +33,6 @@ Testing:
   total_pressure edge values; fwrite per value won't fix).
 - C done 2026-10-27: M-056 2D (MatDataRestrictBC2D copies boundary ghost flags like 3D; no effect
   today, 2D has no rediscretized levels; t03 t16 t19 t22 t26 t28 t30 pass).
-- Improvements (not fixes) are kept in improvements.md: N-021 multigrid transfer.
 - C open (checked in code 2026-10-27):
   - 5. S-036: Clapeyron units (with Andrea).
   - 8. M-046, M-067 (with Garrett).
@@ -191,7 +190,6 @@ All done and committed.
     N-026 done 2026-10-27: total_pressure uses boundary ghost values (use_bound = 1) like
     pressure; checked on t01 with -pres_top 0.3 (old edge difference 0.017, now 0). fwrite per
     value: won't fix (stdio buffering, small cost).
-14. N-021 multigrid transfer: moved to improvements.md (an improvement, not a fix).
 
 ## Moved from A to C while fixing
 
