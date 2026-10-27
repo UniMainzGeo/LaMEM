@@ -596,6 +596,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	jr = &lm->jr;
 
 	track_stages = 0;
+	restart      = 0;
 
 	if(!param)
 	{
@@ -643,14 +644,18 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//  NONLINEAR THERMO-MECHANICAL SOLVER
 		//====================================
 
-		// apply phase transitions on particles
-		PetscCall(Phase_Transition(&lm->actx));
+		// step-start changes are applied once per step, not again on a time step restart
+		if(!restart)
+		{
+			// apply phase transitions on particles
+			PetscCall(Phase_Transition(&lm->actx));
 
-		// apply user-defined dylib plugin's phase transition hook (no-op unless loaded)
-		PetscCall(DylibPluginPhaseTransition(&lm->actx));
+			// apply user-defined dylib plugin's phase transition hook (no-op unless loaded)
+			PetscCall(DylibPluginPhaseTransition(&lm->actx));
 
-		// inject geometric primitives whose injection time has been reached
-		PetscCall(ADVMarkInjectGeom(&lm->actx));
+			// inject geometric primitives whose injection time has been reached
+			PetscCall(ADVMarkInjectGeom(&lm->actx));
+		}
 
 		// initialize boundary constraint vectors
 		PetscCall(BCApply(&lm->bc));
@@ -713,7 +718,12 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		PetscCall(ADVSelectTimeStep(&lm->actx, &restart));
 
 		// restart if fixed time step is larger than CFLMAX
-		if(restart) continue;
+		if(restart)
+		{
+			if(track_stages) { PetscCall(PetscLogStagePop()); }
+
+			continue;
+		}
 
 		// STANDARD MODEL
 		if(lm->surf.SurfMode == 1) PetscCall(FreeSurfAdvect(&lm->surf));
@@ -777,6 +787,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// update phase ratios taking into account actual free surface position
 		PetscCall(FreeSurfGetAirPhaseRatio(&lm->surf));
+
+		// move phase transition boxes with the accepted time step
+		PetscCall(MovingBoxes(jr));
 
 		//==================
 		// Save data to disk

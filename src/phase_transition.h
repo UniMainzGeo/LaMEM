@@ -43,6 +43,7 @@ PetscErrorCode Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,
 PetscErrorCode Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans, JacRes *jr, Marker *P,PetscInt PH1, PetscInt PH2, Scaling *scal, PetscInt *ph, PetscScalar *T, PetscInt *InsideAbove);
 PetscErrorCode Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Controls ctrl, PetscInt *ph, PetscInt *InsideAbove);
 PetscErrorCode Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,PetscInt PH1, PetscInt PH2, Scaling *scal, PetscInt *ph_out, PetscScalar *T_out, JacRes *jr, PetscInt cellID);
+PetscErrorCode MovingBoxes(JacRes *jr);
 PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts, JacRes *jr);
 PetscErrorCode LinkNotInAirBoxes(Ph_trans_t *PhaseTrans, JacRes *jr);
 PetscErrorCode DynamicPhTr_Init(JacRes *jr);

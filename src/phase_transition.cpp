@@ -730,7 +730,6 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	// creates arrays to optimize marker-cell interaction
 
 	DBMat           *dbm;
-	TSSol           *ts;
 	Ph_trans_t      *PhaseTrans;
 	Marker          *P;
 	JacRes          *jr;
@@ -746,7 +745,6 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	// Retrieve parameters
 	jr          =   actx->jr;
 	dbm         =   jr->dbm;
-	ts          =   jr->ts;
 	numPhTrn    =   dbm->numPhtr;
 	scal        =   dbm->scal;
 	time        =   jr->bc->ts->time;
@@ -773,17 +771,10 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 		{
 			nphc = 0;
 		}
-		// calling the moving dike function
-
+		// moving boxes are moved in the end of time step (MovingBoxes)
 		if ( PhaseTrans->Type == _NotInAirBox_ )
 		{
-			if (PhaseTrans->v_box)
-			{
-				PetscCall(MovingBox(PhaseTrans, ts, jr));
-			}
-
 			PetscCall(LinkNotInAirBoxes(PhaseTrans, jr));
-
 		}
 
 		for(i = 0; i < actx->nummark; i++)      // loop over all (local) particles
@@ -950,6 +941,29 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //----------------------------------------------------------------------------------------
+PetscErrorCode MovingBoxes(JacRes *jr)
+{
+	// move boxes in the end of time step, after the time step is accepted
+	// (called before the time stamp is updated, so time and dt belong to this step)
+
+	Ph_trans_t  *PhaseTrans;
+	PetscInt     nPtr;
+
+	PetscFunctionBeginUser;
+
+	for(nPtr = 0; nPtr < jr->dbm->numPhtr; nPtr++)
+	{
+		PhaseTrans = jr->dbm->matPhtr+nPtr;
+
+		if(PhaseTrans->Type == _NotInAirBox_ && PhaseTrans->v_box)
+		{
+			PetscCall(MovingBox(PhaseTrans, jr->ts, jr));
+		}
+	}
+
+	PetscFunctionReturn(0);
+}
+//----------------------------------------------------------------------------------------
 PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts, JacRes *jr)
 {
 
@@ -961,7 +975,7 @@ PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts, JacRes *jr)
 	PetscFunctionBeginUser;
 
 	dt  = ts->dt;       // time step
-	t_c = ts->time;     // current time stamp, computed at the end of last time step round
+	t_c = ts->time;     // time at the start of this time step
 
 	fs = jr->fs;
 	ny = fs->dsy.ncels;
@@ -971,7 +985,7 @@ PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts, JacRes *jr)
 	t1_box = PhaseTrans->t1_box;
 	v_box  = PhaseTrans->v_box;
 
-	// check if the current time step is equal to the starting time of when the box is supposed to move
+	// move the box if this time step starts within the moving period
 	if(t_c >= t0_box && t_c <= t1_box)
 	{
 		for(j = -1; j < ny+1; j++)
