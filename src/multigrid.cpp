@@ -280,8 +280,8 @@ PetscErrorCode MGCreate(MG *mg, MatData *md, Mat A)
 	PetscCall(PCMGSetLevels(mg->pc, mg->nlvl, NULL));
 	PetscCall(PCMGSetType(mg->pc, PC_MG_MULTIPLICATIVE));
 	PetscCall(PCMGSetCycleType(mg->pc, PC_MG_CYCLE_V));
-	PetscCall(PCSetFromOptions(mg->pc));
 	PetscCall(PCMGSetGalerkin(mg->pc, PC_MG_GALERKIN_NONE));
+	PetscCall(PCSetFromOptions(mg->pc));
 
 	// set coarse solver setup flag
 	mg->crs_setup = 0;

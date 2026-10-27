@@ -33,7 +33,6 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	SNESType        type;
 	NLSol          *nl;
 	PetscBool       flag;
-	SNESLineSearch  linesearch;
 
 	PetscFunctionBeginUser;
 
@@ -69,6 +68,7 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	PetscCall(MatCreateMFFD(PETSC_COMM_WORLD, dof->ln, dof->ln,
 	                        PETSC_DETERMINE, PETSC_DETERMINE, &nl->MFFD));
 	PetscCall(MatSetOptionsPrefix(nl->MFFD,"fd_"));
+	PetscCall(MatMFFDSetType(nl->MFFD, MATMFFD_WP));
 	PetscCall(MatSetFromOptions(nl->MFFD));
 	PetscCall(MatSetUp(nl->MFFD));
 
@@ -78,19 +78,18 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	PetscCall(SNESSetType(snes, SNESNEWTONLS));
 	PetscCall(SNESGetLineSearch(snes, &ls));
 	PetscCall(SNESLineSearchSetType(ls, SNESLINESEARCHBASIC));
+	PetscCall(SNESLineSearchSetPreCheck(ls, &SNESLineSearchPreCheck, (void*)nl));
 	PetscCall(SNESSetFunction(snes, jr->gres, &FormResidual, NULL));
 	PetscCall(SNESSetJacobian(snes, J, P, &FormJacobian, NULL));
 	PetscCall(SNESSetConvergenceTest(snes, &SNESCoupledTest, NULL, NULL));
-	PetscCall(SNESGetLineSearch(snes, &linesearch));
-	PetscCall(SNESLineSearchSetPreCheck(linesearch, &SNESLineSearchPreCheck, (void*)nl));
-	PetscCall(SNESSetFromOptions(snes));
 
-	// setup linear solver & preconditioner
+	// setup linear solver & preconditioner (prefix and defaults before reading options)
 	PetscCall(SNESGetKSP(snes, &ksp));
 	PetscCall(KSPSetOptionsPrefix(ksp,"js_"));
-	PetscCall(KSPSetFromOptions(ksp));
 	PetscCall(KSPGetPC(ksp, &pc));
 	PetscCall(PCSetType(pc, PCMAT));
+	PetscCall(SNESSetFromOptions(snes));
+	PetscCall(KSPSetFromOptions(ksp));
 
 	// create preconditioner context
 	PetscCall(PCDataCreate(&nl->pc, jr, nl->PICARD, P));
@@ -283,7 +282,6 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		// prepare MFFD operator
 		PetscCall(MatMFFDSetFunction(nl->MFFD, (PetscErrorCode (*)(void*,Vec,Vec))SNESComputeFunction, snes));
 		PetscCall(MatMFFDSetBase(nl->MFFD, x, nl->jr->gres));
-		PetscCall(MatMFFDSetType(nl->MFFD, MATMFFD_WP));
 
 		// assembly MFFD operator
 		PetscCall(MatAssemblyBegin(nl->MFFD, MAT_FINAL_ASSEMBLY));

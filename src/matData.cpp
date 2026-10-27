@@ -153,12 +153,7 @@ PetscErrorCode MatDataCoarsen(MatData *coarse, MatData *fine)
 PetscErrorCode MatDataComputeIndex(MatData *md)
 {
 	// compute & set global indices of local & ghost nodes
-
-	// **********************************************************************
-	// NOTE:
-	// for the ghost points, store negative global index of the primary DOF
-	// instead of -1
-	// **********************************************************************
+	// (ghost points store -1; matrix assembly finds the primary DOF through pdofidx)
 
 	FDSTAG      *fs;
 	DOFIndex    *dof;

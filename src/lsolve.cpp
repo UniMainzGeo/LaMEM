@@ -79,12 +79,12 @@ PetscErrorCode PCParamSetFromOptions(PCParam *p)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Coupled geometric multigrid is incompatible with matrix penalty (jp_type, jp_pgamma)");
 	}
 
-	if(p->vs_type == _VEL_MG_ && p->pgamma != 1.0)
+	if(p->pc_type == _STOKES_BF_ && p->vs_type == _VEL_MG_ && p->pgamma != 1.0)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Velocity geometric multigrid is incompatible with matrix penalty (bf_vs_type, jp_pgamma)");
 	}
 
-	if(p->sp_type && p->pgamma != 1.0)
+	if(p->pc_type == _STOKES_BF_ && p->sp_type == _SCHUR_WBFBT_ && p->pgamma != 1.0)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "wBFBT preconditioner is incompatible with matrix penalty (bf_schur_type, jp_pgamma)");
 	}

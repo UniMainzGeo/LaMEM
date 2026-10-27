@@ -62,8 +62,6 @@ PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P)
 		PetscCall(MatSetValue((*P), ii, ii, 0.0, INSERT_VALUES));
 	}
 
-	PetscCall(MatSetFromOptions((*P)));
-
 	// assemble
 	PetscCall(MatAIJAssemble((*P), 0, NULL, 0.0));
 
@@ -121,7 +119,6 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, MatData *md)
 		// create
 		PetscCall(VecCreateMPI(PETSC_COMM_WORLD, ln, PETSC_DETERMINE, &nullsp_vecs[i]));
 		PetscCall(VecSetFromOptions(nullsp_vecs[i]));
-		PetscCall(VecZeroEntries   (nullsp_vecs[i]));
 
 		// initialize
 		PetscCall(VecZeroEntries (nullsp_vecs[i]));
