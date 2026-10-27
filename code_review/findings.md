@@ -167,7 +167,7 @@ Next free IDs: S-049, M-074, N-030
 | N-022 | note | confirmed | cleanup | medium | marker, advect, AVD, cvi, subgrid (various) | Dead code, wrong comments and log lines, small clean-ups | fixed |
 | N-023 | note | confirmed | cleanup | medium | phase_transition.cpp, dike.cpp (various) | Dead code, misleading names and comments, small clean-ups | open |
 | N-024 | note | confirmed | input | medium | parsing.cpp (various) | Input parsing: silent bad numbers, octal integers, dropped values, rank-0 error hang | fixed |
-| N-025 | note | confirmed | cleanup | medium | options.cpp, tssolve.cpp, scaling.cpp, LaMEMLib.cpp, docs | Output and time-step quirks, labels, docs | partly fixed |
+| N-025 | note | confirmed | cleanup | medium | options.cpp, tssolve.cpp, scaling.cpp, LaMEMLib.cpp, docs | Output and time-step quirks, labels, docs | fixed |
 | N-026 | note | confirmed | cleanup | medium | outFunct.cpp, paraViewOutBin.cpp, paraViewOutAVD.cpp, paraViewOutPassiveTracers.cpp | Output quirks: names, stale residual, dead vectors, unchecked inputs | partly fixed |
 | N-027 | note | confirmed | input | medium | adjoint.cpp (several) | Adjoint input and small quirks | open |
 | N-028 | note | confirmed | physics | design | JacRes.cpp:1086-1103 | FSSA only stabilizes the diagonal terms | won't fix |
@@ -1869,8 +1869,10 @@ Next free IDs: S-049, M-074, N-030
   - `lbl_heat_production` says `[W/m3]` but the unit is power/mass, W/kg (scaling.cpp:188, 246).
     "WRNING! ... scaling is employed" has a typo and no newline (scaling.cpp:123).
   - GettingStarted.md:49-60 says `nstep_out` sets the number of time steps; it is `nstep_max`.
-- Status: partly fixed (group B): labels/typos fixed; fix_dt schedule fixed; dt_out, time_end
-  trimming left for C
+- Status: fixed. Group B: labels/typos, fix_dt schedule. Group C (2026-10-27): nstep_out = 0 means
+  output only by dt_out (and first/last step), nstep_out < 0 no output; dt_out output times on a
+  fixed grid (multiples of dt_out, not reset by other outputs); dike.cpp no longer divides by
+  nstep_out = 0. No dt trimming at time_end / output times (Anton: running past the end is fine)
 
 ### N-026 [note, confirmed] Output quirks: names, stale residual, dead vectors, unchecked inputs
 - Tags: note, confirmed, cleanup, medium

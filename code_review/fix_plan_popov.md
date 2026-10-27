@@ -181,6 +181,10 @@ All done and committed.
 13. Left from B (N-025, N-026): dt_out without effect when nstep_out = 1, no dt trimming at
     time_end / output times; one value per fwrite in marker/tracer/AVD files, total_pressure
     edge values. fix_dt schedule one step late: already fixed (Anton, 2026-10-26).
+    N-025 done 2026-10-27: nstep_out = 0 is output by dt_out only, < 0 is no output; dt_out
+    output on a fixed time grid; dike.cpp guards istep % nstep_out. No trimming at time_end or
+    output times (Anton: not needed). t12 no longer reads output steps 1 and 3 (unused, step 3
+    not saved any more).
 14. N-021 multigrid transfer (open, 2026-10-27). Viscosity enters the coarse levels in two ways:
     Galerkin levels compute R*A*P with fixed geometric P (viscosity jumps are smoothed over);
     matrix-free levels average fine viscosity arithmetically over 8 cells (matData.cpp
