@@ -247,7 +247,7 @@ Next free IDs: S-049, M-074, N-030
   passive tracers, the FastScape ranges and the uniform-grid CFL step. No test hits this:
   t18 sets a ref point but uses simple shear only.
 - Fix idea: gcrdbeg += eps*(gcrdbeg - ref); same for gcrdend.
-- Status: fixed (group A); test with non-zero `bg_ref_point` not yet added
+- Status: fixed (group A); no test needed (Anton, 2026-10-27: two-line fix, same formula as the nodes)
 
 ### S-007 [major, confirmed] CFL time step ignores negative velocities on non-uniform grids
 - Tags: major, confirmed, logic, quick

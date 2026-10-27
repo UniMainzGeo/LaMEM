@@ -53,7 +53,8 @@ Testing:
 - C done 2026-10-27: M-026 (8300c874, ADVMarkSave writes APS with header 1211215, the format the
   loader already reads; t33 checks a save/load round trip; no results change). No input used
   save_mark, so nobody was hit.
-- Lowest priority: S-006 test.
+- S-006 test dropped 2026-10-27 (Anton: the fix is simple, no test needed; no output shows the
+  global box directly, so a test would need an extra check in the code).
 - Older notes below say "t37 FastScape broken" or "dyndike fails (known)": both are resolved
   (t37 needs `surf=scape`, see CLAUDE.md; dyndike fixed with the lmaxit removal).
 
@@ -253,7 +254,7 @@ step, mostly markers) and dropped for now.
 
 ## Lowest priority (or ask Boris)
 
-- S-006 test: pure shear with non-zero `bg_ref_point`, check the global box (Boris asked for it).
+- S-006 test: dropped 2026-10-27, see Status.
 
 ## Order of work
 

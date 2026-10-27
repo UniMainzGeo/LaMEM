@@ -526,7 +526,7 @@ Next free IDs: S-049, M-074, N-030
   - Anton Popov — 157753dd Bug fixes. (2017-03-24) — added gcrdbeg/gcrdend *= (1+eps) in Discret1DStretch (ref=0 assumed)
 - At HEAD: still present, src/fdstag.cpp:550-551. Note: Node stretch with ref point from 28f94019 (2014) was later; global bounds ignore ref.
 - Feedback requested from: Anton Popov
-- Status: fixed (group A); test with non-zero `bg_ref_point` not yet added
+- Status: fixed (group A); no test needed (Anton, 2026-10-27: two-line fix, same formula as the nodes)
 - Boris: Please fix & add a test
 
 ### S-007 [major, confirmed] CFL time step ignores negative velocities on non-uniform grids
