@@ -74,7 +74,7 @@ ghosts of `lp_lith` now copy the edge cell, so the pressure difference at walls 
    `k' = k*(1 - phRat) + phRat*k*f` (dike.cpp:466 now uses `kfac -= phRat*melt*(1 - f)`, same
    value). To do: rewrite in his form; no results change (round-off only).
 2. Ramp width: he wants an optional input, default 10 C. Already done (`T_ramp`, `T_pert`,
-   2026-10-23). Tell him.
+   2026-10-23). He knows (2026-10-27); nothing to do.
 3. Per-phase T_Nu / nu_k: confirmed. He asks for defaults `nu_k = 1`, `T_Nu = 0` for phases
    without them. The code already does nothing for such phases (`nu_k` unset = 0 is skipped in
    JacResTemp.cpp:111). To do: make `nu_k = 1` the explicit default and say so in
