@@ -33,10 +33,10 @@ Testing:
   total_pressure edge values; fwrite per value won't fix).
 - C done 2026-10-27: M-056 2D (MatDataRestrictBC2D copies boundary ghost flags like 3D; no effect
   today, 2D has no rediscretized levels; t03 t16 t19 t22 t26 t28 t30 pass).
-- C done 2026-10-27: S-036 (Clapeyron transitions require units = geo; geo unchanged).
-- C done 2026-10-27: M-046 (dike opening removed from the stabilization stress and Hr in
+- C done 2026-10-27: S-036 (dcb02800, Clapeyron transitions require units = geo; geo unchanged).
+- C done 2026-10-27: M-046 (cae8e3b9, dike opening removed from the stabilization stress and Hr in
   cellConstEq; changes t26, references updated).
-- C done 2026-10-27: M-067 (step-start changes skipped on a CFLMAX restart; adjoint part was
+- C done 2026-10-27: M-067 (775aa508, step-start changes skipped on a CFLMAX restart; adjoint part was
   wrong, the gradient is overwritten. Moving boxes now move in the end of the step with the
   accepted dt (before: start of step with the next dt, twice on a restart). Log stage popped on
   restart. No test hits a restart; checked by hand. Changes results with v_box: t16 references
