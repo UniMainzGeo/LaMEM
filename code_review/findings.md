@@ -131,7 +131,7 @@ Next free IDs: S-049, M-074, N-030
 | M-064 | minor | confirmed | logic | medium | phase_transition.cpp:883-905,922,1026-1029 | `ResetParam = APS` resets every step; side depends on type; broken for NotInAirBox | open |
 | M-065 | minor | confirmed | logic | medium | phase_transition.cpp:851-864 | `BoxVicinity` uses y-size for z, and stale or zero bounds for NotInAirBox | open |
 | M-066 | minor | confirmed | memory | medium | tssolve.cpp:381-423, 457-462 | Time-step schedule can overflow its 2000-entry arrays and cuts nstep_max | fixed |
-| M-067 | minor | confirmed | logic | medium | LaMEMLib.cpp:713, phase_transition.cpp:967 | Time-step restart (CFLMAX) repeats phase transitions, so moving boxes move twice | open |
+| M-067 | minor | confirmed | logic | medium | LaMEMLib.cpp:713, phase_transition.cpp:967 | Time-step restart (CFLMAX) repeats phase transitions, so moving boxes move twice | fixed |
 | M-068 | minor | confirmed | logic, input | medium | passive_tracer.cpp:262, 420-797, 63-91 | Passive tracer APS never updated, IDs wrong when nx != ny, typos silently mean "Always" | open |
 | M-069 | minor | confirmed | physics | medium | outFunct.cpp:742-743, 767-768; JacResAux.cpp | SHmax/EHmax direction vectors are averaged to corners, which breaks near north-south | fixed |
 | M-070 | minor | confirmed | memory | medium | adjoint.cpp:204-389 | `AllMaterialParameters` scan: writes past arrays, checks only the first block | open |
@@ -1483,7 +1483,12 @@ Next free IDs: S-049, M-074, N-030
   and dike time averaging counts the step twice. With adjoint modes, the gradient for the
   rejected step was already computed and added.
 - Fix idea: do the CFL check before applying step-start changes, or skip them on a restart.
-- Status: open
+- Check: the adjoint part is wrong; the gradient is overwritten each step (`grd[j] = ...`), not
+  added, so the re-solve replaces it.
+- Status: fixed (group C): phase transitions, plugin hook and injection are skipped on a restart;
+  moving boxes are moved in the end of the time step (MovingBoxes, before TSSolStepForward) with
+  the accepted dt, so a rejected step never moves them. Also: the log stage ("Advect markers",
+  -snes_track_stages) was left pushed on a restart; now popped before `continue`.
 
 ### M-068 [minor, confirmed] Passive tracers: APS frozen, wrong IDs, silent fallbacks
 - Tags: minor, confirmed, logic, input, medium

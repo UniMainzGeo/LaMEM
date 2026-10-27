@@ -36,8 +36,12 @@ Testing:
 - C done 2026-10-27: S-036 (Clapeyron transitions require units = geo; geo unchanged).
 - C done 2026-10-27: M-046 (dike opening removed from the stabilization stress and Hr in
   cellConstEq; changes t26, references updated).
-- C open (checked in code 2026-10-27):
-  - 8. M-067 (with Garrett).
+- C done 2026-10-27: M-067 (step-start changes skipped on a CFLMAX restart; adjoint part was
+  wrong, the gradient is overwritten. Moving boxes now move in the end of the step with the
+  accepted dt (before: start of step with the next dt, twice on a restart). Log stage popped on
+  restart. No test hits a restart; checked by hand. Changes results with v_box: t16 references
+  updated (the move test already failed before, likely M-046 not updating it). t19, t26, t39
+  pass).
 - Core-count drift (found 2026-10-26 while testing S-014), fixed 2026-10-26: with
   `rand_noise 0`, 1-core and 4-core runs of
   examples/BuiltInSetups/Subduction2D_FreeSlip_DirectSolver.dat drifted apart (dt 0.23798 vs
@@ -164,7 +168,7 @@ All done and committed.
    N-019 (2026-10-26): -snes_newton_maxit is now the Newton budget per solve; once used up, Picard
    only (no Picard/Newton ping-pong). MMFD label fixed to MFFD. Divergence test vs first residual
    of the step kept. t03, t13, t14, t26, t32 pass.
-8. With Garrett: M-046 (done 2026-10-27), M-067.
+8. With Garrett: M-046 (done 2026-10-27), M-067 (done 2026-10-27).
 9. Low value: M-009, M-023, M-054, M-057, N-008, N-014 (code or docs?), N-017, N-020.
    Done 2026-10-23: M-009 surface z clamped to box on bottom/top ranks; M-023 RK2 midpoint clamped
    (not deleted); M-054 closed box with unbalanced CompensatingInflow stops with an error (Anton:
