@@ -35,7 +35,7 @@ Testing:
   today, 2D has no rediscretized levels; t03 t16 t19 t22 t26 t28 t30 pass).
 - C done 2026-10-27: S-036 (dcb02800, Clapeyron transitions require units = geo; geo unchanged).
 - C done 2026-10-27: M-046 (cae8e3b9, dike opening removed from the stabilization stress and Hr in
-  cellConstEq; changes t26, references updated).
+  cellConstEq; changes t26 and t27, references updated; t27 later in 5c3ca5c3; full suite passes).
 - C done 2026-10-27: M-067 (775aa508, step-start changes skipped on a CFLMAX restart; adjoint part was
   wrong, the gradient is overwritten. Moving boxes now move in the end of the step with the
   accepted dt (before: start of step with the next dt, twice on a restart). Log stage popped on
