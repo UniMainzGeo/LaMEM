@@ -1410,10 +1410,12 @@ if should_run_test("t33_Initial_APS")
 
     # Test that plast_strain values are correct in both cases
     #   Includes pvd, marker, and passive tracer output
-    mean_APS0, mean_APS1 = compare_APS(dir, "initial_aps_setup.dat", "./markers_$name0", "./markers_$name1")
+    mean_APS0, mean_APS1, mean_APS2 = compare_APS(dir, "initial_aps_setup.dat", "./markers_$name0", "./markers_$name1")
     #  Verify APS values after 2 timesteps
     @test mean_APS0 == 0.0
     @test mean_APS1 == 0.5
+    #  Markers saved by LaMEM keep APS
+    @test mean_APS2 == 0.5
 
 	if clean_files
 		clean_test_directory(dir)

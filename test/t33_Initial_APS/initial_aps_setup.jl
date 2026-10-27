@@ -6,19 +6,26 @@ function compare_APS(dir, param_file, dir_markers_APS0, dir_markers_APS1)
     cd(dir)
     outfile0 = "test_markers_no_APS"
     outfile1 = "test_markers_APS"
+    outfile2 = "test_markers_APS_saved"
 
     # Tests must be run on 1 core as markers were created with 1 core
     out0 = run_lamem_local_test(param_file, 1, "-mark_load_file $dir_markers_APS0/mdb -out_pvd 1 -out_file_name $outfile0 -out_ptr 1 -out_ptr_APS 1")
     data0, t0 = read_LaMEM_timestep(outfile0, 2, pwd(), fields=("plast_strain [ ]",), surf=false, last=true) 
     
-    out1 = run_lamem_local_test(param_file, 1, "-mark_load_file $dir_markers_APS1/mdb -out_pvd 1 -out_file_name $outfile1 -out_ptr 1 -out_ptr_APS 1") 
+    # also save the markers at the end of the run (with APS)
+    out1 = run_lamem_local_test(param_file, 1, "-mark_load_file $dir_markers_APS1/mdb -out_pvd 1 -out_file_name $outfile1 -out_ptr 1 -out_ptr_APS 1 -save_mark 1 -mark_save_file ./markers_APS_saved/mdb") 
     data1, t1 = read_LaMEM_timestep(outfile1, 2, pwd(), fields=("plast_strain [ ]",), surf=false, last=true) 
+
+    # load the saved markers again: APS must be kept
+    out2 = run_lamem_local_test(param_file, 1, "-mark_load_file ./markers_APS_saved/mdb -out_pvd 1 -out_file_name $outfile2") 
+    data2, t2 = read_LaMEM_timestep(outfile2, 2, pwd(), fields=("plast_strain [ ]",), surf=false, last=true) 
     
     # get the mean value of plast_strain from each model
     APS0 = data0.fields.plast_strain
     APS1 = data1.fields.plast_strain
+    APS2 = data2.fields.plast_strain
     cd(cur_dir)
-    return mean(APS0), mean(APS1)
+    return mean(APS0), mean(APS1), mean(APS2)
 end
 
 

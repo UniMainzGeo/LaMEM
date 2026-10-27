@@ -314,14 +314,14 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_WRITE, &view_out));
 	PetscCall(PetscViewerBinaryGetDescriptor(view_out, &fd));
 
-	// initialize file header for MATLAB compatibility
-	header = -1;
+	// file header signals the version with APS as a field (see ADVMarkInitFiles)
+	header = 1211215;
 
 	// create write buffer
-	PetscCall(PetscMalloc((size_t)(5*actx->nummark)*sizeof(PetscScalar), &markbuf));
+	PetscCall(PetscMalloc((size_t)(6*actx->nummark)*sizeof(PetscScalar), &markbuf));
 
 	// copy data from storage into buffer
-	for(imark = 0, markptr = markbuf; imark < actx->nummark; imark++, markptr += 5)
+	for(imark = 0, markptr = markbuf; imark < actx->nummark; imark++, markptr += 6)
 	{
 		P          =              &actx->markers[imark];
 		markptr[0] =              P->X[0]*chLen;
@@ -329,13 +329,14 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 		markptr[2] =              P->X[2]*chLen;
 		markptr[3] = (PetscScalar)P->phase;
 		markptr[4] =              P->T*chTemp - Tshift;
+		markptr[5] =              P->APS;
 	}
 
 	// write binary output
 	s_nummark = (PetscScalar)actx->nummark;
 	PetscCall(PetscBinaryWrite(fd, &header,    1,               PETSC_SCALAR));
 	PetscCall(PetscBinaryWrite(fd, &s_nummark, 1,               PETSC_SCALAR));
-	PetscCall(PetscBinaryWrite(fd, markbuf,    5*actx->nummark, PETSC_SCALAR));
+	PetscCall(PetscBinaryWrite(fd, markbuf,    6*actx->nummark, PETSC_SCALAR));
 
 	// destroy file handle & file name
 	PetscCall(PetscViewerDestroy(&view_out));
