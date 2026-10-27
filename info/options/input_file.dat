@@ -735,7 +735,7 @@
 
     <PhaseTransitionStart>
         ID                      =   1                           # Phase_transition law ID
-        Type                    =   Clapeyron                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
+        Type                    =   Clapeyron                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition (requires units = geo)
         Name_Clapeyron          =   Mantle_Transition_660km     # predefined profiles; see SetClapeyron_Eq in phase_transition.cpp for options 
         number_phases           =   3
         PhaseAbove              =   4 5 7                       # phase ID after transition

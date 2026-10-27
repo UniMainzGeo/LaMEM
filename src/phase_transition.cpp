@@ -557,6 +557,13 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 	PetscFunctionBeginUser;
 
 	scal = dbm -> scal;
+
+	// slopes and temperatures are given in [MPa/K] and [C]
+	if(scal->utype != _GEO_)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Clapeyron phase transitions require units = geo");
+	}
+
 	PetscCall(getStringParam(fb, _OPTIONAL_, "Name_Clapeyron", ph->Name_clapeyron, "user-defined"));
 
 	if(strcmp(ph->Name_clapeyron, "user-defined"))
@@ -592,11 +599,11 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 
 	for(it=0; it<ph->neq; it++)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"       eq[%" PetscInt_FMT "]            :   gamma = %- 4.2e [MPa/C], P0 = %4.2e [Pa],  T0 = %2.1f [deg C] \n", it, ph->clapeyron_slope[it], ph->P0_clapeyron[it],ph->T0_clapeyron[it]);
+		PetscPrintf(PETSC_COMM_WORLD,"       eq[%" PetscInt_FMT "]            :   gamma = %- 4.2e [MPa/K], P0 = %4.2e [Pa],  T0 = %2.1f [deg C] \n", it, ph->clapeyron_slope[it], ph->P0_clapeyron[it],ph->T0_clapeyron[it]);
 
 		ph->clapeyron_slope[it]     /=  (scal->stress/scal->temperature);                           // [MPa/K]
 		ph->P0_clapeyron[it]        /=  (scal->stress_si);                                          // [Pa]
-		ph->T0_clapeyron[it]        =   (ph->T0_clapeyron[it]+scal->Tshift)/ (scal->temperature);   // [Celcius]
+		ph->T0_clapeyron[it]        =   (ph->T0_clapeyron[it]+scal->Tshift)/ (scal->temperature);   // [C]
 	}
 	PetscFunctionReturn(0);
 
@@ -663,8 +670,8 @@ PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph)
 
 	    Where
 	        P0              :   Zero interection [Pa]
-	        clapeyron_slope :   Slope of the line [MPa/C]??
-	        T0              :   Shift in temperature [Celcius]
+	        clapeyron_slope :   Slope of the line [MPa/K]
+	        T0              :   Shift in temperature [C]
 	*/
 
 	PetscFunctionBeginUser;
