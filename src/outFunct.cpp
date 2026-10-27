@@ -301,9 +301,10 @@ PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 	Vec         lp, lpt;
 	PetscScalar pShift, biot;
 
-	biot   =  jr->ctrl.biot;
-	cf     =  scal->stress;
-	pShift = -cf*jr->ctrl.pShift;
+	biot            =  jr->ctrl.biot;
+	cf              =  scal->stress;
+	iflag.use_bound = 1;
+	pShift          = -cf*jr->ctrl.pShift;
 
 	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &lpt));
 
