@@ -168,7 +168,7 @@ Next free IDs: S-049, M-074, N-030
 | N-023 | note | confirmed | cleanup | medium | phase_transition.cpp, dike.cpp (various) | Dead code, misleading names and comments, small clean-ups | open |
 | N-024 | note | confirmed | input | medium | parsing.cpp (various) | Input parsing: silent bad numbers, octal integers, dropped values, rank-0 error hang | fixed |
 | N-025 | note | confirmed | cleanup | medium | options.cpp, tssolve.cpp, scaling.cpp, LaMEMLib.cpp, docs | Output and time-step quirks, labels, docs | fixed |
-| N-026 | note | confirmed | cleanup | medium | outFunct.cpp, paraViewOutBin.cpp, paraViewOutAVD.cpp, paraViewOutPassiveTracers.cpp | Output quirks: names, stale residual, dead vectors, unchecked inputs | partly fixed |
+| N-026 | note | confirmed | cleanup | medium | outFunct.cpp, paraViewOutBin.cpp, paraViewOutAVD.cpp, paraViewOutPassiveTracers.cpp | Output quirks: names, stale residual, dead vectors, unchecked inputs | fixed |
 | N-027 | note | confirmed | input | medium | adjoint.cpp (several) | Adjoint input and small quirks | open |
 | N-028 | note | confirmed | physics | design | JacRes.cpp:1086-1103 | FSSA only stabilizes the diagonal terms | won't fix |
 | N-029 | note | confirmed | physics | design | subgrid.cpp:528-606 | Rock/air phase change keeps old stress, APS and T | won't fix |
@@ -1894,7 +1894,9 @@ Next free IDs: S-049, M-074, N-030
   - `out_avd_ref <= 0` isn't rejected (division by zero, paraViewOutAVD.cpp:365). A rank with no
     markers reads `points[-1]` (paraViewOutAVD.cpp:909).
   - Marker, tracer and AVD files are written one value per `fwrite` (slow for many markers).
-- Status: partly fixed (group B): energ_res, pShift, AVD, outputs fixed; fwrite per value and total_pressure edges left
+- Status: fixed. Group B: energ_res, pShift, AVD, outputs. Group C (2026-10-27): total_pressure
+  uses the boundary ghost values like pressure (differed at edges only with a pressure BC, e.g.
+  pres_top). fwrite per value: won't fix (stdio buffers the writes; ~1-2 s per 10M markers)
 
 ### N-027 [note, confirmed] Adjoint input and small quirks
 - Tags: note, confirmed, input, medium

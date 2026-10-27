@@ -185,6 +185,9 @@ All done and committed.
     output on a fixed time grid; dike.cpp guards istep % nstep_out. No trimming at time_end or
     output times (Anton: not needed). t12 no longer reads output steps 1 and 3 (unused, step 3
     not saved any more).
+    N-026 done 2026-10-27: total_pressure uses boundary ghost values (use_bound = 1) like
+    pressure; checked on t01 with -pres_top 0.3 (old edge difference 0.017, now 0). fwrite per
+    value: won't fix (stdio buffering, small cost).
 14. N-021 multigrid transfer (open, 2026-10-27). Viscosity enters the coarse levels in two ways:
     Galerkin levels compute R*A*P with fixed geometric P (viscosity jumps are smoothed over);
     matrix-free levels average fine viscosity arithmetically over 8 cells (matData.cpp
