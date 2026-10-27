@@ -777,7 +777,7 @@ PetscErrorCode cellConstEq(
 	SolVarDev   *svDev;
 	SolVarBulk  *svBulk;
 	Controls    *ctrl;
-	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
+	PetscScalar  eta_st, ptotal, txx, tyy, tzz, exx, eyy, ezz;
 
 	PetscFunctionBeginUser;
 
@@ -796,10 +796,22 @@ PetscErrorCode cellConstEq(
 	if(ctrl->initGuess) eta_st = 0.0;
 	else                eta_st = svDev->eta_st;
 
+	// get total deviatoric strain rates without dike opening
+	exx = svCell->dxx;
+	eyy = svCell->dyy;
+	ezz = svCell->dzz;
+
+	if(ctrl->actDike)
+	{
+		exx -=  (2.0/3.0)*dikeRHS;
+		eyy -= -(1.0/3.0)*dikeRHS;
+		ezz -= -(1.0/3.0)*dikeRHS;
+	}
+
 	// compute stabilization stresses
-	sxx = 2.0*eta_st*svCell->dxx;
-	syy = 2.0*eta_st*svCell->dyy;
-	szz = 2.0*eta_st*svCell->dzz;
+	sxx = 2.0*eta_st*exx;
+	syy = 2.0*eta_st*eyy;
+	szz = 2.0*eta_st*ezz;
 
 	// compute history shear stress
 	svCell->sxx = 2.0*ctx->eta*dxx;
@@ -815,14 +827,14 @@ PetscErrorCode cellConstEq(
 	svDev->PSR = 0.5*(txx*txx + tyy*tyy + tzz*tzz);
 
 	// compute dissipative part of total strain rate (viscous + plastic = total - elastic)
-	txx = svCell->dxx - svDev->I2Gdt*(svCell->sxx - svCell->hxx);
-	tyy = svCell->dyy - svDev->I2Gdt*(svCell->syy - svCell->hyy);
-	tzz = svCell->dzz - svDev->I2Gdt*(svCell->szz - svCell->hzz);
+	txx = exx - svDev->I2Gdt*(svCell->sxx - svCell->hxx);
+	tyy = eyy - svDev->I2Gdt*(svCell->syy - svCell->hyy);
+	tzz = ezz - svDev->I2Gdt*(svCell->szz - svCell->hzz);
 
 	// compute shear heating term contribution
 	svDev->Hr =
 	    txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz +
-	    sxx*svCell->dxx + syy*svCell->dyy + szz*svCell->dzz;
+	    sxx*exx + syy*eyy + szz*ezz;
 
 	// compute total viscosity
 	svDev->eta = ctx->eta + eta_st;
