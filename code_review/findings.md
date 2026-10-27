@@ -120,7 +120,7 @@ Next free IDs: S-049, M-074, N-030
 | M-053 | minor | confirmed | parallel, input | medium | bc.cpp:1229-1274, 1148 | Fixed-cell file read: unchecked fread/stat, one-rank errors hang, file not closed on error | fixed |
 | M-054 | minor | possible | input | medium | bc.cpp:2132-2142, 2213-2223 | CompensatingInflow has no mass-balance check (needs user `velbot`/`veltop`) | fixed |
 | M-055 | minor | confirmed | logic | medium | matFree.cpp:637-684, 1304-1309, 1355-1360; matBFBT.cpp:208-209 | Matrix-free operator and diagonal treat the periodic x seam as a free-slip wall | fixed |
-| M-056 | minor | confirmed | logic | medium | matData.cpp:642-645, 808-811 | Rediscretized coarse levels lose no-slip and pressure BCs on boundary ghosts | partly fixed |
+| M-056 | minor | confirmed | logic | medium | matData.cpp:642-645, 808-811 | Rediscretized coarse levels lose no-slip and pressure BCs on boundary ghosts | fixed |
 | M-057 | minor | confirmed | parallel | medium | advect.cpp:1368-1568 | ADVCheckCorners depends on CPU count, reuses the same seed, misses markers on the centre plane | fixed |
 | M-058 | minor | confirmed | parallel | medium | AVD.cpp:747-749,791-793 | AVD half-volume rule uses processor boundaries; nmax not halved | fixed |
 | M-059 | minor | confirmed | logic | medium | AVD.cpp:813-816,865-884,944-946 | AVD "edge" control volumes are face volumes; printed labels swapped | fixed |
@@ -1363,7 +1363,7 @@ Next free IDs: S-049, M-074, N-030
   affected (they use R*A*P).
 - Fix idea: copy the fine ghost constraint flags to the coarse ghosts (e.g. check the fine
   ghost at the matching boundary position).
-- Status: partly fixed (group B, batch 5): 3D fixed, 2D left (needs matrix-free MG)
+- Status: fixed. 3D in group B (batch 5); 2D 2026-10-27, same copy of boundary ghost flags (no effect today: 2D has no rediscretized levels, R/P don't read these ghosts)
 
 ### M-057 [minor, confirmed] ADVCheckCorners depends on CPU count; same seed; centre-plane gap
 - Tags: minor, confirmed, parallel, medium
@@ -1786,7 +1786,7 @@ Next free IDs: S-049, M-074, N-030
     fire for `jp_type user`.
   - matAux.cpp:124/127 `VecZeroEntries` twice; matAux.cpp:65 second `MatSetFromOptions`.
   - Restriction/prolongation weights assume uniform spacing, and R is not a scaled P^T.
-- Status: partly fixed (group C): dead multigrid test functions removed, MGLevelCreate declaration fixed; option order, MFFD type, matData comment, lsolve checks, matAux duplicates fixed 2026-10-27 (1a67766e); R/P weights open (fix_plan_popov.md C.14)
+- Status: partly fixed (group C): dead multigrid test functions removed, MGLevelCreate declaration fixed; option order, MFFD type, matData comment, lsolve checks, matAux duplicates fixed 2026-10-27 (1a67766e); R/P weights and coarse viscosity averaging moved to improvements.md (not a bug)
 
 ### N-022 [note, confirmed] Dead code, wrong comments and log lines, small clean-ups
 - Tags: note, confirmed, cleanup, medium

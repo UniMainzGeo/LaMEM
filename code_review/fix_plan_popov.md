@@ -28,12 +28,15 @@ Testing:
 - C done 2026-10-27: N-021 rest except R/P weights (1a67766e, option order in nlsolve/multigrid, MFFD type
   set once, matData comment, lsolve bf-only checks, matAux duplicates). No results change
   (t01-t08, t15, t20 pass).
-- C open (checked in code 2026-10-26):
+- C done 2026-10-27: 13, rest of N-025 (ea15ddba: nstep_out = 0 is output by dt_out only, < 0 no
+  output, dt_out on a fixed time grid; no trimming at time_end) and N-026 (b71b97cd:
+  total_pressure edge values; fwrite per value won't fix).
+- C done 2026-10-27: M-056 2D (MatDataRestrictBC2D copies boundary ghost flags like 3D; no effect
+  today, 2D has no rediscretized levels; t03 t16 t19 t22 t26 t28 t30 pass).
+- Improvements (not fixes) are kept in improvements.md: N-021 multigrid transfer.
+- C open (checked in code 2026-10-27):
   - 5. S-036: Clapeyron units (with Andrea).
   - 8. M-046, M-067 (with Garrett).
-  - 13. Rest of N-025 / N-026: dt_out, time_end trimming, fwrite per value, total_pressure edges.
-  - 14. N-021 R/P weights and coarse viscosity (see item 14 below).
-  - M-056 2D (needs matrix-free MG in 2D).
 - Core-count drift (found 2026-10-26 while testing S-014), fixed 2026-10-26: with
   `rand_noise 0`, 1-core and 4-core runs of
   examples/BuiltInSetups/Subduction2D_FreeSlip_DirectSolver.dat drifted apart (dt 0.23798 vs
@@ -188,17 +191,7 @@ All done and committed.
     N-026 done 2026-10-27: total_pressure uses boundary ghost values (use_bound = 1) like
     pressure; checked on t01 with -pres_top 0.3 (old edge difference 0.017, now 0). fwrite per
     value: won't fix (stdio buffering, small cost).
-14. N-021 multigrid transfer (open, 2026-10-27). Viscosity enters the coarse levels in two ways:
-    Galerkin levels compute R*A*P with fixed geometric P (viscosity jumps are smoothed over);
-    matrix-free levels average fine viscosity arithmetically over 8 cells (matData.cpp
-    MatDataRestrictParam3D/2D, also edge values), which favours the strong phase.
-    - 14b. Option for coarse viscosity averaging (arithmetic / geometric / harmonic, default
-      arithmetic). Compare multigrid iteration counts on t02, t03 and a falling block with
-      viscosity contrast 1e4-1e6.
-    - 14c. P weights from node coordinates instead of fixed 9/16, 3/16, ... (non-uniform grids).
-      Expected small gain.
-    - Dropped: R = P^T (R and P stencils differ by design); viscosity-weighted P (much more
-      expensive).
+14. N-021 multigrid transfer: moved to improvements.md (an improvement, not a fix).
 
 ## Moved from A to C while fixing
 

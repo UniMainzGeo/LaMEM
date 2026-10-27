@@ -15,6 +15,8 @@ This folder is tracked on the `code-review` branch only; keep it off `master`.
 
 ## Fixing findings: build and test
 
+- Fix plans: `fix_plan_*.md`. Improvements that are not fixes: `improvements.md` (after the fixes).
+
 - Check each finding in the code before fixing it; some fix ideas in `findings.md` are wrong.
 - Always build LaMEM in both modes after a change: `make mode=deb all` and `make mode=opt all`
   in `src/`. Tests use both binaries (most use opt, a few use deb). Hand runs use `bin/opt` or
