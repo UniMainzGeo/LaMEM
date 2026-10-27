@@ -24,14 +24,14 @@ Testing:
 - C done 2026-10-26: M-063 (bff40e9f, stop kept), N-022 (d3a18147, 88e7fbf5),
   S-014 (b7a5c143, cell-center velocities precomputed, see below).
 - C done 2026-10-27: S-044 (1f57d0ed, ghosted fixed-cell flag, owned faces only);
-  M-048 not an issue (air gets Ttop).
+  M-048 not an issue (air gets Ttop); N-004 (2c3f19d3, fresh phase read on restart, strict checks).
 - C open (checked in code 2026-10-26):
   - 5. S-036: Clapeyron units (with Andrea).
   - 8. M-046, M-067 (with Garrett).
   - 13. Rest of N-025 / N-026: dt_out, time_end trimming, fwrite per value, total_pressure edges.
   - Rest of N-021 (option order in nlsolve/multigrid, matData comment, lsolve bf checks,
     matAux duplicates, R/P weights).
-  - N-004 (restart decision), M-056 2D (needs matrix-free MG in 2D).
+  - M-056 2D (needs matrix-free MG in 2D).
 - Core-count drift (found 2026-10-26 while testing S-014), fixed 2026-10-26: with
   `rand_noise 0`, 1-core and 4-core runs of
   examples/BuiltInSetups/Subduction2D_FreeSlip_DirectSolver.dat drifted apart (dt 0.23798 vs
@@ -193,6 +193,8 @@ All done and committed.
   interval (`nxe = 2*ccx[nx]-ccx[nx-1]`, `ccx[nx]` is already the ghost cell); this changes t16.
 - N-004: `eta && Bd` is accepted on purpose for restarts (phases are re-read into a struct
   that still holds the old Bd/Bn, see c8ec3931). A strict check needs a decision on restart.
+  Done 2026-10-27: fresh read (Anton: re-reading is meant to override parameters); each phase
+  is cleared in DBMatReadPhase, strict checks, eta_st default in DBMatSetDefaultEtaSt. Committed 2c3f19d3.
 
 ## Status of A (2026-10-20)
 

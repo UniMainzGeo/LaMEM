@@ -146,7 +146,7 @@ Next free IDs: S-049, M-074, N-030
 | N-001 | note | confirmed | logic | quick | JacRes.cpp:917 | `dikeRHS` is not set when dikes are off | open |
 | N-002 | note | confirmed | cleanup | quick | JacResAux.cpp:389; JacResTemp.cpp:85,107 | Material data changed inside compute loops; Controls copied for every cell | fixed |
 | N-003 | note | confirmed | physics | quick | phase.cpp:1511; constEq.cpp:375,798 | `eta_min` is not a cutoff; it's added to every phase's viscosity | won't fix |
-| N-004 | note | confirmed | input | quick | phase.cpp:526-548 | Creep input checks never fire; `Bd`/`Bn` are silently overwritten by `eta`/`eta0` | open |
+| N-004 | note | confirmed | input | quick | phase.cpp:526-548 | Creep input checks never fire; `Bd`/`Bn` are silently overwritten by `eta`/`eta0` | fixed (group C) |
 | N-005 | note | confirmed | cleanup | quick | meltParam.cpp | Whole file is dead code (no callers) | open |
 | N-006 | note | confirmed | logic | quick | phase.cpp:1471,1479 | PrintMatProp prints wrong values under some labels | open |
 | N-007 | note | confirmed | cleanup | quick | surf.cpp, fastscape.cpp | Small clean-ups (duplicate reads, wrong comments/units, folder name rounding) | fixed |
@@ -1593,7 +1593,10 @@ Next free IDs: S-049, M-074, N-030
   `eta0+e0+n` together with `Bn`, and `Bn` is then overwritten. The error messages claim
   the parameters must be unique.
 - Fix idea: reject (eta && Bd) and (eta0 && Bn).
-- Status: open (moved from A to C: `eta && Bd` accepted on purpose for restarts)
+- Status: fixed (group C, 2c3f19d3): phases are cleared before reading, so a restart takes
+  them from the input file only (re-reading was added to override parameters, Anton); checks
+  reject eta + Bd and eta0/e0/n + Bn. Default eta_st moved to DBMatSetDefaultEtaSt (JacResCreate
+  and restart).
 
 ### N-005 [note, confirmed] meltParam.cpp is dead code
 - Tags: note, confirmed, cleanup, quick
