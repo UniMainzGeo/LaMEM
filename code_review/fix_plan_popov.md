@@ -23,10 +23,10 @@ Testing:
   T-coupling work; t16 and t26 workarounds removed; t16, t19 sped up (e38ee480).
 - C done 2026-10-26: M-063 (bff40e9f, stop kept), N-022 (d3a18147, 88e7fbf5),
   S-014 (b7a5c143, cell-center velocities precomputed, see below).
-- C done 2026-10-27: S-044 (1f57d0ed, ghosted fixed-cell flag, owned faces only).
+- C done 2026-10-27: S-044 (1f57d0ed, ghosted fixed-cell flag, owned faces only);
+  M-048 not an issue (air gets Ttop).
 - C open (checked in code 2026-10-26):
   - 5. S-036: Clapeyron units (with Andrea).
-  - 6. M-048: T = 0 means unset (phase.cpp, marker.cpp).
   - 8. M-046, M-067 (with Garrett).
   - 13. Rest of N-025 / N-026: dt_out, time_end trimming, fwrite per value, total_pressure edges.
   - Rest of N-021 (option order in nlsolve/multigrid, matData comment, lsolve bf checks,
@@ -142,6 +142,7 @@ All done and committed.
    wrap instead of being deleted. t18 unchanged. Committed ea809634.
 5. S-036 (Clapeyron units in SI): with Andrea; input unit per unit system.
 6. M-048 (T = 0 means unset): DBL_MAX sentinel may change existing inputs.
+   Not an issue (Anton, 2026-10-27): air gets `Ttop`, not phase `T`; 0 [C] blocks are rare. No change.
 7. Intended? M-047, M-049, N-003, N-016, N-019. Done, committed 92b20ac3 (t10 refs 2eb1e72b).
    M-047 (2026-10-26): setting only the pressure history (cells, markers) is intended (Anton);
    zero pressure sum (no gravity) now counts as converged, no NaN / false warning.

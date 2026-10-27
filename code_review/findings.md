@@ -112,7 +112,7 @@ Next free IDs: S-049, M-074, N-030
 | M-045 | minor | confirmed | parallel | medium | JacRes.cpp:1004-1017 | Dike strain-rate correction is missing in ghost cells, so results depend on CPU count | open |
 | M-046 | minor | possible | physics | medium | constEq.cpp:798-822 | Dike opening still enters the stabilization stress and shear heating | open |
 | M-047 | minor | possible | logic | medium | JacRes.cpp:1545-1703 | `init_lith_pres` only sets the pressure history, and its stop test is weak | fixed (group C) |
-| M-048 | minor | confirmed | input | medium | phase.cpp:798-803; marker.cpp:523 | Phase temperature `T = 0` (°C) is treated as "not set" | open |
+| M-048 | minor | confirmed | input | medium | phase.cpp:798-803; marker.cpp:523 | Phase temperature `T = 0` (°C) is treated as "not set" | not an issue |
 | M-049 | minor | possible | physics | medium | constEq.cpp:603-626, 697, 756 | Shear and bulk moduli averaged with non-elastic phases counted as 0 | fixed (group C) |
 | M-050 | minor | confirmed | logic | medium | surf.cpp:1167, 1223, 1643 | Slope erosion and topographic diffusion ignore periodic x | open |
 | M-051 | minor | confirmed | parallel, restart | medium | tools.cpp:80, 293-322; fdstag.cpp:292-294 | Rank-0-only errors can hang; restart reads aren't checked | fixed |
@@ -1269,7 +1269,9 @@ Next free IDs: S-049, M-074, N-030
   no phase temperature at all. The code already warns for the same problem with `TRef_fk`
   (phase.cpp:703).
 - Fix idea: use a DBL_MAX sentinel for "unset", like `gwLevel`.
-- Status: open
+- Status: not an issue (Anton, 2026-10-27): air temperature is not set through phase `T`;
+  air markers get `Ttop` (advect.cpp, marker.cpp). Phase `T` is meant for hot bodies (plumes,
+  intrusions); a phase block at exactly 0 [C] is rare and no input uses it. No change.
 
 ### M-049 [minor, possible] Moduli averaged with non-elastic phases counted as 0
 - Tags: minor, possible, physics, medium
