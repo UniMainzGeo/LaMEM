@@ -14,7 +14,7 @@ Testing:
 - `make update NN` rewrites all references in those test folders. Keep them all (no need to
   revert the ones whose tests passed before; they do the same job).
 
-## Status (2026-10-26, checked against commits and code)
+## Status (2026-10-27, checked against commits and code)
 
 - A: done, committed (14425854..876978e4).
 - B: done, committed (see each batch below for the commits).
@@ -23,8 +23,8 @@ Testing:
   T-coupling work; t16 and t26 workarounds removed; t16, t19 sped up (e38ee480).
 - C done 2026-10-26: M-063 (bff40e9f, stop kept), N-022 (d3a18147, 88e7fbf5),
   S-014 (b7a5c143, cell-center velocities precomputed, see below).
+- C done 2026-10-27: S-044 (1f57d0ed, ghosted fixed-cell flag, owned faces only).
 - C open (checked in code 2026-10-26):
-  - 3. S-044: `fix_phase` / `fix_cell` faces on processor boundaries (bc.cpp BCApplyPhase/Cells).
   - 5. S-036: Clapeyron units (with Andrea).
   - 6. M-048: T = 0 means unset (phase.cpp, marker.cpp).
   - 8. M-046, M-067 (with Garrett).
@@ -133,7 +133,9 @@ All done and committed.
 2. S-046 (dt): fix changes all viscoelastic results; test references need updating.
    Done 2026-10-26: `fix_dt` also on with temperature (dt-dependent solve); temperature-only test results changed. Committed b41cef9a.
 3. S-044 (`fix_phase` on processor boundaries): ghosted flags vs ADD/MAX before scatter.
-   Still open (2026-10-26).
+   Done 2026-10-27: ghosted flag (BCApplyFixCells). ADD does not fit: the free marker is DBL_MAX
+   and non-zero constraints would double; MIN would work but touches all BCApply* routines.
+   Only fixed regions with a corner on a rank-boundary corner changed. Committed 1f57d0ed.
 4. S-045 (`exy_num_periods`): really wrap markers, or document deletion.
    Done 2026-10-26: periodic marker advection != periodic mechanical BC (Anton). Marker
    neighbour list made periodic in x for Exy (`FDSTAGGetNeighbProc(fs, ptx)`), outflow markers

@@ -55,7 +55,7 @@ Next free IDs: S-049, M-074, N-030
 | S-041 | major | confirmed | physics | medium | adjoint.cpp:860-880,3455-3520 | Strain-rate targets aren't scaled, and the strain-rate derivative is incomplete | open |
 | S-042 | major | confirmed | parallel | medium | adjoint.cpp:1744-1749 | `Adjoint_AdvectPoint` moves points on one CPU only, and again in every forward run | open |
 | S-043 | major | possible | physics | design | fastscape.cpp:458-469, 646 | FastScape grid doesn't follow a stretching LaMEM box | open |
-| S-044 | major | confirmed | parallel | design | bc.cpp:2595-2604, 2648-2657 | `fix_phase` / `fix_cell` lose faces on processor boundaries; results depend on CPU count | open |
+| S-044 | major | confirmed | parallel | design | bc.cpp:2595-2604, 2648-2657 | `fix_phase` / `fix_cell` lose faces on processor boundaries; results depend on CPU count | fixed (group C) |
 | S-045 | major | confirmed | logic | design | advect.cpp:278,1086-1096 | With `exy_num_periods`, outflow markers are deleted, not wrapped | fixed |
 | S-046 | major | possible | physics | design | LaMEMLib.cpp:715; tssolve.cpp:308 | Solve and marker advection use different dt when dt is not fixed | fixed (group C) |
 | S-047 | major | confirmed | parallel, memory | design | adjoint.cpp:2505-2690,102-112 | Surface observations (`Ap = 3`) use wrong grid positions and crash with several CPUs in z | open |
@@ -738,7 +738,12 @@ Next free IDs: S-049, M-074, N-030
   number of CPUs.
 - Fix idea: loop over owned faces and check both neighbor cells (needs ghosted phase ratio
   / flag), or add the ghost contributions with ADD/MAX before the scatter.
-- Status: open
+- Status: fixed (group C, 1f57d0ed): BCApplyPhase and BCApplyCells replaced by BCApplyFixCells.
+  The fixed-cell flag is ghosted (one DA_CEN exchange); each rank fixes the faces it owns when a
+  cell on either side is fixed. With incompressible flow one lost face is harmless (mass balance
+  keeps it zero); a cell losing two faces, at a corner of the fixed region on a rank-boundary
+  corner, let flow through (t05 setup, fixed block x < 0.25, z < 0.5, 8 cores: permeability
+  4.80e-2 vs 4.64e-2 on 1 core; now equal). t05 unchanged; fix_cell has no test.
 
 ### S-045 [major, confirmed] With `exy_num_periods`, outflow markers are deleted, not wrapped
 - Tags: major, confirmed, logic, design
