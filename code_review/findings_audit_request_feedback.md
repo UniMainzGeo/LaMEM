@@ -337,7 +337,7 @@ Next free IDs: S-049, M-074, N-030
 | M-023 | minor | confirmed | logic | quick | cvi.cpp:204-205 | RK2 deletes markers whose midpoint leaves the domain | fixed | Adina Püsök |
 | M-024 | minor | confirmed | logic | quick | subgrid.cpp:673; LaMEMLib.cpp:731-734 | `ADVGetSedPhase` uses stale cell numbers when called for passive tracers | open | Andrea Piccolo |
 | M-025 | minor | confirmed | memory | quick | marker.cpp:604-642 | Temperature-file setup loops over the wrong marker count; index can run out of range | fixed | Arthur Bauville (+Popov) |
-| M-026 | minor | confirmed | memory | quick | marker.cpp:294 | `ADVMarkSave` crashes when the save path has no '/'; APS not saved | partly fixed | Anton Popov |
+| M-026 | minor | confirmed | memory | quick | marker.cpp:294 | `ADVMarkSave` crashes when the save path has no '/'; APS not saved | fixed | Anton Popov |
 | M-027 | minor | confirmed | logic | quick | advect.cpp:1089 | Periodic x-shift uses `>` while the rank test uses `>=` | fixed | Anton Popov |
 | M-028 | minor | confirmed | physics | quick | advect.cpp:2053; bc.cpp:2952 | Adiabatic gradient uses \|z - Ztop\|, so rock above the reference level is heated | open | Andrea Piccolo |
 | M-029 | minor | confirmed | input | quick | marker.cpp:1193-1200 | Ridge spreading rate can silently be 0 | open | Jana Schierjott |
@@ -1652,7 +1652,7 @@ Next free IDs: S-049, M-074, N-030
   - Anton Popov — 5bb51c5d test problem runs (2017-03-01) — added (*strrchr(path,'/'))='\0' without NULL check
 - At HEAD: still present, src/marker.cpp:294
 - Feedback requested from: Anton Popov
-- Status: partly fixed (group A): APS still not saved
+- Status: fixed (group A: no-'/' path; 8300c874: APS saved, header 1211215, t33 round trip)
 
 ### M-027 [minor, confirmed] Periodic x-shift uses `>` while the rank test uses `>=`
 - Tags: minor, confirmed, logic, quick

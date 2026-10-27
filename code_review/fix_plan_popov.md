@@ -50,7 +50,10 @@ Testing:
   the corner center. Now both runs agree to ~1e-10 over 21 steps. Changes results (t16, t22,
   t27, t32, t34 references updated). Known and accepted: the parent marker is searched in local
   cells only (no ghost markers), so it can still differ next to rank boundaries.
-- Lowest priority: S-006 test; M-026 APS not saved by ADVMarkSave.
+- C done 2026-10-27: M-026 (8300c874, ADVMarkSave writes APS with header 1211215, the format the
+  loader already reads; t33 checks a save/load round trip; no results change). No input used
+  save_mark, so nobody was hit.
+- Lowest priority: S-006 test.
 - Older notes below say "t37 FastScape broken" or "dyndike fails (known)": both are resolved
   (t37 needs `surf=scape`, see CLAUDE.md; dyndike fixed with the lmaxit removal).
 
@@ -220,7 +223,7 @@ All done and committed.
 
 Done, committed 14425854..876978e4: S-001, S-003, S-004, S-006 (test not yet added), S-007, S-010, S-011,
 S-013, S-018/M-012, S-019 (perturbed coordinate kept in host cell), S-024, M-005, M-008,
-M-017, M-018, M-020, M-022, M-025, M-026 (APS still not saved), M-027, M-031, M-037, M-038,
+M-017, M-018, M-020, M-022, M-025, M-026 (APS saved since 8300c874), M-027, M-031, M-037, M-038,
 M-040, M-041, N-013. S-011 adds a field to BCCtx, so older restart files no longer load.
 M-041: only the .pvd is truncated; stale `Timestep_*` folders after a restart from an earlier
 checkpoint stay. Checkpointing at output steps was discussed (checkpoint ~20-150x one output
