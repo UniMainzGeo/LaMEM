@@ -1341,11 +1341,8 @@ PetscErrorCode BCApply(BCCtx *bc)
 	// apply velocity cylinders
 	PetscCall(BCApplyVelCylinder(bc));
 
-	// fix all cells occupied by phase
-	PetscCall(BCApplyPhase(bc));
-
-	// fix specific cells
-	PetscCall(BCApplyCells(bc));
+	// fix all cells occupied by phase and specific cells
+	PetscCall(BCApplyFixCells(bc));
 
 	// plume like boundary condition
 	if(bc->Plume_Type == 1)
@@ -2584,109 +2581,94 @@ PetscErrorCode BCApplyVelCylinder(BCCtx *bc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode BCApplyPhase(BCCtx *bc)
+PetscErrorCode BCApplyFixCells(BCCtx *bc)
 {
-	// apply default velocity constraints on the boundaries
-
-	FDSTAG      *fs;
-	SolVarCell  *svCell;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, fixPhase;
-	PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
-
-	PetscFunctionBeginUser;
-
-	// access context
-	fs       = bc->fs;
-	fixPhase = bc->fixPhase;
-	svCell   = bc->jr->svCell;
-
-	// check constraint activation
-	if(fixPhase == -1) PetscFunctionReturn(0);
-
-	// access constraint vectors
-	PetscCall(DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx));
-	PetscCall(DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy));
-	PetscCall(DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz));
-
-	// get local grid sizes
-	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
-
-	iter = 0;
-
-	START_STD_LOOP
-	{
-		// check for constrained cell
-		if(svCell[iter++].phRat[fixPhase] == 1.0)
-		{
-			bcvx[k][j][i]   = 0.0;
-			bcvx[k][j][i+1] = 0.0;
-
-			bcvy[k][j][i]   = 0.0;
-			bcvy[k][j+1][i] = 0.0;
-
-			bcvz[k][j][i]   = 0.0;
-			bcvz[k+1][j][i] = 0.0;
-		}
-	}
-	END_STD_LOOP
-
-	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz));
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode BCApplyCells(BCCtx *bc)
-{
-	// apply default velocity constraints on the boundaries
+	// fix all faces of cells occupied by fixPhase or flagged in fixCellFlag
+	// a face is fixed if a cell on either side is fixed
+	// the cell flag is ghosted, so faces on processor boundaries are set by their owner
 
 	FDSTAG        *fs;
+	SolVarCell    *svCell;
 	unsigned char *fixCellFlag;
-	PetscInt      i, j, k, nx, ny, nz, sx, sy, sz, iter;
-	PetscScalar   ***bcvx,  ***bcvy,  ***bcvz;
+	PetscInt      i, j, k, nx, ny, nz, sx, sy, sz, iter, fixPhase;
+	PetscScalar   ***bcvx,  ***bcvy,  ***bcvz, ***fix;
+	Vec           lfix;
 
 	PetscFunctionBeginUser;
-
-	// check activation
-	if(!bc->fixCell) PetscFunctionReturn(0);
 
 	// access context
 	fs          = bc->fs;
+	fixPhase    = bc->fixPhase;
 	fixCellFlag = bc->fixCellFlag;
+	svCell      = bc->jr->svCell;
 
-	// access constraint vectors
-	PetscCall(DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx));
-	PetscCall(DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy));
-	PetscCall(DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz));
+	// check constraint activation
+	if(fixPhase == -1 && !bc->fixCell) PetscFunctionReturn(0);
 
-	// get local grid sizes
+	// set cell flag (outer ghost cells stay zero)
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &lfix));
+
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lfix, &fix));
+
 	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	iter = 0;
 
 	START_STD_LOOP
 	{
-		// check for constrained cell
-		if(fixCellFlag[iter++])
+		if((fixPhase != -1 && svCell[iter].phRat[fixPhase] == 1.0)
+		|| (bc->fixCell    && fixCellFlag[iter]))
 		{
-			bcvx[k][j][i]   = 0.0;
-			bcvx[k][j][i+1] = 0.0;
-
-			bcvy[k][j][i]   = 0.0;
-			bcvy[k][j+1][i] = 0.0;
-
-			bcvz[k][j][i]   = 0.0;
-			bcvz[k+1][j][i] = 0.0;
+			fix[k][j][i] = 1.0;
 		}
+		iter++;
+	}
+	END_STD_LOOP
+
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lfix, &fix));
+
+	LOCAL_TO_LOCAL(fs->DA_CEN, lfix)
+
+	// access vectors
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lfix,     &fix));
+	PetscCall(DMDAVecGetArray(fs->DA_X,   bc->bcvx, &bcvx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   bc->bcvy, &bcvy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz));
+
+	// X points
+	PetscCall(DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz));
+
+	START_STD_LOOP
+	{
+		if(fix[k][j][i-1] || fix[k][j][i]) bcvx[k][j][i] = 0.0;
+	}
+	END_STD_LOOP
+
+	// Y points
+	PetscCall(DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz));
+
+	START_STD_LOOP
+	{
+		if(fix[k][j-1][i] || fix[k][j][i]) bcvy[k][j][i] = 0.0;
+	}
+	END_STD_LOOP
+
+	// Z points
+	PetscCall(DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz));
+
+	START_STD_LOOP
+	{
+		if(fix[k-1][j][i] || fix[k][j][i]) bcvz[k][j][i] = 0.0;
 	}
 	END_STD_LOOP
 
 	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lfix,     &fix));
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz));
+
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &lfix));
 
 	PetscFunctionReturn(0);
 }

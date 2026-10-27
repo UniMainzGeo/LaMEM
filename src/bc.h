@@ -354,11 +354,8 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc);
 // apply internal velocity cylinders
 PetscErrorCode BCApplyVelCylinder(BCCtx *bc);
 
-// constraint all cells containing phase
-PetscErrorCode BCApplyPhase(BCCtx *bc);
-
-// constrain cells marked in files in parallel
-PetscErrorCode BCApplyCells(BCCtx *bc);
+// constrain all cells containing fixPhase and cells marked in files
+PetscErrorCode BCApplyFixCells(BCCtx *bc);
 
 // create SPC constraint lists
 PetscErrorCode BCListSPC(BCCtx *bc);
