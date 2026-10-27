@@ -25,12 +25,14 @@ Testing:
   S-014 (b7a5c143, cell-center velocities precomputed, see below).
 - C done 2026-10-27: S-044 (1f57d0ed, ghosted fixed-cell flag, owned faces only);
   M-048 not an issue (air gets Ttop); N-004 (2c3f19d3, fresh phase read on restart, strict checks).
+- C done 2026-10-27: N-021 rest except R/P weights (1a67766e, option order in nlsolve/multigrid, MFFD type
+  set once, matData comment, lsolve bf-only checks, matAux duplicates). No results change
+  (t01-t08, t15, t20 pass).
 - C open (checked in code 2026-10-26):
   - 5. S-036: Clapeyron units (with Andrea).
   - 8. M-046, M-067 (with Garrett).
   - 13. Rest of N-025 / N-026: dt_out, time_end trimming, fwrite per value, total_pressure edges.
-  - Rest of N-021 (option order in nlsolve/multigrid, matData comment, lsolve bf checks,
-    matAux duplicates, R/P weights).
+  - 14. N-021 R/P weights and coarse viscosity (see item 14 below).
   - M-056 2D (needs matrix-free MG in 2D).
 - Core-count drift (found 2026-10-26 while testing S-014), fixed 2026-10-26: with
   `rand_noise 0`, 1-core and 4-core runs of
@@ -179,6 +181,17 @@ All done and committed.
 13. Left from B (N-025, N-026): dt_out without effect when nstep_out = 1, no dt trimming at
     time_end / output times; one value per fwrite in marker/tracer/AVD files, total_pressure
     edge values. fix_dt schedule one step late: already fixed (Anton, 2026-10-26).
+14. N-021 multigrid transfer (open, 2026-10-27). Viscosity enters the coarse levels in two ways:
+    Galerkin levels compute R*A*P with fixed geometric P (viscosity jumps are smoothed over);
+    matrix-free levels average fine viscosity arithmetically over 8 cells (matData.cpp
+    MatDataRestrictParam3D/2D, also edge values), which favours the strong phase.
+    - 14b. Option for coarse viscosity averaging (arithmetic / geometric / harmonic, default
+      arithmetic). Compare multigrid iteration counts on t02, t03 and a falling block with
+      viscosity contrast 1e4-1e6.
+    - 14c. P weights from node coordinates instead of fixed 9/16, 3/16, ... (non-uniform grids).
+      Expected small gain.
+    - Dropped: R = P^T (R and P stencils differ by design); viscosity-weighted P (much more
+      expensive).
 
 ## Moved from A to C while fixing
 

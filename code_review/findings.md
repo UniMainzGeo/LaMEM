@@ -1786,7 +1786,7 @@ Next free IDs: S-049, M-074, N-030
     fire for `jp_type user`.
   - matAux.cpp:124/127 `VecZeroEntries` twice; matAux.cpp:65 second `MatSetFromOptions`.
   - Restriction/prolongation weights assume uniform spacing, and R is not a scaled P^T.
-- Status: partly fixed (group C): dead multigrid test functions removed, MGLevelCreate declaration fixed; rest open
+- Status: partly fixed (group C): dead multigrid test functions removed, MGLevelCreate declaration fixed; option order, MFFD type, matData comment, lsolve checks, matAux duplicates fixed 2026-10-27 (1a67766e); R/P weights open (fix_plan_popov.md C.14)
 
 ### N-022 [note, confirmed] Dead code, wrong comments and log lines, small clean-ups
 - Tags: note, confirmed, cleanup, medium
