@@ -41,7 +41,7 @@ Next free IDs: S-049, M-074, N-030
 | S-027 | major | confirmed | memory | quick | adjoint.cpp:1159,1438,1534 | `fcconv` is written past its end (TAO not limited by `Inversion_maxit`; off by one without TAO) | open |
 | S-028 | major | confirmed | memory | quick | objFunct.h:85; adjoint.cpp:1294-1450 | `factor2array[51]` is indexed up to 100 parameters | open |
 | S-029 | major | confirmed | physics | medium | JacResAux.cpp:244-321 | Lithostatic and pore pressure are zero in boundary ghost cells, so boundary edges get half the value | fixed |
-| S-030 | major | possible | physics | medium | JacResTemp.cpp:520-522 | Adiabatic heating sees a fake pressure jump at boundaries with inflow or outflow | open |
+| S-030 | major | possible | physics | medium | JacResTemp.cpp:520-522 | Adiabatic heating sees a fake pressure jump at boundaries with inflow or outflow | fixed |
 | S-031 | major | confirmed | logic | medium | constEq.cpp:1008-1060 | Phase diagram lookup reads one pressure row too low, and its edges are wrong | open |
 | S-032 | major | confirmed | physics | medium | surf.cpp:1229-1253 | Slope-dependent erosion never erodes peaks and ridges (centered gradient) | open |
 | S-033 | major | possible | physics | medium | surf.cpp:1203-1211 | Slope-erosion sub-step limit isn't a stability limit | open |
@@ -234,6 +234,7 @@ Next free IDs: S-049, M-074, N-030
   = 0), so kfsed/kdsed apply everywhere. The silt fraction is reset as well.
 - Fix idea: always copy basement (and silt fraction if marine), or at least before writing a restart.
 - Status: open
+- Yun: It needs to be fixed in the same way as the topography is stored to avoid information loss.
 
 ### S-006 [major, confirmed] Grid stretching moves the global box about 0, not about `bg_ref_point`
 - Tags: major, confirmed, logic, quick
@@ -452,6 +453,7 @@ Next free IDs: S-049, M-074, N-030
   always partly filled), which changes the thermal structure around the dike.
 - Fix idea: `kfac = (1 - phRat[dike]) + phRat[dike]*factor`, applied once after the loop.
 - Status: fixed (2026-10-23, Anton): as in the fix idea; jumps at T_sol/T_liq also smoothed
+- Garrett (2026-10-27): confirmed, only the dike fraction is scaled; prefers the form k*(1-phRat) + phRat*k*f in the code.
 
 ### S-024 [major, confirmed] Passive tracer pressure and temperature are read half a cell too high
 - Tags: major, confirmed, physics, quick
@@ -543,7 +545,7 @@ Next free IDs: S-049, M-074, N-030
   zero, so it's harmless there.
 - Fix idea: the same ghost fill as S-029. Also, the one-sided boundary term should use
   zero gradient.
-- Status: open (try t37 or a model with inflow boundaries, with `Adiabatic_Heat = 1`)
+- Status: fixed by S-029 (c7ce5d27): boundary ghosts of `lp_lith` copy the edge cell, so the wall difference is 0
 
 ### S-031 [major, confirmed] Phase diagram lookup reads one pressure row too low; edges wrong
 - Tags: major, confirmed, logic, medium
@@ -602,6 +604,7 @@ Next free IDs: S-049, M-074, N-030
 - Fix idea: smooth before handing the topography back, or copy the smoothed surface into the
   FastScape arrays (or disallow surf_max_angle with surf_mode = 2).
 - Status: open
+- Yun: Do not smooth with FastScape (it can damage river valleys and give false topography).
 
 ### S-035 [major, confirmed] AVD deletion ignores the Voronoi volumes
 - Tags: major, confirmed, logic, medium
@@ -724,6 +727,7 @@ Next free IDs: S-049, M-074, N-030
   is clamped to wrong limits. Not tested; t37 has no background strain.
 - Fix idea: update the range each step (mode 0), or reject bg strain with surf_mode = 2.
 - Status: open
+- Yun: Do not use dynamic (stretching) grids with FastScape; interpolation creates false rivers.
 
 ### S-044 [major, confirmed] `fix_phase` / `fix_cell` lose faces on processor boundaries
 - Tags: major, confirmed, parallel, design
@@ -897,6 +901,7 @@ Next free IDs: S-049, M-074, N-030
   rank 0, so each step leaks 3 Vecs per non-root rank (4 at step 0). FastScapeDestroy frees only
   one of `ncoor_ori_x` / `ncoor_ori_y`, but 3D non-uniform grids allocate both.
 - Status: open
+- Yun: It needs to be fixed.
 
 ### M-011 [minor, possible] Non-uniform FastScape interpolation can skip a node
 - Tags: minor, possible, logic, quick
@@ -905,6 +910,7 @@ Next free IDs: S-049, M-074, N-030
   due to roundoff), that node isn't written, so it keeps its old value (0 at the start).
 - Fix idea: clamp coordinates into the range, or report an error.
 - Status: open
+- Yun: It would be good to fix it.
 
 ### M-012 [minor, confirmed] `interpStretch` can leave stretch factors unset after the last control polygon
 - Tags: minor, confirmed, logic, memory, quick
@@ -1143,6 +1149,7 @@ Next free IDs: S-049, M-074, N-030
   `ADV_Assign_Phase` and `Check_advection_condition` if a cell has no markers.
 - Fix idea: use `id_m`; check `dist.size()` before use.
 - Status: open
+- Yun: Not sure; maybe not his code.
 
 ### M-037 [minor, confirmed] CFL and CFLMAX range checks can never trigger
 - Tags: minor, confirmed, input, quick
@@ -1632,6 +1639,7 @@ Next free IDs: S-049, M-074, N-030
   - fastscape.cpp:1528 builds the output folder time as t*s + dt*s, while LaMEM uses (t+dt)*s
     (LaMEMLib.cpp:542). A rounding difference can give two folders for one step.
 - Status: fixed (group C): all items; FastScape folder time now (t+dt)*s
+- Yun: kd is in m^2/yr (fix the comment); the rest needs no change (kd, kf are constants in the FastScape library).
 
 ### N-008 [note, confirmed] Average topography is a plain node average
 - Tags: note, confirmed, physics, quick
@@ -1660,6 +1668,7 @@ Next free IDs: S-049, M-074, N-030
   read as an input.
 - Fix idea: remove the dead branches, or drop the check if bias should come back.
 - Status: fixed (group C): bias removed fully; `bias_*` keys no longer read
+- Yun: It needs to be cleaned.
 
 ### N-011 [note, confirmed] Velocity cylinder/box edge cases
 - Tags: note, confirmed, input, quick

@@ -288,7 +288,7 @@ Next free IDs: S-049, M-074, N-030
 | S-027 | major | confirmed | memory | quick | adjoint.cpp:1159,1438,1534 | `fcconv` is written past its end (TAO not limited by `Inversion_maxit`; off by one without TAO) | open | Georg Reuber (+Kaus) |
 | S-028 | major | confirmed | memory | quick | objFunct.h:85; adjoint.cpp:1294-1450 | `factor2array[51]` is indexed up to 100 parameters | open | Georg Reuber |
 | S-029 | major | confirmed | physics | medium | JacResAux.cpp:244-321 | Lithostatic and pore pressure are zero in boundary ghost cells, so boundary edges get half the value | fixed | Anton Popov (+("Jeff")) |
-| S-030 | major | possible | physics | medium | JacResTemp.cpp:520-522 | Adiabatic heating sees a fake pressure jump at boundaries with inflow or outflow | open | Andrea Piccolo |
+| S-030 | major | possible | physics | medium | JacResTemp.cpp:520-522 | Adiabatic heating sees a fake pressure jump at boundaries with inflow or outflow | fixed | Andrea Piccolo |
 | S-031 | major | confirmed | logic | medium | constEq.cpp:1008-1060 | Phase diagram lookup reads one pressure row too low, and its edges are wrong | open | Georg Reuber (+Kaus) |
 | S-032 | major | confirmed | physics | medium | surf.cpp:1229-1253 | Slope-dependent erosion never erodes peaks and ridges (centered gradient) | open | Wenrong Cao |
 | S-033 | major | possible | physics | medium | surf.cpp:1203-1211 | Slope-erosion sub-step limit isn't a stability limit | open | Wenrong Cao |
@@ -509,6 +509,7 @@ Next free IDs: S-049, M-074, N-030
 - Feedback requested from: Yun Luo, Boris Kaus
 - Status: open
 - Boris: dont think this was ever tested wiuth restarting; would be good to have 
+- Yun: It needs to be fixed in the same way as the topography is stored to avoid information loss.
 
 ### S-006 [major, confirmed] Grid stretching moves the global box about 0, not about `bg_ref_point`
 - Tags: major, confirmed, logic, quick
@@ -824,6 +825,7 @@ Next free IDs: S-049, M-074, N-030
 - At HEAD: still present, src/dike.cpp:463-479. Note: Behn & Ito (2008) formulation originally Garrett's; Jana extended it to multiple dikes/M.
 - Feedback requested from: Garrett Ito
 - Status: fixed (2026-10-23, Anton): as in the fix idea; jumps at T_sol/T_liq also smoothed
+- Garrett (2026-10-27): confirmed, only the dike fraction is scaled; prefers the form k*(1-phRat) + phRat*k*f in the code.
 
 ### S-024 [major, confirmed] Passive tracer pressure and temperature are read half a cell too high
 - Tags: major, confirmed, physics, quick
@@ -951,7 +953,7 @@ Next free IDs: S-049, M-074, N-030
   - Andrea Piccolo — af6dfe3d Anton allowed me to push the adiabatic heating into the main (2019-07-12); acc54759 I apologize. I forgot to plug Ha in the thermal equation (2019-07-18) — Added adiabatic-heating pressure-gradient term using neighbour-cell lithostatic pressure.
 - At HEAD: still present, src/JacResTemp.cpp:517-526 (bdpdx.. lines 520-522 use P[...] incl. ghost neighbours). Note: Depends on zero outside ghosts of lp_lith (see S-029, Anton Popov / Jeff).
 - Feedback requested from: Andrea Piccolo
-- Status: open (try t37 or a model with inflow boundaries, with `Adiabatic_Heat = 1`)
+- Status: fixed by S-029 (c7ce5d27): boundary ghosts of `lp_lith` copy the edge cell, so the wall difference is 0
 
 ### S-031 [major, confirmed] Phase diagram lookup reads one pressure row too low; edges wrong
 - Tags: major, confirmed, logic, medium
@@ -1028,6 +1030,7 @@ Next free IDs: S-049, M-074, N-030
 - At HEAD: still present, src/LaMEMLib.cpp:749-752 (FastScapeRun then FreeSurfSmoothMaxAngle); src/fastscape.cpp:1590-1606 (gtopo_fs reused). Note: FreeSurfSmoothMaxAngle itself is old (Anton Popov 2016); the conflict arises only from the new coupling.
 - Feedback requested from: Yun Luo
 - Status: open
+- Yun: Do not smooth with FastScape (it can damage river valleys and give false topography).
 
 ### S-035 [major, confirmed] AVD deletion ignores the Voronoi volumes
 - Tags: major, confirmed, logic, medium
@@ -1194,6 +1197,7 @@ Next free IDs: S-049, M-074, N-030
 - At HEAD: still present, src/fastscape.cpp:456-469 (ranges set once), 646-668 (CreateSurfaceGrid mode 0 never called; only modes 1 and 2 at 178, 2948)
 - Feedback requested from: Yun Luo
 - Status: open
+- Yun: Do not use dynamic (stretching) grids with FastScape; interpolation creates false rivers.
 
 ### S-044 [major, confirmed] `fix_phase` / `fix_cell` lose faces on processor boundaries
 - Tags: major, confirmed, parallel, design
@@ -1423,6 +1427,7 @@ Next free IDs: S-049, M-074, N-030
 - At HEAD: still present, src/fastscape.cpp:1210,1234-1242,1305-1317; 3100-3110 (FastScapeDestroy). Note: Whole file arrived in e4778c61; later Kaus/Popov commits are formatting/restructuring.
 - Feedback requested from: Yun Luo
 - Status: open
+- Yun: It needs to be fixed.
 
 ### M-011 [minor, possible] Non-uniform FastScape interpolation can skip a node
 - Tags: minor, possible, logic, quick
@@ -1435,6 +1440,7 @@ Next free IDs: S-049, M-074, N-030
 - At HEAD: still present, src/fastscape.cpp:1046-1081 (if(indices.found) without else)
 - Feedback requested from: Yun Luo
 - Status: open
+- Yun: It would be good to fix it.
 
 ### M-012 [minor, confirmed] `interpStretch` can leave stretch factors unset after the last control polygon
 - Tags: minor, confirmed, logic, memory, quick
@@ -1792,6 +1798,7 @@ Next free IDs: S-049, M-074, N-030
 - At HEAD: still present, src/passive_tracer.cpp:599 (ii vs id_m), 370, 606-607, 936, 1048-1049. Note: Original bug line in 2020 Piccolo commits (also beeec8c5 2020-11-10); Yun's change was cosmetic.
 - Feedback requested from: Andrea Piccolo, Yun Luo
 - Status: open
+- Yun: Not sure; maybe not his code.
 
 ### M-037 [minor, confirmed] CFL and CFLMAX range checks can never trigger
 - Tags: minor, confirmed, input, quick
@@ -2478,6 +2485,7 @@ Next free IDs: S-049, M-074, N-030
 - At HEAD: still present, src/surf.cpp:111-112,243-248,72-73,1275; src/fastscape.cpp:92,124-130,1528; src/fastscape.h:163. Note: Wenrong Cao email caowenrong@gmail.com; Tobias Baumann appears as 'tosaba'. FastScape author raw name 'Yun'.
 - Feedback requested from: Wenrong Cao, Yun Luo, Anton Popov
 - Status: fixed (group C): all items; FastScape folder time now (t+dt)*s
+- Yun: kd is in m^2/yr (fix the comment); the rest needs no change (kd, kf are constants in the FastScape library).
 
 ### N-008 [note, confirmed] Average topography is a plain node average
 - Tags: note, confirmed, physics, quick
@@ -2519,6 +2527,7 @@ Next free IDs: S-049, M-074, N-030
 - At HEAD: still present, src/fdstag.cpp:80-83; dead branches fdstag.cpp:144-171, src/fastscape.cpp:564-631,907
 - Feedback requested from: Anton Popov, Yun Luo
 - Status: fixed (group C): bias removed fully; `bias_*` keys no longer read
+- Yun: It needs to be cleaned.
 
 ### N-011 [note, confirmed] Velocity cylinder/box edge cases
 - Tags: note, confirmed, input, quick

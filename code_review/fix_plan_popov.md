@@ -55,8 +55,71 @@ Testing:
   save_mark, so nobody was hit.
 - S-006 test dropped 2026-10-27 (Anton: the fix is simple, no test needed; no output shows the
   global box directly, so a test would need an extra check in the code).
+- D (2026-10-27): Andrea's and Yun's findings taken over; Garrett and Yun feedback added. See D.
+  S-030 fixed by S-029. Open: everything in D.
 - Older notes below say "t37 FastScape broken" or "dyndike fails (known)": both are resolved
   (t37 needs `surf=scape`, see CLAUDE.md; dyndike fixed with the lmaxit removal).
+
+## D. Feedback from Garrett and Yun; Andrea's and Yun's findings taken over (2026-10-27)
+
+Andrea Piccolo and Yun Luo will not work on their findings, so all of them are now Anton's.
+Garrett answered the dike-heating email (ac3eda06); Yun commented on his findings
+(`findings_audit_request_feedback_yl.md`). Already done before: S-024, S-036, M-016, N-007
+(kd comment is m^2/yr), N-010, N-011. S-030 found fixed by S-029 (c7ce5d27): the boundary
+ghosts of `lp_lith` now copy the edge cell, so the pressure difference at walls is 0.
+
+### Garrett's reply (dike heating, S-023)
+
+1. kfac fix: confirmed, only the dike fraction is scaled. He prefers the code to read
+   `k' = k*(1 - phRat) + phRat*k*f` (dike.cpp:466 now uses `kfac -= phRat*melt*(1 - f)`, same
+   value). To do: rewrite in his form; no results change (round-off only).
+2. Ramp width: he wants an optional input, default 10 C. Already done (`T_ramp`, `T_pert`,
+   2026-10-23). Tell him.
+3. Per-phase T_Nu / nu_k: confirmed. He asks for defaults `nu_k = 1`, `T_Nu = 0` for phases
+   without them. The code already does nothing for such phases (`nu_k` unset = 0 is skipped in
+   JacResTemp.cpp:111). To do: make `nu_k = 1` the explicit default and say so in
+   input_file.dat; check that `T_Nu = 0` C given by hand is not treated as unset (M-048 pattern,
+   phase.cpp:798).
+4. t16: nothing to do.
+
+### Yun's decisions (FastScape)
+
+| ID | Yun | Fix |
+|---|---|---|
+| S-005 | fix like topography | always copy basement and silt fraction, not only with output on |
+| S-034 | no extra smoothing with FastScape | skip `surf_max_angle` smoothing with FastScape (error or warning if set) |
+| S-043 | no dynamic grid with FastScape | stop with an error when background strain is used with FastScape |
+| M-010 | fix | free the scatter Vecs on all ranks; free both `ncoor_ori_x/y` |
+| M-011 | fix | clamp coordinates into the range, error if still not found |
+| M-036 | not sure (not his code) | `markers[id_m]`; check that `dist` is not empty |
+
+### Andrea's findings (no feedback; Boris's remarks where given)
+
+Quick:
+- S-008 (Boris doubts it): check in the code first; read with scale 1, print without `*time`.
+- S-020 (Boris: fix): compute `nphc` from the arrays of the transition type; never set a
+  negative phase.
+- S-021: error on unknown `Type`, `Parameter_transition`, `Name_Clapeyron`; check `ID` range
+  (also `PhaseTransLink*` and dike `ID`).
+- M-001: remove the second `AdiabHeat` factor (JacResTemp.cpp:525). Changes results with
+  `Adiabatic_Heat` not 0 or 1.
+- M-003: use the capped `mf` in the melt density.
+- M-013: `phase_inflow_bot` default -1, test `< 0`.
+- M-014: skip the ramp when `relax_dist <= 0`.
+- M-015: one Gaussian formula for BC and injected markers; require `temp_bot` with a plume.
+- M-028: `Z = max(Z_Top - z, 0)` in both adiabat routines.
+- M-039 (Boris too): own `out_ptr` flag in PVPtr; output only when tracers exist.
+- N-005: delete meltParam.cpp/.h and the commented call.
+- N-012 (Boris too): comments, messages, debug print, unused lists.
+
+Medium:
+- S-038 + M-024: passive tracers use a stale marker-to-cell list; move the tracer update after
+  `ADVRemap` (or map markers first). One batch.
+- M-068: tracer APS never updated, IDs with nx/ny swapped, typos mean "Always", ActiveValue = 0.
+- M-052: sign of `velin` on Right/Back faces depends on `bvel_face_out`. Changes the meaning of
+  existing inputs: discuss before fixing.
+- N-023: shared with Garrett. Andrea's part (`PhaseInside[0] = -1` after the "Don't set phase"
+  message) taken over; the dike parts stay with Garrett.
 
 ## Random noise seeding (checked 2026-10-26, dropped)
 
