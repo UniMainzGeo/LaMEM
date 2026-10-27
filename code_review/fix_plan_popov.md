@@ -33,8 +33,8 @@ Testing:
   total_pressure edge values; fwrite per value won't fix).
 - C done 2026-10-27: M-056 2D (MatDataRestrictBC2D copies boundary ghost flags like 3D; no effect
   today, 2D has no rediscretized levels; t03 t16 t19 t22 t26 t28 t30 pass).
+- C done 2026-10-27: S-036 (Clapeyron transitions require units = geo; geo unchanged).
 - C open (checked in code 2026-10-27):
-  - 5. S-036: Clapeyron units (with Andrea).
   - 8. M-046, M-067 (with Garrett).
 - Core-count drift (found 2026-10-26 while testing S-014), fixed 2026-10-26: with
   `rand_noise 0`, 1-core and 4-core runs of
@@ -144,7 +144,10 @@ All done and committed.
    Done 2026-10-26: periodic marker advection != periodic mechanical BC (Anton). Marker
    neighbour list made periodic in x for Exy (`FDSTAGGetNeighbProc(fs, ptx)`), outflow markers
    wrap instead of being deleted. t18 unchanged. Committed ea809634.
-5. S-036 (Clapeyron units in SI): with Andrea; input unit per unit system.
+5. S-036 (Clapeyron units in SI). Done 2026-10-27 (Anton, without Andrea): any Clapeyron
+   transition now requires `units = geo` (slope [MPa/K], T0 [C], P0 [Pa]); si and none stop with
+   an error. Nobody runs mantle-scale models in SI. Geo was correct before, results unchanged.
+   Comments and log labels fixed ([MPa/K], [C]). t16 t21 t29 pass (t41 skipped, plugin not built).
 6. M-048 (T = 0 means unset): DBL_MAX sentinel may change existing inputs.
    Not an issue (Anton, 2026-10-27): air gets `Ttop`, not phase `T`; 0 [C] blocks are rare. No change.
 7. Intended? M-047, M-049, N-003, N-016, N-019. Done, committed 92b20ac3 (t10 refs 2eb1e72b).

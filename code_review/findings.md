@@ -47,7 +47,7 @@ Next free IDs: S-049, M-074, N-030
 | S-033 | major | possible | physics | medium | surf.cpp:1203-1211 | Slope-erosion sub-step limit isn't a stability limit | open |
 | S-034 | major | confirmed | logic | medium | LaMEMLib.cpp:765; fastscape.cpp:1599 | With FastScape, max-angle smoothing is undone every step | open |
 | S-035 | major | confirmed | logic | medium | AVD.cpp:1192-1199 | AVD deletion ignores the Voronoi volumes (`tclaimed` is always 0) | fixed |
-| S-036 | major | confirmed | physics | medium | phase_transition.cpp:592-594,667-711 | Clapeyron laws are wrong in SI units (C read as K, MPa/K read as Pa/K) | open |
+| S-036 | major | confirmed | physics | medium | phase_transition.cpp:592-594,667-711 | Clapeyron laws are wrong in SI units (C read as K, MPa/K read as Pa/K) | fixed (group C) |
 | S-037 | major | confirmed | logic | medium | phase_transition.cpp:1303,1322,1334 | NotInAirBox uses only the first segment's `zbounds` | open |
 | S-038 | major | confirmed | logic | medium | passive_tracer.cpp:585-607, 904-938, 1032-1049 | Passive tracers use a stale marker-to-cell list (after marker exchange) | open |
 | S-039 | major | confirmed | input | medium | options.cpp:944-950, 126-162, 251-252 | Command-line options are ignored while solver defaults (MG levels, grid, thermal) are set | fixed |
@@ -625,7 +625,7 @@ Next free IDs: S-049, M-074, N-030
   comment) is wrong in SI setups.
 - Fix idea: store predefined laws in SI (Pa/K, K) and convert with `stress_si` and an
   explicit °C→K shift; document input units per unit system.
-- Status: open
+- Status: fixed (group C)
 
 ### S-037 [major, confirmed] NotInAirBox uses only the first segment's `zbounds`
 - Tags: major, confirmed, logic, medium
