@@ -746,7 +746,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 	END_PLANE_LOOP
 
 	//output means stress array to std on timesteps of other output
-	if (((istep % nstep_out)==0) && (dike->out_stress>0))
+	if ((nstep_out > 0 && (istep % nstep_out)==0) && (dike->out_stress>0))
 	{
 		if (L==0)
 		{
@@ -1281,7 +1281,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 //--------------------------------------------------
 //  Send smoothed stress of current step to stdout
 //--------------------------------------------------
-	if (((istep % nstep_out)==0) && (dike->out_stress>0))
+	if ((nstep_out > 0 && (istep % nstep_out)==0) && (dike->out_stress>0))
 	{
 		if (L==0)
 		{
@@ -1456,7 +1456,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 		CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2;
 		CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2;
 
-		if (L==0 &&  ((istep % nstep_out)==0) && (dike->out_dikeloc > 0))
+		if (L==0 &&  (nstep_out > 0 && (istep % nstep_out)==0) && (dike->out_dikeloc > 0))
 		{
 			ycell = COORD_CELL(j, sy, fs->dsy);
 			xcell=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2;
@@ -1467,7 +1467,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 
 	}//end loop over j cell row
 
-	if (((istep % nstep_out)==0) && (dike->out_dikeloc > 0))
+	if ((nstep_out > 0 && (istep % nstep_out)==0) && (dike->out_dikeloc > 0))
 	{
 		PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
 	}

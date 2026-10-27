@@ -36,11 +36,11 @@ struct TSSol
 	PetscScalar CFL;                       // CFL (Courant-Friedrichs-Lewy) criterion
 	PetscScalar CFLMAX;                    // CFL tolerance for accepting fixed time steps
 	PetscScalar time;                      // current time
-	PetscScalar time_out;                  // previous output time stamp
+	PetscScalar time_out;                  // last passed output time (multiple of dt_out)
 	PetscScalar time_end;                  // simulation end time
 	PetscScalar tol;                       // tolerance for time comparisons
 	PetscInt    nstep_max;                 // maximum allowed number of steps (lower bound: time_end/dt_max)
-	PetscInt    nstep_out;                 // save output every n steps
+	PetscInt    nstep_out;                 // save output every n steps (0: only by dt_out, < 0: no output)
 	PetscInt    nstep_ini;                 // save output for n initial steps
 	PetscInt    nstep_rdb;                 // save restart database every n steps
 	PetscInt    fix_dt;                    // flag to keep time steps fixed for advection (elasticity, temperature, kinematic block BC)

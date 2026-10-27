@@ -41,7 +41,7 @@
     dt              = 0.05           # time step
     dt_min          = 0.01           # minimum time step (declare divergence if lower value is attempted)
     dt_max          = 0.2            # maximum time step
-    dt_out          = 0.2            # output step (output at least at fixed time intervals)
+    dt_out          = 0.2            # output time step (also output at multiples of dt_out, in addition to nstep_out)
     inc_dt          = 0.1            # time step increment per time step (fraction of unit)
     num_dt_periods  = 4              # number of time stepping periods
     time_dt_periods = 0 20 50 60 100 # timestamps where timestep should be fixed (first entry has to 0)
@@ -49,7 +49,7 @@
     CFL             = 0.5            # CFL (Courant-Friedrichs-Lewy) criterion
     CFLMAX          = 0.8            # restart time step above this CFL (elasticity, temperature, kinematic blocks)
     nstep_max       = 50             # maximum allowed number of steps (lower bound: time_end/dt_max)
-    nstep_out       = -1             # save output every n steps. Set this to -1 to deactivate saving output
+    nstep_out       = -1             # save output every n steps. 0: output only by dt_out (and first/last step), -1: no output
     nstep_ini       = 5              # save output for n initial steps
     nstep_rdb       = 5              # save restart database every n steps
     time_tol        = 1e-8           # relative tolerance for time comparisons

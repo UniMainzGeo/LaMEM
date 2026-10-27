@@ -115,7 +115,8 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 	PetscPrintf(PETSC_COMM_WORLD, "   CFLMAX (fixed time steps)    : %g \n",    ts->CFLMAX);
 
 	if(ts->dt_out)    PetscPrintf(PETSC_COMM_WORLD, "   Output time step             : %g %s \n", ts->dt_out  *time, scal->lbl_time);
-	if(ts->nstep_out) PetscPrintf(PETSC_COMM_WORLD, "   Output every [n] steps       : %" PetscInt_FMT " \n", ts->nstep_out);
+	if(ts->nstep_out < 0) PetscPrintf(PETSC_COMM_WORLD, "   Output                       : off \n");
+	if(ts->nstep_out > 0) PetscPrintf(PETSC_COMM_WORLD, "   Output every [n] steps       : %" PetscInt_FMT " \n", ts->nstep_out);
 	if(ts->nstep_ini) PetscPrintf(PETSC_COMM_WORLD, "   Output [n] initial steps     : %" PetscInt_FMT " \n", ts->nstep_ini);
 	if(ts->nstep_rdb) PetscPrintf(PETSC_COMM_WORLD, "   Save restart every [n] steps : %" PetscInt_FMT " \n", ts->nstep_rdb);
 
@@ -208,25 +209,35 @@ PetscInt TSSolIsOutput(TSSol *ts)
 	//  * after last time step
 	//==========================================
 
-	PetscScalar time_end, time_out;
+	PetscScalar time_end, time_tol;
+	PetscInt    out_time;
+
+	// output is switched off
+	if(ts->nstep_out < 0) return 0;
+
+	// get time tolerance
+	time_tol = ts->tol*ts->dt_max;
 
 	// get end time (with tolerance)
-	time_end = ts->time_end - ts->tol*ts->dt_max;
+	time_end = ts->time_end - time_tol;
 
-	// get next output time (with tolerance)
-	time_out = ts->time_out + ts->dt_out - ts->tol*ts->dt_max;
+	// check output time, keep output times on a fixed grid (multiples of dt_out)
+	out_time = 0;
 
-	// check output conditions
-	if ((!ts->istep                                               ||
-	     (ts->nstep_ini         &&   ts->istep <= ts->nstep_ini)  ||
-	     (ts->nstep_out         && !(ts->istep %  ts->nstep_out)) ||
-	     (ts->dt_out            &&   ts->time  >= time_out)       ||
-	     (ts->time  >= time_end ||   ts->istep == ts->nstep_max)) &&
-	    (ts->nstep_out > 0) )
+	if(ts->dt_out && ts->time >= ts->time_out + ts->dt_out - time_tol)
 	{
-		// update output time stamp
-		ts->time_out = ts->time;
+		out_time = 1;
 
+		while(ts->time >= ts->time_out + ts->dt_out - time_tol) ts->time_out += ts->dt_out;
+	}
+
+	// check output conditions (nstep_out = 0 means output only by time)
+	if(!ts->istep                                               ||
+	   (ts->nstep_ini         &&   ts->istep <= ts->nstep_ini)  ||
+	   (ts->nstep_out         && !(ts->istep %  ts->nstep_out)) ||
+	   out_time                                                 ||
+	   ts->time  >= time_end  ||   ts->istep == ts->nstep_max)
+	{
 		return 1;
 	}
 

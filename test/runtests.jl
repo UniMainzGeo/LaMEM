@@ -689,8 +689,6 @@ if should_run_test("t12_Temperature_diffusion")
                             keywords=keywords, accuracy=acc, cores=1, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=false)
     
-    data, t1 = read_LaMEM_timestep("t13", 1, dir); T1=data.fields.temperature[1,1,:]; 
-    data, t3 = read_LaMEM_timestep("t13", 3, dir); T3=data.fields.temperature[1,1,:];
     data, t5 = read_LaMEM_timestep("t13", 5, dir); T5=data.fields.temperature[1,1,:];
     z = data.z.val[1,1,:]
 
